@@ -78,8 +78,7 @@ canvas { display:block; image-rendering:pixelated; image-rendering:crisp-edges; 
 
 <!-- QR panel — outside the game box, shown on title screen -->
 <div id="qr-panel" style="
-  display:none; position:fixed; right:24px; top:50%; transform:translateY(-50%);
-  text-align:center; z-index:200; pointer-events:none;">
+  display:none; position:fixed; text-align:center; z-index:200; pointer-events:none; transform:translateY(-50%);">
   <img id="qr-img" style="width:200px;height:200px;border:8px solid #fff;display:block;border-radius:6px;"/>
   <div style="font-family:'Press Start 2P',monospace;font-size:11px;color:#ffd700;margin-top:14px;line-height:1.8;">SCAN TO PLAY</div>
   <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:#aaa;margin-top:6px;">ON YOUR PHONE</div>
@@ -3682,15 +3681,26 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
   var img = document.getElementById('qr-img');
   if(img) img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data=' + encodeURIComponent(CTRL_URL);
 
-  // Show QR panel only on title/select screens
+  // Show QR panel only on title/select screens, positioned in right gap
   function updateQRPanel(){
     var panel = document.getElementById('qr-panel');
     if(!panel) return;
     var show = (gameState==='title'||gameState==='select');
     panel.style.display = show ? 'block' : 'none';
+    if(!show) return;
+    // Position: center of space between right edge of (scaled) game box and right viewport edge
+    var container = document.getElementById('game-container');
+    var rect = container ? container.getBoundingClientRect() : null;
+    if(rect){
+      var gameRight = rect.right;
+      var vpRight   = window.innerWidth;
+      var gapWidth  = vpRight - gameRight;
+      var centerX   = gameRight + gapWidth / 2;
+      panel.style.left  = centerX + 'px';
+      panel.style.top   = '50%';
+      panel.style.transform = 'translate(-50%, -50%)';
+    }
   }
-  // Hook into game loop check — run every 30 frames
-  var _origLoop = typeof gameLoop === 'function' ? gameLoop : null;
   setInterval(updateQRPanel, 500);
 })();
 
