@@ -64,23 +64,29 @@
     position:relative;
     width:300px;height:300px;
     flex-shrink:0;
-  }
-  .dpad-btn{
-    position:absolute;
-    display:flex;align-items:center;justify-content:center;
-    border-radius:16px;font-size:34px;
-    border:2px solid rgba(255,255,255,0.18);
-    background:rgba(255,255,255,0.08);
-    transition:background .05s;
-    /* Extended touch area via padding trick */
     touch-action:none;
   }
-  .dpad-btn.pressed{background:rgba(255,255,255,0.32)!important;transform:scale(0.95);}
-  /* UP */    .dpad-up   {top:0;   left:100px; width:100px;height:100px;}
-  /* DOWN */  .dpad-down {bottom:0;left:100px; width:100px;height:100px;}
-  /* LEFT */  .dpad-left {top:100px;left:0;    width:100px;height:100px;}
-  /* RIGHT */ .dpad-right{top:100px;right:0;   width:100px;height:100px;}
-  /* CENTER */.dpad-center{top:100px;left:100px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.04);}
+  /* Cross shape: hide corners via clip */
+  .dpad-cross{
+    position:absolute;inset:0;
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    grid-template-rows:1fr 1fr 1fr;
+  }
+  .dpad-cell{
+    display:flex;align-items:center;justify-content:center;
+    font-size:30px;color:rgba(255,255,255,0.5);
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.1);
+    transition:background .05s, color .05s;
+  }
+  .dpad-cell.corner{ background:transparent; border:none; pointer-events:none; }
+  .dpad-cell.active{ background:rgba(255,255,255,0.28); color:#fff; }
+  #dpad-up    { border-radius:14px 14px 0 0; }
+  #dpad-down  { border-radius:0 0 14px 14px; }
+  #dpad-left  { border-radius:14px 0 0 14px; }
+  #dpad-right { border-radius:0 14px 14px 0; }
+  #dpad-center{ background:rgba(0,0,0,0.2); }
 
   /* ── ACTION BUTTONS ─────────────────────── */
   .action-area{
@@ -141,13 +147,19 @@
 
 <!-- CONTROLLER SCREEN -->
 <div id="screen-ctrl" class="screen">
-  <!-- D-PAD -->
+  <!-- D-PAD: continuous cross -->
   <div class="dpad" id="dpad">
-    <div class="dpad-btn dpad-up"    data-key-p1="w"         data-key-p2="ArrowUp">▲</div>
-    <div class="dpad-btn dpad-down"  data-key-p1="s"         data-key-p2="ArrowDown">▼</div>
-    <div class="dpad-btn dpad-left"  data-key-p1="a"         data-key-p2="ArrowLeft">◀</div>
-    <div class="dpad-btn dpad-right" data-key-p1="d"         data-key-p2="ArrowRight">▶</div>
-    <div class="dpad-center"></div>
+    <div class="dpad-cross">
+      <div class="dpad-cell corner"></div>
+      <div class="dpad-cell" id="dpad-up">▲</div>
+      <div class="dpad-cell corner"></div>
+      <div class="dpad-cell" id="dpad-left">◀</div>
+      <div class="dpad-cell" id="dpad-center"></div>
+      <div class="dpad-cell" id="dpad-right">▶</div>
+      <div class="dpad-cell corner"></div>
+      <div class="dpad-cell" id="dpad-down">▼</div>
+      <div class="dpad-cell corner"></div>
+    </div>
   </div>
 
   <!-- BUTTONS -->
@@ -241,47 +253,59 @@ function showController(){
 
 // ── Attach touch controls ────────────────────────────────────────────
 function attachControls(){
-  const keyAttr = player==='p1' ? 'data-key-p1' : 'data-key-p2';
+  const dirKeys = player==='p1'
+    ? {up:'w', down:'s', left:'a', right:'d'}
+    : {up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight'};
 
-  document.querySelectorAll('['+keyAttr+']').forEach(btn=>{
-    const key = btn.getAttribute(keyAttr);
+  // Continuous D-pad: coordinate-based detection
+  const dpad = document.getElementById('dpad');
+  let currentDpadKey = null;
+
+  function getDpadDir(touch){
+    const rect = dpad.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top  + rect.height/2;
+    const dx = touch.clientX - cx;
+    const dy = touch.clientY - cy;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    if(dist < 22) return null;
+    return Math.abs(dy) > Math.abs(dx)
+      ? (dy < 0 ? 'up' : 'down')
+      : (dx < 0 ? 'left' : 'right');
+  }
+
+  function setDpadDir(dir){
+    if(dir === currentDpadKey) return;
+    if(currentDpadKey){
+      const k = dirKeys[currentDpadKey];
+      heldKeys.delete(k); sendKey(false, k);
+      const el = document.getElementById('dpad-'+currentDpadKey);
+      if(el) el.classList.remove('active');
+    }
+    currentDpadKey = dir;
+    if(dir){
+      const k = dirKeys[dir];
+      heldKeys.add(k); sendKey(true, k);
+      vibrate(18);
+      const el = document.getElementById('dpad-'+dir);
+      if(el) el.classList.add('active');
+    }
+  }
+
+  dpad.addEventListener('touchstart', e=>{ e.preventDefault(); setDpadDir(getDpadDir(e.changedTouches[0])); },{passive:false});
+  dpad.addEventListener('touchmove',  e=>{ e.preventDefault(); setDpadDir(getDpadDir(e.changedTouches[0])); },{passive:false});
+  dpad.addEventListener('touchend',   e=>{ e.preventDefault(); setDpadDir(null); },{passive:false});
+  dpad.addEventListener('touchcancel',e=>{ e.preventDefault(); setDpadDir(null); },{passive:false});
+
+  // Action buttons
+  document.querySelectorAll('.action-btn').forEach(btn=>{
+    const key = btn.getAttribute(player==='p1'?'data-key-p1':'data-key-p2');
     if(!key) return;
-
-    btn.addEventListener('touchstart', e=>{
-      e.preventDefault();
-      if(!heldKeys.has(key)){
-        heldKeys.add(key);
-        sendKey(true, key);
-        btn.classList.add('pressed');
-        vibrate(25);
-
-        // Double-tap dash for P2 right arrow
-        if(player==='p2' && key==='ArrowRight'){
-          const now=Date.now();
-          if(lastTap[key] && now-lastTap[key]<300){
-            sendKey(true, key); // second rapid press
-          }
-          lastTap[key]=now;
-        }
-      }
-    },{passive:false});
-
-    btn.addEventListener('touchend', e=>{
-      e.preventDefault();
-      heldKeys.delete(key);
-      sendKey(false, key);
-      btn.classList.remove('pressed');
-    },{passive:false});
-
-    btn.addEventListener('touchcancel', e=>{
-      e.preventDefault();
-      heldKeys.delete(key);
-      sendKey(false, key);
-      btn.classList.remove('pressed');
-    },{passive:false});
+    btn.addEventListener('touchstart', e=>{ e.preventDefault(); if(!heldKeys.has(key)){ heldKeys.add(key); sendKey(true,key); btn.classList.add('pressed'); vibrate(25); } },{passive:false});
+    btn.addEventListener('touchend',   e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
+    btn.addEventListener('touchcancel',e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
   });
 
-  // Hide P1 jump button (D-pad up = jump for P1)
   if(player==='p1') document.getElementById('btn-jump').style.display='none';
 }
 
