@@ -70,39 +70,9 @@ const server=http.createServer((req,res)=>{
     let html=fs.readFileSync(path.join(__dirname,'wedding-game-v9.html'),'utf8');
     const WS=wsURL(req);
     const GAME=gameURL(req);
-    // Replace the hardcoded ws://localhost:3000 injected by previous build
+    // Replace hardcoded localhost URL with the real server URL
     html=html.replace(/ws:\/\/localhost:3000/g, WS);
-    // Inject dynamic WS bootstrap just before </body>
-    const inject=`<script>
-(function(){
-  var wsUrl='${WS}';
-  var ctrlBar=document.getElementById('ctrl-bar');
-  var ctrlUrl=document.getElementById('ctrl-url');
-  var sock,retry;
-  function connect(){
-    try{sock=new WebSocket(wsUrl);}catch(e){return;}
-    sock.onopen=function(){sock.send(JSON.stringify({type:'game_register'}));};
-    sock.onmessage=function(e){
-      var msg;try{msg=JSON.parse(e.data);}catch(x){return;}
-      if(msg.type==='server_info'){
-        if(ctrlBar)ctrlBar.style.display='flex';
-        if(ctrlUrl)ctrlUrl.textContent='📱 ${GAME}/controller';
-      }
-      if(msg.type==='key'){
-        document.dispatchEvent(new KeyboardEvent(msg.event,{key:msg.key,code:msg.key,bubbles:true,cancelable:true}));
-      }
-      if(msg.type==='player_connected'||msg.type==='player_disconnected'){
-        var dot=document.getElementById('ctrl-status-'+msg.player);
-        if(dot){dot.style.background=msg.type==='player_connected'?'#00ff88':'#333';dot.style.boxShadow=msg.type==='player_connected'?'0 0 6px #00ff88':'none';}
-      }
-    };
-    sock.onclose=function(){if(ctrlBar)ctrlBar.style.display='none';retry=setTimeout(connect,4000);};
-    sock.onerror=function(){};
-  }
-  connect();
-})();
-</script>`;
-    html=html.replace('</body>',inject+'</body>');
+    html=html.replace(/http:\/\/localhost:3000/g, GAME);
     res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
     res.end(html);
 
@@ -133,7 +103,7 @@ server.on('upgrade',(req,socket)=>{
         if(gameSock&&!gameSock.destroyed) gameSock.write(encodeWS(txt));
         continue;
       }
-      // Plain string registration
+      // Plain string OR JSON game_register
       if(txt==='game_register'){
         gameSock=socket;
         const proto=req.headers['x-forwarded-proto']==='https'?'https':'http';
@@ -144,7 +114,13 @@ server.on('upgrade',(req,socket)=>{
       }
       try{
         const msg=JSON.parse(txt);
-        if(msg.type==='player_register'){
+        if(msg.type==='game_register'){
+          gameSock=socket;
+          const proto=req.headers['x-forwarded-proto']==='https'?'https':'http';
+          const host=req.headers['host']||`localhost:${PORT}`;
+          socket.write(encodeWS({type:'server_info',url:`${proto}://${host}`}));
+          Object.keys(players).forEach(p=>socket.write(encodeWS({type:'player_connected',player:p})));
+        } else if(msg.type==='player_register'){
           players[msg.player]=socket;
           socket._role=msg.player;
           if(gameSock&&!gameSock.destroyed)gameSock.write(encodeWS({type:'player_connected',player:msg.player}));
