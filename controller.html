@@ -47,9 +47,35 @@
   #status-dot{width:12px;height:12px;border-radius:50%;background:#555;}
   #status-dot.on{background:#00ff88;box-shadow:0 0 8px #00ff88;}
 
-  /* ── CONTROLLER SCREEN ───────────────────── */
+  /* ── UTILITY STRIP — sits just below the status bar green line ── */
+  #utility-bar{
+    display:none;
+    position:fixed;top:46px;left:0;right:0;height:36px;
+    z-index:98;
+    background:rgba(0,0,0,0.55);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    align-items:center;justify-content:center;gap:10px;
+    padding:0 12px;
+  }
+  #utility-bar.visible{ display:flex; }
+  .util-btn{
+    height:26px;padding:0 10px;border-radius:6px;
+    border:1.5px solid rgba(255,255,255,0.18);
+    background:rgba(255,255,255,0.05);
+    font-family:inherit;font-size:6px;color:#888;
+    display:flex;align-items:center;justify-content:center;gap:3px;
+    touch-action:none;-webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;white-space:nowrap;
+  }
+  .util-btn.pressed{background:rgba(255,255,255,0.2);color:#fff;}
+  .util-btn.esc-btn{border-color:rgba(255,80,80,0.5);color:#ff8888;}
+  .util-btn.esc-btn.pressed{background:rgba(255,0,0,0.18);}
+  .util-btn.mute-btn{border-color:rgba(255,200,0,0.4);color:#ffcc44;}
+  .util-btn.mute-btn.pressed{background:rgba(255,200,0,0.15);}
+
+  /* ── CONTROLLER SCREEN — pushed below both bars ── */
   #screen-ctrl{
-    padding-top:44px;
+    padding-top:82px;   /* 44px status + 36px util + 2px gap */
     flex-direction:row;
     align-items:center;
     justify-content:space-around;
@@ -114,30 +140,7 @@
     outline:none;
     -webkit-appearance:none;
   }
-  /* ── UTILITY BAR ─────────────────────────── */
-  #utility-bar{
-    display:none; /* shown after player connects */
-    position:fixed;bottom:0;left:0;right:0;
-    gap:8px;padding:8px 12px 20px;
-    background:rgba(0,0,0,0.7);
-    border-top:1px solid rgba(255,255,255,0.1);
-    z-index:50;
-  }
-  #utility-bar.visible{ display:flex; }
-  .util-btn{
-    flex:1;height:50px;border-radius:10px;
-    border:2px solid rgba(255,255,255,0.2);
-    background:rgba(255,255,255,0.06);
-    font-family:inherit;font-size:7px;color:#aaa;
-    display:flex;align-items:center;justify-content:center;
-    touch-action:none;-webkit-user-select:none;user-select:none;
-    -webkit-tap-highlight-color:transparent;gap:4px;
-  }
-  .util-btn.pressed{background:rgba(255,255,255,0.22);color:#fff;}
-  .util-btn.esc-btn{border-color:#ff4444;color:#ff6666;}
-  .util-btn.esc-btn.pressed{background:rgba(255,0,0,0.2);}
-  /* Push main controls up above the utility bar */
-  #screen-ctrl{ padding-bottom:80px; }
+
 </style>
 </head>
 <body>
@@ -197,9 +200,8 @@
   <button class="util-btn esc-btn" id="btn-esc">⏸ ESC</button>
   <button class="util-btn" id="btn-prev">◄ PREV</button>
   <button class="util-btn" id="btn-next">NEXT ►</button>
+  <button class="util-btn mute-btn" id="btn-mute">🔊 MUTE</button>
 </div>
-
-<div class="hint">↑↑↓↓←→←→ ACTION = secret</div>
 
 <script>
 const WS_URL  = (function(){
@@ -319,6 +321,25 @@ function showController(){
   utilBtn('btn-esc',  'Escape');
   utilBtn('btn-prev', '[');
   utilBtn('btn-next', ']');
+
+  // Mute button — toggles audio, updates label
+  const muteBtn = document.getElementById('btn-mute');
+  let muted = false;
+  if(muteBtn){
+    muteBtn.addEventListener('touchstart', e=>{
+      e.preventDefault();
+      muteBtn.classList.add('pressed');
+      sendKey(true, 'm');
+      muted = !muted;
+      muteBtn.textContent = muted ? '🔇 UNMUTE' : '🔊 MUTE';
+      vibrate(20);
+    },{passive:false});
+    muteBtn.addEventListener('touchend', e=>{
+      e.preventDefault();
+      muteBtn.classList.remove('pressed');
+      sendKey(false, 'm');
+    },{passive:false});
+  }
 
   attachControls();
 }

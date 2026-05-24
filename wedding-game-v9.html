@@ -92,6 +92,189 @@ canvas { display:block; image-rendering:pixelated; image-rendering:crisp-edges; 
 </div>
 
 <script>/* v2026052402 */
+// ==================================================================
+// == AUDIO SYSTEM ==================================================
+// ==================================================================
+const Audio = (function(){
+  let ctx=null, masterGain, musicGain, sfxGain;
+  let musicEnabled=true, sfxEnabled=true;
+  let scheduleTimer=null, nextNoteTime=0;
+  let melodyPos=0, theme=null, currentThemeName=null;
+  const LOOKAHEAD=0.12, TICK=50;
+
+  function init(){
+    if(ctx) return;
+    try{
+      ctx=new(window.AudioContext||window.webkitAudioContext)();
+      masterGain=ctx.createGain(); masterGain.gain.value=0.65;
+      musicGain=ctx.createGain(); musicGain.gain.value=0.32;
+      sfxGain=ctx.createGain();   sfxGain.gain.value=0.75;
+      musicGain.connect(masterGain); sfxGain.connect(masterGain);
+      masterGain.connect(ctx.destination);
+    }catch(e){}
+  }
+
+  // Note name → frequency
+  function nf(note){
+    if(!note||note==='_') return 0;
+    const nm={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+    const m=note.match(/^([A-G])(#?)(\d)$/);
+    if(!m) return 0;
+    const st=nm[m[1]]+(m[2]==='#'?1:0)+(parseInt(m[3])-4)*12-9;
+    return 440*Math.pow(2,st/12);
+  }
+
+  function osc(freq,start,dur,type,vol,dest){
+    if(!ctx||!freq||!musicEnabled) return;
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(0.001,start);
+    g.gain.linearRampToValueAtTime(vol,start+0.012);
+    g.gain.exponentialRampToValueAtTime(0.001,start+dur*0.88);
+    o.connect(g); g.connect(dest||musicGain);
+    o.start(start); o.stop(start+dur+0.02);
+  }
+
+  // Themes: melody=16th notes, bass=quarter notes (plays every 4 melody steps)
+  const T={
+    title:{bpm:140,
+      mel:'C4 E4 G4 C5 B4 G4 E4 _ F4 A4 C5 F5 E5 C5 A4 _ G4 B4 D5 G5 F5 D5 B4 _ E4 G4 C5 E5 D5 C5 B4 _'.split(' '),
+      bas:'C3 F3 G3 C3'.split(' ')},
+    l1:{bpm:170,
+      mel:'E4 G4 A4 B4 E4 G4 A4 C5 D5 B4 A4 G4 F#4 D4 E4 _ A4 C5 B4 A4 G4 E4 F#4 G4 A4 B4 C5 A4 B4 _ E4 _'.split(' '),
+      bas:'E3 A3 D3 E3'.split(' ')},
+    l2:{bpm:112,
+      mel:'_ _ _ _ A4 _ _ _ _ _ _ _ G#4 _ _ _ _ _ _ _ A4 _ G4 _ F4 _ E4 _ _ _ _ _'.split(' '),
+      bas:'A2 E3 G#2 E3'.split(' ')},
+    l3:{bpm:158,
+      mel:'D4 _ F#4 _ A4 _ B4 _ D5 B4 A4 F#4 D4 _ _ _ F#4 _ A4 _ B4 _ D5 _ A4 B4 D5 _ B4 _ A4 _'.split(' '),
+      bas:'D3 A3 G3 D3'.split(' ')},
+    l4:{bpm:192,
+      mel:'C5 G4 E4 G4 C5 G4 A4 G4 F5 C5 A4 C5 F5 C5 G5 _ E5 B4 G4 B4 E5 B4 C5 B4 A4 E4 C4 E4 A4 E4 G5 _'.split(' '),
+      bas:'C3 F3 G3 C3'.split(' ')},
+    l5:{bpm:178,
+      mel:'G4 C5 E5 G5 F5 A4 C5 F5 E5 G4 B4 E5 D5 F#4 A4 D5 C5 E4 G4 C5 B4 D5 G5 _ A4 C5 E5 A5 G5 _ _ _'.split(' '),
+      bas:'C3 F3 G3 C3'.split(' ')},
+    l6:{bpm:132,
+      mel:'C4 D4 E4 F4 G4 A4 B4 C5 D5 C5 B4 A4 G4 F4 E4 D4 E4 G4 C5 E5 F5 E5 D5 C5 B4 D5 G5 B4 C5 _ _ _'.split(' '),
+      bas:'C3 G3 F3 C3'.split(' ')},
+    l7:{bpm:96,
+      mel:'A4 _ _ _ _ _ _ _ E4 _ _ _ D4 _ _ _ C4 _ _ _ B3 _ _ _ A3 _ _ _ _ _ _ _'.split(' '),
+      bas:'A2 E2 D2 A2'.split(' ')},
+    l8:{bpm:205,
+      mel:'E5 _ E5 _ E5 D5 C5 _ B4 _ B4 _ B4 A4 G4 _ A4 _ A4 _ A4 G4 F4 _ E4 _ G4 _ B4 _ E5 _'.split(' '),
+      bas:'E3 E3 G3 A3'.split(' ')},
+    l9:{bpm:188,
+      mel:'D5 _ F5 _ A5 _ F5 _ E5 _ D5 _ C5 _ A4 _ A#4 _ D5 _ F5 _ A#5 _ G5 _ F5 _ D5 _ _ _'.split(' '),
+      bas:'D3 C3 A#2 A2'.split(' ')},
+  };
+
+  const LEVEL_THEME={0:'title',1:'l1',2:'l2',3:'l3',4:'l4',5:'l5',6:'l6',7:'l7',8:'l8',9:'l9'};
+
+  function schedule(){
+    if(!ctx||!theme||!musicEnabled) return;
+    const bd=60/theme.bpm/2; // 16th note duration
+    while(nextNoteTime < ctx.currentTime+LOOKAHEAD){
+      const m=theme.mel[melodyPos%theme.mel.length];
+      const f=nf(m);
+      if(f) osc(f,nextNoteTime,bd*0.88,'square',0.18);
+      if(melodyPos%4===0&&theme.bas){
+        const b=theme.bas[Math.floor(melodyPos/4)%theme.bas.length];
+        const bf=nf(b);
+        if(bf) osc(bf,nextNoteTime,bd*3.8,'triangle',0.22);
+      }
+      melodyPos++; nextNoteTime+=bd;
+    }
+  }
+
+  function playTheme(name){
+    if(!ctx) return;
+    if(currentThemeName===name) return;
+    stop();
+    currentThemeName=name; theme=T[name]; melodyPos=0;
+    nextNoteTime=ctx.currentTime+0.05;
+    if(musicEnabled) scheduleTimer=setInterval(schedule,TICK);
+  }
+
+  function playLevelTheme(lvl){
+    init();
+    playTheme(LEVEL_THEME[lvl]||'l1');
+  }
+
+  function stop(){
+    if(scheduleTimer){clearInterval(scheduleTimer);scheduleTimer=null;}
+    currentThemeName=null; theme=null;
+  }
+
+  function toggleMusic(){
+    musicEnabled=!musicEnabled;
+    if(!musicEnabled) stop();
+    else { playLevelTheme(currentLevel||0); }
+    return musicEnabled;
+  }
+
+  // SFX
+  function sfx(type){
+    if(!ctx||!sfxEnabled) return;
+    const t=ctx.currentTime;
+    function so(f,st,dur,tp,vol){ // sfx osc
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type=tp||'square'; o.frequency.value=f;
+      g.gain.setValueAtTime(vol||0.3,st);
+      g.gain.exponentialRampToValueAtTime(0.001,st+dur*0.9);
+      o.connect(g); g.connect(sfxGain); o.start(st); o.stop(st+dur+0.01);
+    }
+    function noise(st,dur,vol){
+      const buf=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*dur),ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(ctx.sampleRate*dur*0.3));
+      const s=ctx.createBufferSource(),g=ctx.createGain();
+      s.buffer=buf; g.gain.setValueAtTime(vol,st); g.gain.exponentialRampToValueAtTime(0.001,st+dur);
+      s.connect(g); g.connect(sfxGain); s.start(st);
+    }
+    switch(type){
+      case 'jump':
+        so(330,t,0.06,'square',0.25); so(494,t+0.04,0.05,'square',0.2); so(659,t+0.07,0.04,'square',0.15); break;
+      case 'shoot':
+        {const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='square'; o.frequency.setValueAtTime(1200,t); o.frequency.exponentialRampToValueAtTime(300,t+0.08);
+        g.gain.setValueAtTime(0.35,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.08);
+        o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+0.09);} break;
+      case 'pop':
+        {const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='sine'; o.frequency.setValueAtTime(700,t); o.frequency.exponentialRampToValueAtTime(200,t+0.1);
+        g.gain.setValueAtTime(0.3,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+        o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+0.11);} break;
+      case 'collect':
+        [523,659,784,1047].forEach((f,i)=>so(f,t+i*0.04,0.09,'square',0.22)); break;
+      case 'damage':
+        noise(t,0.15,0.6);
+        {const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='sawtooth'; o.frequency.setValueAtTime(440,t); o.frequency.exponentialRampToValueAtTime(110,t+0.18);
+        g.gain.setValueAtTime(0.4,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+        o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+0.19);} break;
+      case 'enemyhit':
+        so(180,t,0.07,'sawtooth',0.35); noise(t,0.05,0.3); break;
+      case 'enemydie':
+        [440,554,659,880,1109].forEach((f,i)=>so(f,t+i*0.05,0.1,'square',0.28)); break;
+      case 'levelclear':
+        [523,659,784,1047,784,1047,1319,1568].forEach((f,i)=>so(f,t+i*0.09,0.14,'square',0.28)); break;
+      case 'gameover':
+        [392,370,349,330,311,294,262].forEach((f,i)=>so(f,t+i*0.16,0.22,'sawtooth',0.3)); break;
+      case 'godmode':
+        [523,659,784,1047,1319,1568,2093].forEach((f,i)=>so(f,t+i*0.06,0.15,'square',0.3)); break;
+      case 'button':
+        so(880,t,0.04,'square',0.15); break;
+      case 'stomp':
+        noise(t,0.08,0.5); so(120,t,0.12,'sawtooth',0.4); break;
+    }
+  }
+
+  return{init,playTheme,playLevelTheme,stop,toggleMusic,sfx,
+         get musicOn(){ return musicEnabled; }};
+})();
+
+
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -117,6 +300,9 @@ function setNarrator(txt){
 
 // INPUT
 document.addEventListener('keydown',e=>{
+  Audio.init();  // start audio context on first gesture
+  if(e.key==='m'||e.key==='M'){ const on=Audio.toggleMusic(); screenFlash=15; screenFlashColor=on?'#00ff88':'#ff4444'; }
+
   keys[e.key]=true; keys[e.code]=true;
  
   if(e.key==='Escape'){ if(gameState==='gameover') gameState='title'; else { togglePause(); pauseOption=0; } }
@@ -176,6 +362,7 @@ document.addEventListener('keydown',e=>{
     if(godModeBuffer==='GOD'){
       godMode=!godMode;lives=godMode?99:3;
       screenFlash=40;screenFlashColor=godMode?'#ffd700':'#ff4444';
+      Audio.sfx('godmode');
       const gb=document.getElementById('god-bar');
       if(gb) gb.style.display=godMode?'block':'none';
     }
@@ -1279,9 +1466,11 @@ function initCurrentLevel(){
   if(map[currentLevel]) map[currentLevel]();
 }
 
-function retryLevel(){ lives=3; particles=[]; screenFlash=0; dialogueQueue=[]; currentDialogue=null; launchLevel(currentLevel); }
+function retryLevel(){ window.__goSfx=false;
+ lives=3; particles=[]; screenFlash=0; dialogueQueue=[]; currentDialogue=null; launchLevel(currentLevel); }
 
 function startGame(){
+  window.__goSfx=false;
   currentLevel=1; score=0; lives=3; particles=[];
   gameState='cutscene';
   cutsceneText=[
@@ -1350,6 +1539,7 @@ function nextLevel(){
 
 function triggerLevelClear(msg){
   if(gameState!=='playing') return;
+  Audio.sfx('levelclear');
   gameState='levelclear'; levelClearMsg=msg; levelClearTimer=0;
   screenFlash=30; screenFlashColor='#ffd700';
   for(let i=0;i<20;i++) spawnHeart(Math.random()*W,Math.random()*H);
@@ -1360,6 +1550,7 @@ function triggerLevelClear(msg){
 // == LEVEL 1: CLEAN AIR -- SPACE SHOOTER ============================
 // ==================================================================
 function initLevel1(){
+  Audio.playLevelTheme(1);
     levelData={
     p1:{x:160,y:H-70,bullets:[],shootCool:0},
     p2:{x:480,y:H-70,bullets:[],shootCool:0},
@@ -1428,7 +1619,7 @@ function runLevel1(){
     const lbl=c.type==='bad'?'BAD':'GOOD';
     const lcol=c.type==='bad'?'#ff6644':'#44ff88';
     drawText(lbl,c.x-10,c.y+4,5,lcol,true);
-    if(c.y>H-75){c.alive=false;if(c.type==='bad'){lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';if(lives<=0)gameState='gameover';}}
+    if(c.y>H-75){c.alive=false;if(c.type==='bad'){lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');if(lives<=0)gameState='gameover';}}
   });
 
   // shooter ships (P1 left, P2 right)
@@ -1511,6 +1702,7 @@ function runLevel1(){
 // == LEVEL 2: SQUID GAMES -- RED LIGHT/GREEN LIGHT + BRIDGE =========
 // ==================================================================
 function initLevel2(){
+  Audio.playLevelTheme(2);
     levelData={
     minigame:'redlight',
     greenLight:true, lightTimer:0, lightDuration:80,
@@ -1700,6 +1892,7 @@ function runLevel2(){
 // ==================================================================
 const CELL=20, COLS=32, ROWS=24;
 function initLevel3(){
+  Audio.playLevelTheme(3);
     const startX=5,startY=9;
   levelData={
     snake1:[{x:startX,y:startY},{x:startX-1,y:startY},{x:startX-2,y:startY}],
@@ -1865,7 +2058,7 @@ function runLevel3(){
     ctx.strokeStyle='#ff4444'; ctx.lineWidth=1.5; ctx.strokeRect(mCX-mw/2-8,mly,mw+16,18);
     drawText(mLabel, mCX-mw/2, mly+13, 8,'#ff4444',false);
     if(d.snake1[0]&&d.snake1[0].x===d.chef.x&&d.snake1[0].y===d.chef.y){d.chefEaten=true;score+=300;spawnHeart(d.chef.x*CELL,d.chef.y*CELL);queueDialogue('GORJAN','Malina down. The ramen is ours.',130,'#00ff88');}
-    else if(d.snake2[0]&&d.snake2[0].x===d.chef.x&&d.snake2[0].y===d.chef.y){lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';}
+    else if(d.snake2[0]&&d.snake2[0].x===d.chef.x&&d.snake2[0].y===d.chef.y){lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');}
   }
   if(total===6&&!d.midTalk){d.midTalk=true;queueDialogue('MARTELA','This is the best trip of my life.',160,'#ff69b4');queueDialogue('GORJAN','Wait until you see what I planned next...',180,'#00ff88');}
   if(total>=d.goal){
@@ -1881,6 +2074,7 @@ function runLevel3(){
 // == LEVEL 4: OVERTHINKING FRIENDS -- BUBBLE TROUBLE ================
 // ==================================================================
 function initLevel4(){
+  Audio.playLevelTheme(4);
   dialogueQueue=[]; clueboard=[];
   levelData={
     p1:{x:100,y:H-60,bullets:[],shootCool:0,score:0},
@@ -1965,6 +2159,7 @@ function runLevel4(){
     p.shootCool--;
     if((keys[sk]||keys[skalt])&&p.shootCool<=0){
       p.bullets.push({x:p.x,y:p.y-20,alive:true});
+      Audio.sfx('shoot');
       p.shootCool=15;
     }
   }
@@ -2006,7 +2201,7 @@ function runLevel4(){
     l4players.forEach(p=>{
       if(d.hitCooldown>0) return;
       if(Math.sqrt((p.x-b.x)**2+((H-70)-b.y)**2)<b.r+14){
-        lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';
+        lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');
         d.hitCooldown=120; // ~2s invincibility after hit
         spawnParticle(p.x,p.y-30,'#ff4444',8,4);
         if(lives<=0)gameState='gameover';
@@ -2027,6 +2222,7 @@ function runLevel4(){
 // == LEVEL 5: JOANA'S QUOTA CHAOS -- CATCH THE DRINKS ===============
 // ==================================================================
 function initLevel5(){
+  Audio.playLevelTheme(5);
   levelData={
     p1:{x:160,y:H-80},
     p2:{x:480,y:H-80},
@@ -2133,7 +2329,7 @@ function runLevel5(){
     l5players.forEach(p=>{
       if(Math.abs(p.x-bottle.x)<28&&Math.abs((H-80)-bottle.y)<40&&bottle.alive){
         bottle.alive=false;
-        d.caught++; score+=120;
+        d.caught++; score+=120; Audio.sfx('collect');
         spawnHeart(bottle.x,bottle.y);
         if(d.caught%5===0) queueDialogue('JOANA',['QUOTA MET!','EXCELLENT!','BUY MORE!','KEEP GOING!'][Math.floor(Math.random()*4)],80,'#ff4444');
       }
@@ -2201,6 +2397,7 @@ function runLevel5(){
 // == LEVEL 6: WINDOWS 95 -- BREAKOUT/PONG ===========================
 // ==================================================================
 function initLevel6(){
+  Audio.playLevelTheme(6);
     levelData={
     ball:{x:W/2,y:H/2,vx:3,vy:-3.5,r:8},
     dora:{x:200,y:180,vx:-1.4,vy:0.8,hp:2},
@@ -2391,6 +2588,7 @@ function runLevel6(){
 // == LEVEL 7: THE KIDNAPPING (cinematic) ===========================
 // ==================================================================
 function initLevel7(){
+  Audio.playLevelTheme(7);
   levelData={
     phase:0,timer:0,emirX:W+80,
     clouds:Array.from({length:8},()=>({x:Math.random()*W,y:40+Math.random()*120,w:60+Math.random()*80})),
@@ -2542,6 +2740,7 @@ function runLevel7(){
 }
 
 function initLevel8(){
+  Audio.playLevelTheme(8);
   levelData={
     p1:{x:30,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:3},
     platforms:[
@@ -2684,13 +2883,14 @@ function runLevel8(){
       if(em.hp===6) queueDialogue('EMIR','You dare! I have a GUN!',140,'#ff4444');
       if(em.hp===3) queueDialogue('EMIR','STOP MOVING!!',120,'#ff4444');
       if(em.hp<=0){
+        Audio.sfx('enemydie');
         spawnParticle(em.x,em.y,'#ffd700',30,10);
         spawnParticle(em.x,em.y,'#ff69b4',20,7);
         d.rescued=true;d.victoryTimer=0;score+=2000;
         queueDialogue('EMIR','The hat... protect the hat...',180,'#ff4444');
       }
     } else if(Math.abs(pl.x-em.x)<32&&Math.abs(pl.y-em.y)<36&&pl.vy>=0){
-      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';pl.x=30;pl.vy=-5;
+      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');pl.x=30;pl.vy=-5;
     }
   }
 
@@ -2723,12 +2923,12 @@ function runLevel8(){
   if(keys['a']||keys['A']){pl.vx=-pl.speed;pl.facing=-1;pl.frame++;}
   else if(keys['d']||keys['D']){pl.vx=pl.speed;pl.facing=1;pl.frame++;}
   else pl.vx*=0.75;
-  if((keys['w']||keys['W'])&&pl.grounded){pl.vy=-9;pl.grounded=false;}
+  if((keys['w']||keys['W'])&&pl.grounded){pl.vy=-9;pl.grounded=false;Audio.sfx('jump');}
   pl.vy+=0.45;pl.x+=pl.vx;pl.y+=pl.vy;
   pl.x=Math.max(10,Math.min(W-10,pl.x));
   pl.grounded=false;
   d.platforms.forEach(p=>{if(pl.x>p.x&&pl.x<p.x+p.w&&pl.y+18>p.y&&pl.y+18<p.y+p.h+Math.abs(pl.vy)+2&&pl.vy>=0){pl.y=p.y-18;pl.vy=0;pl.grounded=true;}});
-  if(pl.y>H+50){pl.x=30;pl.y=200;pl.vy=0;lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';if(lives<=0)gameState='gameover';}
+  if(pl.y>H+50){pl.x=30;pl.y=200;pl.vy=0;lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');if(lives<=0)gameState='gameover';}
 
   drawGorjan(pl.x,pl.y,pl.facing,pl.frame);
 
@@ -2763,6 +2963,7 @@ function fireEmir(em,pl,phase,d){
 // == BONUS: MARTELA'S REVENGE =======================================
 // ==================================================================
 function initBonusLevel(){
+  Audio.playLevelTheme(9);
   levelData={
     p2:{x:40,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:4.2},
     platforms:[
@@ -2937,7 +3138,7 @@ function runBonusLevel(){
         queueDialogue('MIHAELA','Fine. You are better at this than me. The spreadsheet predicted this outcome.',240,'#ff4444');
       }
     } else if(Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&mh.hp>0){
-      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';pl.x=40;pl.vy=-5;
+      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');pl.x=40;pl.vy=-5;
     }
   }
 
@@ -2970,12 +3171,12 @@ function runBonusLevel(){
   if(keys['ArrowLeft']){pl.vx=Math.min(pl.vx,-pl.speed);pl.facing=-1;pl.frame++;}
   else if(keys['ArrowRight']){pl.vx=Math.max(pl.vx,pl.speed);pl.facing=1;pl.frame++;}
   else pl.vx*=0.72;
-  if(keys['ArrowUp']&&pl.grounded){pl.vy=-11;pl.grounded=false;}  // jumps higher than Gorjan
+  if(keys['ArrowUp']&&pl.grounded){pl.vy=-11;pl.grounded=false;Audio.sfx('jump');}  // jumps higher than Gorjan
   pl.vy+=.42;pl.x+=pl.vx;pl.y+=pl.vy;
   pl.x=Math.max(10,Math.min(W-10,pl.x));
   pl.grounded=false;
   d.platforms.forEach(p=>{if(pl.x>p.x&&pl.x<p.x+p.w&&pl.y+18>p.y&&pl.y+18<p.y+p.h+Math.abs(pl.vy)+2&&pl.vy>=0){pl.y=p.y-18;pl.vy=0;pl.grounded=true;}});
-  if(pl.y>H+50){pl.x=40;pl.y=200;pl.vy=0;lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';if(lives<=0)gameState='gameover';}
+  if(pl.y>H+50){pl.x=40;pl.y=200;pl.vy=0;lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');if(lives<=0)gameState='gameover';}
 
   drawMartela(pl.x,pl.y,pl.facing,pl.frame);
 
@@ -3039,6 +3240,7 @@ function fireSpreadsheet(mh,pl,phase,d){
 const tStars=Array.from({length:70},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*2+.5,t:Math.random()*100}));
 let tblink=0;
 function runTitle(){
+  if(gameState==='title'&&!Audio.musicOn===false) Audio.playLevelTheme(0);
   ctx.fillStyle='#000010'; ctx.fillRect(0,0,W,H);
   tStars.forEach(function(s){
     var tw=(Math.sin(frameCount*.03+s.t)+1)/2;
@@ -3342,6 +3544,8 @@ function drawLevelClear(){
 
 // == GAME OVER ====================================================
 function drawGameOver(){
+  if(!window.__goSfx){ window.__goSfx=true; Audio.sfx('gameover'); }
+
   ctx.fillStyle='rgba(0,0,0,0.92)';ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='#ff4444';ctx.lineWidth=3;ctx.strokeRect(80,100,W-160,260);
   drawTextC('GAME OVER',150,16,'#ff4444');
