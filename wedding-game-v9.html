@@ -3406,37 +3406,48 @@ function gameLoop(){
 function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.globalAlpha=screenFlash/30*.4;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;screenFlash--;}}
 // Preload custom font then start loop
 document.fonts.load("62px 'SomeTimeLater'").then(()=>{ gameLoop(); }).catch(()=>{ gameLoop(); });
+
+// Mobile controller — optimised WebSocket client
 (function(){
   var sock, reconnectTimer;
   var ctrlBar = document.getElementById('ctrl-bar');
   var ctrlUrl = document.getElementById('ctrl-url');
+  // Keys that need full event dispatch (trigger state changes, not just movement)
+  var triggerKeys = {' ':1,'Enter':1,'Escape':1,'f':1,'F':1,'[':1,']':1};
 
   function connect(){
     try{ sock = new WebSocket('ws://localhost:3000'); }
     catch(e){ return; }
 
     sock.onopen = function(){
-      sock.send(JSON.stringify({type:'game_register'}));
+      sock.send('game_register');
     };
 
     sock.onmessage = function(e){
+      var raw = e.data;
+
+      // Compact protocol: "d:ArrowLeft" or "u:ArrowLeft"
+      if(raw.length < 3) return;
+      if(raw[1]===':'){
+        var down = raw[0]==='d';
+        var key  = raw.slice(2);
+        // 1. Direct keys[] update — zero dispatch overhead
+        keys[key] = down;
+        // 2. Also fire full event for trigger keys (Enter, Space, Escape etc.)
+        if(down && triggerKeys[key]){
+          document.dispatchEvent(new KeyboardEvent('keydown',{key:key,code:key,bubbles:true,cancelable:true}));
+        }
+        return;
+      }
+
+      // JSON messages (server info, player status)
       var msg;
-      try{ msg=JSON.parse(e.data); }catch(e){ return; }
+      try{ msg=JSON.parse(raw); }catch(x){ return; }
 
       if(msg.type==='server_info'){
-        // Show the ctrl bar with phone URL
         if(ctrlBar) ctrlBar.style.display='flex';
-        if(ctrlUrl) ctrlUrl.textContent='📱 http://'+msg.ip+':'+msg.port+'/controller';
-        window.__controllerURL = 'http://'+msg.ip+':'+msg.port+'/controller';
+        if(ctrlUrl) ctrlUrl.textContent='📱 '+msg.url+'/controller';
       }
-
-      if(msg.type==='key'){
-        var ev = new KeyboardEvent(msg.event,{
-          key:msg.key, code:msg.key, bubbles:true, cancelable:true
-        });
-        document.dispatchEvent(ev);
-      }
-
       if(msg.type==='player_connected'){
         var dot=document.getElementById('ctrl-status-'+msg.player);
         if(dot){ dot.style.background='#00ff88'; dot.style.boxShadow='0 0 6px #00ff88'; }
@@ -3448,8 +3459,10 @@ document.fonts.load("62px 'SomeTimeLater'").then(()=>{ gameLoop(); }).catch(()=>
     };
 
     sock.onclose = function(){
+      // Clear all held keys on disconnect to prevent stuck keys
+      Object.keys(keys).forEach(function(k){ keys[k]=false; });
       if(ctrlBar) ctrlBar.style.display='none';
-      reconnectTimer = setTimeout(connect, 4000);
+      reconnectTimer = setTimeout(connect, 3000);
     };
     sock.onerror = function(){};
   }

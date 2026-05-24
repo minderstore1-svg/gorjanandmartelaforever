@@ -128,20 +128,28 @@ server.on('upgrade',(req,socket)=>{
     let txt;
     while((txt=decodeWS(buf))!==null){
       buf=Buffer.alloc(0);
+      // Compact key message — passthrough raw, no JSON parse needed
+      if(txt.length > 1 && txt[1]===':' && (txt[0]==='d'||txt[0]==='u')){
+        if(gameSock&&!gameSock.destroyed) gameSock.write(encodeWS(txt));
+        continue;
+      }
+      // Plain string registration
+      if(txt==='game_register'){
+        gameSock=socket;
+        const proto=req.headers['x-forwarded-proto']==='https'?'https':'http';
+        const host=req.headers['host']||`localhost:${PORT}`;
+        socket.write(encodeWS({type:'server_info',url:`${proto}://${host}`}));
+        Object.keys(players).forEach(p=>socket.write(encodeWS({type:'player_connected',player:p})));
+        continue;
+      }
       try{
         const msg=JSON.parse(txt);
-        if(msg.type==='game_register'){
-          gameSock=socket;
-          socket.write(encodeWS({type:'server_info'}));
-          Object.keys(players).forEach(p=>socket.write(encodeWS({type:'player_connected',player:p})));
-        } else if(msg.type==='player_register'){
+        if(msg.type==='player_register'){
           players[msg.player]=socket;
           socket._role=msg.player;
           if(gameSock&&!gameSock.destroyed)gameSock.write(encodeWS({type:'player_connected',player:msg.player}));
           socket.write(encodeWS({type:'registered',player:msg.player}));
           console.log('✅',msg.player,'connected');
-        } else if(msg.type==='key'){
-          if(gameSock&&!gameSock.destroyed)gameSock.write(encodeWS(msg));
         } else if(msg.type==='ping'){
           socket.write(encodeWS({type:'pong'}));
         }
