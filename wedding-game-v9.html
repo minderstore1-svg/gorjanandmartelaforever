@@ -12,8 +12,15 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:'Press Start 2P',monospace; overflow:hidden; }
-#game-container { position:relative; width:640px; height:480px; overflow:hidden; border:4px solid #444; box-shadow:0 0 40px rgba(255,100,150,0.3); }
-canvas { display:block; image-rendering:pixelated; width:640px; height:480px; }
+#game-container {
+  position:relative;
+  width:640px; height:480px;
+  overflow:hidden;
+  border:4px solid #444;
+  box-shadow:0 0 40px rgba(255,100,150,0.3);
+  transform-origin: top center;
+}
+canvas { display:block; image-rendering:pixelated; image-rendering:crisp-edges; width:640px; height:480px; }
 #hud { position:absolute; top:0; left:0; right:0; padding:4px 8px; display:flex; justify-content:space-between; font-size:7px; color:#fff; pointer-events:none; text-shadow:1px 1px 0 #000; z-index:10; background:rgba(0,0,0,0.5); }
 #narrator-box {
   position:absolute;
@@ -3093,6 +3100,15 @@ function runTitle(){
 
   ctx.fillStyle='#222'; ctx.fillRect(60,432,W-120,1);
 
+  // QR code for controller URL
+  if(window.__qrCanvas){
+    const qrSize=72;
+    const qrX=W/2-qrSize/2;
+    ctx.fillStyle='#fff'; ctx.fillRect(qrX-3,438,qrSize+6,qrSize+6);
+    ctx.drawImage(window.__qrCanvas, qrX, 441, qrSize, qrSize);
+    drawTextC('SCAN TO PLAY ON PHONE',441+qrSize+6,5,'#555');
+  }
+
   // confirm
   tblink++;
   var bl=Math.floor(tblink/22)%2===0;
@@ -3404,6 +3420,39 @@ function gameLoop(){
   } catch(e) { console.error('GameLoop error:', e.message, e.stack); }
 }
 function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.globalAlpha=screenFlash/30*.4;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;screenFlash--;}}
+// Auto-scale game to fill browser window
+(function(){
+  function scaleGame(){
+    var container = document.getElementById('game-container');
+    if(!container) return;
+    var scaleX = window.innerWidth  / 648;
+    var scaleY = window.innerHeight / 520;
+    var scale  = Math.min(scaleX, scaleY);
+    container.style.transform = 'scale('+scale+')';
+    var scaledH = 488 * scale;
+    document.body.style.paddingTop = Math.max(0, (window.innerHeight - scaledH - 40) / 2) + 'px';
+  }
+  window.addEventListener('resize', scaleGame);
+  scaleGame();
+})();
+
+// QR code generator (controller URL)
+// Uses Google Charts API if online, falls back to URL text
+(function(){
+  var CTRL_URL = 'https://gorjanandmartelaforever-production.up.railway.app/controller';
+  var img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function(){
+    var c = document.createElement('canvas');
+    c.width = 200; c.height = 200;
+    var cx = c.getContext('2d');
+    cx.drawImage(img, 0, 0, 200, 200);
+    window.__qrCanvas = c;
+  };
+  img.onerror = function(){ window.__qrCanvas = null; };
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=2&data=' + encodeURIComponent(CTRL_URL);
+})();
+
 // Preload custom font then start loop
 document.fonts.load("62px 'SomeTimeLater'").then(()=>{ gameLoop(); }).catch(()=>{ gameLoop(); });
 
