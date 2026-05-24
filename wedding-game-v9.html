@@ -114,6 +114,12 @@ const Audio = (function(){
     }catch(e){}
   }
 
+  function ensureRunning(){
+    // Call this on any user gesture to create + resume the context
+    init();
+    if(ctx && ctx.state==='suspended') ctx.resume();
+  }
+
   // Note name → frequency
   function nf(note){
     if(!note||note==='_') return 0;
@@ -197,7 +203,7 @@ const Audio = (function(){
   }
 
   function playLevelTheme(lvl){
-    init();
+    ensureRunning();
     playTheme(LEVEL_THEME[lvl]||'l1');
   }
 
@@ -267,11 +273,28 @@ const Audio = (function(){
         so(880,t,0.04,'square',0.15); break;
       case 'stomp':
         noise(t,0.08,0.5); so(120,t,0.12,'sawtooth',0.4); break;
+      case 'greenlight':
+        [523,659,784].forEach((f,i)=>so(f,t+i*0.05,0.08,'square',0.22)); break;
+      case 'redlight':
+        so(220,t,0.06,'sawtooth',0.35); so(165,t+0.05,0.12,'sawtooth',0.3); break;
+      case 'caught':
+        {const o=ctx.createOscillator(),g=ctx.createGain();
+        o.type='sawtooth'; o.frequency.setValueAtTime(880,t); o.frequency.setValueAtTime(660,t+0.05); o.frequency.setValueAtTime(880,t+0.1);
+        g.gain.setValueAtTime(0.45,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.25);
+        o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+0.26);}
+        noise(t,0.12,0.35); break;
+      case 'bridgesafe':
+        [659,784,1047].forEach((f,i)=>so(f,t+i*0.04,0.1,'sine',0.28)); break;
+      case 'bridgeunsafe':
+        so(200,t,0.08,'sawtooth',0.4); so(150,t+0.06,0.15,'sawtooth',0.35); noise(t+0.04,0.1,0.4); break;
     }
   }
 
-  return{init,playTheme,playLevelTheme,stop,toggleMusic,sfx,
-         get musicOn(){ return musicEnabled; }};
+  function toggleSfx(){ sfxEnabled=!sfxEnabled; return sfxEnabled; }
+
+  return{init,ensureRunning,playTheme,playLevelTheme,stop,toggleMusic,toggleSfx,sfx,
+         get musicOn(){ return musicEnabled; },
+         get sfxOn(){ return sfxEnabled; }};
 })();
 
 
@@ -300,7 +323,7 @@ function setNarrator(txt){
 
 // INPUT
 document.addEventListener('keydown',e=>{
-  Audio.init();  // start audio context on first gesture
+  Audio.ensureRunning();  // create + resume AudioContext on any key
   if(e.key==='m'||e.key==='M'){ const on=Audio.toggleMusic(); screenFlash=15; screenFlashColor=on?'#00ff88':'#ff4444'; }
 
   keys[e.key]=true; keys[e.code]=true;
@@ -376,6 +399,8 @@ document.addEventListener('keydown',e=>{
   }
   e.preventDefault();
 });
+document.addEventListener('mousedown', ()=>{ Audio.ensureRunning(); });
+document.addEventListener('touchstart', ()=>{ Audio.ensureRunning(); }, {passive:true});
 document.addEventListener('keyup',e=>{ keys[e.key]=false; keys[e.code]=false; });
 function togglePause(){ if(gameState==='playing') paused=!paused; }
 
@@ -1638,6 +1663,7 @@ function runLevel1(){
   d.p1.shootCool--;
   if((keys[' ']||keys['f']||keys['F'])&&d.p1.shootCool<=0){
     d.p1.bullets.push({x:d.p1.x,y:d.p1.y-16,alive:true});
+    Audio.sfx('shoot');
     d.p1.shootCool=12;
   }
   drawShip(d.p1.x,d.p1.y,'#00ff88',p2Active()?'P1':'YOU');
@@ -1650,6 +1676,7 @@ function runLevel1(){
   d.p2.shootCool--;
   if((keys['Enter']||keys['ArrowUp'])&&d.p2.shootCool<=0){
     d.p2.bullets.push({x:d.p2.x,y:d.p2.y-16,alive:true});
+    Audio.sfx('shoot');
     d.p2.shootCool=12;
   }
   if(p2Active()) drawShip(d.p2.x,d.p2.y,'#ff69b4','P2');
@@ -1667,8 +1694,8 @@ function runLevel1(){
         if(!c.alive)return;
         if(Math.abs(b.x-c.x)<c.size+5&&Math.abs(b.y-c.y)<c.size+5){
           b.alive=false; c.alive=false;
-          if(c.type==='bad'){d.killed++;score+=100;spawnHeart(c.x,c.y);}
-          else{lives=Math.max(0,lives-1);screenFlash=10;screenFlashColor='#ff8800';spawnParticle(c.x,c.y,'#ff4400',8,4);}
+          if(c.type==='bad'){d.killed++;score+=100;spawnHeart(c.x,c.y);Audio.sfx('enemydie');}
+          else{lives=Math.max(0,lives-1);screenFlash=10;screenFlashColor='#ff8800';spawnParticle(c.x,c.y,'#ff4400',8,4);Audio.sfx('damage');}
         }
       });
     });
@@ -1736,12 +1763,13 @@ function runLevel2(){
       d.greenLight=!d.greenLight;
       d.lightTimer=0;
       d.lightDuration=50+Math.random()*80;
+      Audio.sfx(d.greenLight?'greenlight':'redlight');
       if(!d.greenLight){
         // penalise only if actively pressing a movement key at the moment of red
         const p1pressing = keys['d']||keys['D']||keys['a']||keys['A'];
         const p2pressing = keys['ArrowRight']||keys['ArrowLeft'];
-        if(p1Active()&&p1pressing){lives=Math.max(0,lives-1);screenFlash=20;screenFlashColor='#ff0000';d.p1x=Math.max(60,d.p1x-30);}
-        if(p2Active()&&p2pressing){lives=Math.max(0,lives-1);screenFlash=20;screenFlashColor='#ff0000';d.p2x=Math.max(120,d.p2x-30);}
+        if(p1Active()&&p1pressing){lives=Math.max(0,lives-1);screenFlash=20;screenFlashColor='#ff0000';d.p1x=Math.max(60,d.p1x-30);Audio.sfx('caught');}
+        if(p2Active()&&p2pressing){lives=Math.max(0,lives-1);screenFlash=20;screenFlashColor='#ff0000';d.p2x=Math.max(120,d.p2x-30);Audio.sfx('caught');}
       } else {
         d.p1safeX=d.p1x; d.p2safeX=d.p2x;
       }
@@ -1844,8 +1872,8 @@ function runLevel2(){
         const bp=d.bridge[target];
         bp.revealed=true;
         const safe=d.p1row==='top'?bp.safe:!bp.safe;
-        if(safe){d.step1=target;score+=50;}
-        else{lives=Math.max(0,lives-1);screenFlash=18;screenFlashColor='#ff0000';/* stay on d.step1 */}
+        if(safe){d.step1=target;score+=50;Audio.sfx('bridgesafe');}
+        else{lives=Math.max(0,lives-1);screenFlash=18;screenFlashColor='#ff0000';Audio.sfx('bridgeunsafe');/* stay on d.step1 */}
       } else {d.step1=9;}
     }
     const p1bx=d.step1<0?spdX+spdW/2:(d.step1<9?startX+d.step1*gap+panW/2:epdX+epdW/2);
@@ -1869,8 +1897,8 @@ function runLevel2(){
         const bp2=d.bridge[target2];
         bp2.revealed=true;
         const safe2=d.p2row==='top'?bp2.safe:!bp2.safe;
-        if(safe2){d.step2=target2;score+=50;}
-        else{lives=Math.max(0,lives-1);screenFlash=18;screenFlashColor='#ff0000';/* stay on d.step2 */}
+        if(safe2){d.step2=target2;score+=50;Audio.sfx('bridgesafe');}
+        else{lives=Math.max(0,lives-1);screenFlash=18;screenFlashColor='#ff0000';Audio.sfx('bridgeunsafe');/* stay on d.step2 */}
       } else {d.step2=9;}
     }
     const p2bx=d.step2<0?spdX+spdW/2+20:(d.step2<9?startX+d.step2*gap+panW/2:epdX+epdW/2);
@@ -3240,7 +3268,7 @@ function fireSpreadsheet(mh,pl,phase,d){
 const tStars=Array.from({length:70},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*2+.5,t:Math.random()*100}));
 let tblink=0;
 function runTitle(){
-  if(gameState==='title'&&!Audio.musicOn===false) Audio.playLevelTheme(0);
+  Audio.playLevelTheme(0);  // deduped internally - only starts once ctx exists
   ctx.fillStyle='#000010'; ctx.fillRect(0,0,W,H);
   tStars.forEach(function(s){
     var tw=(Math.sin(frameCount*.03+s.t)+1)/2;
@@ -3690,6 +3718,11 @@ document.fonts.load("62px 'SomeTimeLater'").then(()=>{ gameLoop(); }).catch(()=>
       var raw = e.data;
 
       // Compact protocol: "d:ArrowLeft" or "u:ArrowLeft"
+      if(raw === 'SFXMUTE'){
+        Audio.toggleSfx();
+        screenFlash = 10; screenFlashColor = Audio.sfxOn ? '#00ccff' : '#555';
+        return;
+      }
       if(raw === 'GODMODE'){
         godMode = !godMode;
         lives = godMode ? 99 : 3;

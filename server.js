@@ -108,6 +108,11 @@ server.on('upgrade',(req,socket)=>{
         if(gameSock&&!gameSock.destroyed) gameSock.write(encodeWS('GODMODE'));
         continue;
       }
+      // SFX mute toggle
+      if(txt==='SFXMUTE'){
+        if(gameSock&&!gameSock.destroyed) gameSock.write(encodeWS('SFXMUTE'));
+        continue;
+      }
       // Plain string OR JSON game_register
       if(txt==='game_register'){
         gameSock=socket;

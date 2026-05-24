@@ -47,19 +47,15 @@
   #status-dot{width:12px;height:12px;border-radius:50%;background:#555;}
   #status-dot.on{background:#00ff88;box-shadow:0 0 8px #00ff88;}
 
-  /* ── UTILITY STRIP — sits just below the status bar green line ── */
+  /* ── UTILITY BUTTONS — right column, above action buttons ── */
   #utility-bar{
     display:none;
-    position:fixed;top:46px;left:0;right:0;height:36px;
-    z-index:98;
-    background:rgba(0,0,0,0.55);
-    border-bottom:1px solid rgba(255,255,255,0.06);
-    align-items:center;justify-content:center;gap:10px;
-    padding:0 12px;
+    flex-direction:column;align-items:flex-end;gap:6px;
+    flex-shrink:0;
   }
   #utility-bar.visible{ display:flex; }
   .util-btn{
-    height:26px;padding:0 10px;border-radius:6px;
+    height:28px;padding:0 10px;border-radius:7px;min-width:70px;
     border:1.5px solid rgba(255,255,255,0.18);
     background:rgba(255,255,255,0.05);
     font-family:inherit;font-size:6px;color:#888;
@@ -67,15 +63,23 @@
     touch-action:none;-webkit-user-select:none;user-select:none;
     -webkit-tap-highlight-color:transparent;white-space:nowrap;
   }
-  .util-btn.pressed{background:rgba(255,255,255,0.2);color:#fff;}
+  .util-btn.pressed{background:rgba(255,255,255,0.22);color:#fff;}
   .util-btn.esc-btn{border-color:rgba(255,80,80,0.5);color:#ff8888;}
   .util-btn.esc-btn.pressed{background:rgba(255,0,0,0.18);}
   .util-btn.mute-btn{border-color:rgba(255,200,0,0.4);color:#ffcc44;}
   .util-btn.mute-btn.pressed{background:rgba(255,200,0,0.15);}
+  .util-btn.sfx-btn{border-color:rgba(100,200,255,0.4);color:#88ccff;}
+  .util-btn.sfx-btn.pressed{background:rgba(100,200,255,0.15);}
 
-  /* ── CONTROLLER SCREEN — pushed below both bars ── */
+  /* Wrapper for right side: util buttons + action buttons */
+  #right-col{
+    display:flex;flex-direction:column;
+    align-items:flex-end;gap:16px;flex-shrink:0;
+  }
+
+  /* ── CONTROLLER SCREEN ── */
   #screen-ctrl{
-    padding-top:82px;   /* 44px status + 36px util + 2px gap */
+    padding-top:44px;
     flex-direction:row;
     align-items:center;
     justify-content:space-around;
@@ -185,23 +189,29 @@
     </div>
   </div>
 
-  <!-- BUTTONS -->
-  <div class="action-area" id="action-area">
-    <!-- Jump / Up action -->
-    <button class="action-btn jump" id="btn-jump"
-      data-key-p1="w" data-key-p2="ArrowUp">JUMP</button>
-    <!-- Shoot / Enter action -->
-    <button class="action-btn shoot" id="btn-action"
-      data-key-p1=" " data-key-p2="Enter">ACTION</button>
+  <!-- RIGHT COLUMN: utility buttons above action buttons -->
+  <div id="right-col">
+    <div id="utility-bar">
+      <button class="util-btn esc-btn"  id="btn-esc">⏸ ESC</button>
+      <button class="util-btn"          id="btn-prev">◄ PREV</button>
+      <button class="util-btn"          id="btn-next">NEXT ►</button>
+      <button class="util-btn mute-btn" id="btn-mute">🔊 MUSIC</button>
+      <button class="util-btn sfx-btn"  id="btn-sfx">🔔 SFX</button>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="action-area" id="action-area">
+      <!-- Jump / Up action -->
+      <button class="action-btn jump" id="btn-jump"
+        data-key-p1="w" data-key-p2="ArrowUp">JUMP</button>
+      <!-- Shoot / Enter action -->
+      <button class="action-btn shoot" id="btn-action"
+        data-key-p1=" " data-key-p2="Enter">ACTION</button>
+    </div>
   </div>
 </div>
 
-<div id="utility-bar">
-  <button class="util-btn esc-btn" id="btn-esc">⏸ ESC</button>
-  <button class="util-btn" id="btn-prev">◄ PREV</button>
-  <button class="util-btn" id="btn-next">NEXT ►</button>
-  <button class="util-btn mute-btn" id="btn-mute">🔊 MUTE</button>
-</div>
+
 
 <script>
 const WS_URL  = (function(){
@@ -321,6 +331,22 @@ function showController(){
   utilBtn('btn-esc',  'Escape');
   utilBtn('btn-prev', '[');
   utilBtn('btn-next', ']');
+
+  // SFX mute button
+  const sfxBtn = document.getElementById('btn-sfx');
+  let sfxMuted = false;
+  if(sfxBtn){
+    sfxBtn.addEventListener('touchstart', e=>{
+      e.preventDefault();
+      sfxBtn.classList.add('pressed');
+      sfxMuted = !sfxMuted;
+      sfxBtn.textContent = sfxMuted ? '🔕 SFX' : '🔔 SFX';
+      // Send special sfxmute message
+      if(sock && sock.readyState===1) sock.send('SFXMUTE');
+      vibrate(20);
+    },{passive:false});
+    sfxBtn.addEventListener('touchend', e=>{ e.preventDefault(); sfxBtn.classList.remove('pressed'); },{passive:false});
+  }
 
   // Mute button — toggles audio, updates label
   const muteBtn = document.getElementById('btn-mute');
