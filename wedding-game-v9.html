@@ -76,6 +76,15 @@ canvas { display:block; image-rendering:pixelated; image-rendering:crisp-edges; 
 <div id="hint-bar"></div>
 <div id="god-bar">★ GOD MODE ★ &nbsp; 1-9: jump to level &nbsp;|&nbsp; ]: next level &nbsp;|&nbsp; [: prev level &nbsp;|&nbsp; 0: bonus</div>
 
+<!-- QR panel — outside the game box, shown on title screen -->
+<div id="qr-panel" style="
+  display:none; position:fixed; right:24px; top:50%; transform:translateY(-50%);
+  text-align:center; z-index:200; pointer-events:none;">
+  <img id="qr-img" style="width:200px;height:200px;border:8px solid #fff;display:block;border-radius:6px;"/>
+  <div style="font-family:'Press Start 2P',monospace;font-size:11px;color:#ffd700;margin-top:14px;line-height:1.8;">SCAN TO PLAY</div>
+  <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:#aaa;margin-top:6px;">ON YOUR PHONE</div>
+</div>
+
 <!-- Mobile controller status (shown when server is running) -->
 <div id="ctrl-bar" style="display:none;width:640px;margin-top:4px;display:none;align-items:center;justify-content:space-between;font-family:'Press Start 2P',monospace;font-size:6px;color:#555;">
   <span id="ctrl-url" style="color:#444"></span>
@@ -3289,17 +3298,6 @@ function runTitle(){
   drawTextC('A LOVE STORY IN 8 LEVELS', 88, 6, '#555');
   ctx.fillStyle='#222'; ctx.fillRect(60,100,W-120,1);
 
-  // QR code — top right corner
-  if(window.__qrCanvas){
-    const qrSize=62;
-    const qrX=W-qrSize-10;
-    const qrY=46;
-    ctx.fillStyle='#fff'; ctx.fillRect(qrX-2,qrY-2,qrSize+4,qrSize+4);
-    ctx.drawImage(window.__qrCanvas, qrX, qrY, qrSize, qrSize);
-    drawText('SCAN',qrX+4,qrY+qrSize+12,4,'#666',false);
-    drawText('PHONE',qrX,qrY+qrSize+22,4,'#666',false);
-  }
-
   // Characters
   ctx.save(); ctx.scale(1.0,1.0);
   drawGorjan(160, 170, 1, frameCount);
@@ -3678,21 +3676,22 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
   scaleGame();
 })();
 
-// QR code generator (controller URL)
-// Uses Google Charts API if online, falls back to URL text
+// QR code — rendered as HTML element outside the game box
 (function(){
   var CTRL_URL = 'https://gorjanandmartelaforever-production.up.railway.app/controller';
-  var img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = function(){
-    var c = document.createElement('canvas');
-    c.width = 200; c.height = 200;
-    var cx = c.getContext('2d');
-    cx.drawImage(img, 0, 0, 200, 200);
-    window.__qrCanvas = c;
-  };
-  img.onerror = function(){ window.__qrCanvas = null; };
-  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=2&data=' + encodeURIComponent(CTRL_URL);
+  var img = document.getElementById('qr-img');
+  if(img) img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data=' + encodeURIComponent(CTRL_URL);
+
+  // Show QR panel only on title/select screens
+  function updateQRPanel(){
+    var panel = document.getElementById('qr-panel');
+    if(!panel) return;
+    var show = (gameState==='title'||gameState==='select');
+    panel.style.display = show ? 'block' : 'none';
+  }
+  // Hook into game loop check — run every 30 frames
+  var _origLoop = typeof gameLoop === 'function' ? gameLoop : null;
+  setInterval(updateQRPanel, 500);
 })();
 
 // Preload custom font then start loop
