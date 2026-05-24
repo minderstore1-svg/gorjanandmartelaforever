@@ -3063,7 +3063,7 @@ function runTitle(){
   if(window.__qrCanvas){
     const qrSize=64;
     const qrX=W-qrSize-8;
-    const qrY=8;
+    const qrY=28;
     ctx.fillStyle='#fff'; ctx.fillRect(qrX-2,qrY-2,qrSize+4,qrSize+4);
     ctx.drawImage(window.__qrCanvas, qrX, qrY, qrSize, qrSize);
     drawText('SCAN',qrX+6,qrY+qrSize+12,4,'#555',false);
