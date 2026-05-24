@@ -61,15 +61,18 @@
   #status-dot{width:12px;height:12px;border-radius:50%;background:#555;}
   #status-dot.on{background:#00ff88;box-shadow:0 0 8px #00ff88;}
 
-  /* ── UTILITY BUTTONS — right column, above action buttons ── */
+  /* ── UTILITY BUTTONS — horizontal row above action button ── */
   #utility-bar{
     display:none;
-    flex-direction:column;align-items:flex-end;gap:6px;
-    flex-shrink:0;
+    flex-direction:row;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:6px;
+    max-width:180px;
   }
   #utility-bar.visible{ display:flex; }
   .util-btn{
-    height:28px;padding:0 10px;border-radius:7px;min-width:70px;
+    height:28px;padding:0 8px;border-radius:7px;
     border:1.5px solid rgba(255,255,255,0.18);
     background:rgba(255,255,255,0.05);
     font-family:inherit;font-size:6px;color:#888;
@@ -85,10 +88,14 @@
   .util-btn.sfx-btn{border-color:rgba(100,200,255,0.4);color:#88ccff;}
   .util-btn.sfx-btn.pressed{background:rgba(100,200,255,0.15);}
 
-  /* Wrapper for right side: util buttons + action buttons */
+  /* Right side: util row on top, action button centered below */
   #right-col{
-    display:flex;flex-direction:column;
-    align-items:flex-end;gap:16px;flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:20px;
+    flex-shrink:0;
   }
 
   /* ── CONTROLLER SCREEN ── */
@@ -214,12 +221,8 @@
       <button class="util-btn sfx-btn"  id="btn-sfx">🔔 SFX</button>
     </div>
 
-    <!-- BUTTONS -->
+    <!-- Single ACTION button, centered -->
     <div class="action-area" id="action-area">
-      <!-- Jump / Up action -->
-      <button class="action-btn jump" id="btn-jump"
-        data-key-p1="w" data-key-p2="ArrowUp">JUMP</button>
-      <!-- Shoot / Enter action -->
       <button class="action-btn shoot" id="btn-action"
         data-key-p1=" " data-key-p2="Enter">ACTION</button>
     </div>
@@ -456,7 +459,6 @@ function attachControls(){
     btn.addEventListener('touchcancel',e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
   });
 
-  if(player==='p1') document.getElementById('btn-jump').style.display='none';
 }
 
 function vibrate(ms){
