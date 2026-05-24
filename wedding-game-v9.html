@@ -2781,21 +2781,28 @@ function runLevel7(){
 function initLevel8(){
   Audio.playLevelTheme(8);
   levelData={
-    p1:{x:30,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:3},
+    p1:{x:80,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:3,
+        punchCool:0,punchTimer:0},
     platforms:[
-      {x:0,y:420,w:180,h:60},{x:200,y:360,w:90,h:14},{x:330,y:310,w:90,h:14},
-      {x:460,y:260,w:90,h:14},{x:560,y:220,w:80,h:14},
-      {x:80,y:290,w:80,h:14},{x:200,y:240,w:80,h:14},{x:350,y:200,w:80,h:14},
+      // Wide ground — Gorjan won't just fall off the bottom
+      {x:0,   y:430,w:W,   h:50},    // full floor
+      // Mid-level platforms — wide and forgiving
+      {x:60,  y:320,w:150, h:14},    // left mid
+      {x:430, y:320,w:150, h:14},    // right mid
+      {x:230, y:250,w:180, h:14},    // center upper
+      // Top platforms
+      {x:30,  y:220,w:120, h:14},    // upper left
+      {x:490, y:220,w:120, h:14},    // upper right
     ],
-    // Emir gets full physics
-    emir:{x:500,y:200,vx:0,vy:0,grounded:false,hp:9,facing:-1,
-          state:'patrol',stateTimer:0,shootTimer:0,dashCool:0,
-          targetX:500,jumpCool:0},
-    bullets:[], rescued:false, victoryTimer:0, cageChat:false,
+    emir:{x:480,y:200,vx:0,vy:0,grounded:false,hp:9,facing:-1,
+          state:'patrol',stateTimer:0,shootTimer:0,dashCool:0,jumpCool:0,
+          invincTimer:0,phaseTransTimer:0,lastPhase:1},
+    bullets:[],rescued:false,victoryTimer:0,cageChat:false,
+    shakeTimer:0,
   };
   setNarrator('');
   levelData.startFrame=frameCount;
-  showHint('JUMP ON EMIR TO DAMAGE — DODGE HIS BULLETS!','WASD + W=jump   (P1 only)');
+  showHint('STOMP or PUNCH (SPACE) Emir — DODGE bullets!','WASD + W=jump   SPACE=punch   (P1 only)');
 }
 
 function runLevel8(){
@@ -2804,16 +2811,30 @@ function runLevel8(){
   const em=d.emir;
   const phase=em.hp>6?1:em.hp>3?2:3;
 
+  // Screen shake
+  let sx=0,sy=0;
+  if(d.shakeTimer>0){
+    sx=(Math.random()-.5)*8*d.shakeTimer/20;
+    sy=(Math.random()-.5)*8*d.shakeTimer/20;
+    d.shakeTimer--;
+    ctx.save(); ctx.translate(sx,sy);
+  }
+
   // Background
   const sky=ctx.createLinearGradient(0,0,0,H);
   sky.addColorStop(0,'#1a0000');sky.addColorStop(1,'#3a1010');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
   for(let i=0;i<8;i++){const fx=i*80+Math.sin(frameCount*.05+i)*10;ctx.fillStyle=`rgba(255,${80+i*8},0,0.25)`;ctx.fillRect(fx,H-80,60,30+Math.sin(frameCount*.08+i)*12);}
-  d.platforms.forEach(p=>{ctx.fillStyle='#2a1a1a';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle='#3a2a2a';ctx.fillRect(p.x,p.y,p.w,3);});
+
+  // Draw platforms
+  d.platforms.forEach(p=>{
+    ctx.fillStyle='#2a1a1a';ctx.fillRect(p.x,p.y,p.w,p.h);
+    ctx.fillStyle='#3a2a2a';ctx.fillRect(p.x,p.y,p.w,3);
+  });
   ctx.fillStyle='#3a0808';ctx.fillRect(0,H-60,W,60);
   for(let lx=0;lx<W;lx+=20){ctx.fillStyle=`rgba(255,${60+Math.sin(frameCount*.1+lx)*25},0,0.4)`;ctx.fillRect(lx,H-60,14,5);}
 
-  // Martela in tower
+  // Martela in cage
   if(!d.rescued){
     ctx.fillStyle='#1a1a2a';ctx.fillRect(W-90,80,80,100);
     ctx.strokeStyle='#888';ctx.lineWidth=2;ctx.strokeRect(W-90,80,80,100);
@@ -2821,87 +2842,86 @@ function runLevel8(){
     drawMartela(W-50,150,1,0,true);
   }
 
-  // ── EMIR AI + PHYSICS ─────────────────────────────────────────────
+  // ── PHASE TRANSITION PAUSE ────────────────────────────────────────
+  if(em.phaseTransTimer>0){
+    em.phaseTransTimer--;
+    // Emir stands still and flashes
+    if(frameCount%6<3) drawEmir(em.x,em.y,0);
+    // Dramatic overlay
+    const prog=1-em.phaseTransTimer/90;
+    ctx.fillStyle=`rgba(255,0,0,${0.15*Math.sin(prog*Math.PI)})`;
+    ctx.fillRect(0,0,W,H);
+    drawTextC(phase===2?'EMIR IS ANGRY!':'EMIR IS ENRAGED!',H/2-10,11,'#ff4444');
+    // Draw player
+    drawGorjan(pl.x,pl.y,pl.facing,0);
+    updateDialogue();drawDialogue();
+    // HUD
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,28);
+    drawText('GORJAN SOLO!',10,20,7,'#ffd700');
+    drawText('LIVES: '+'♥'.repeat(lives),W-130,20,7,'#ff4444');
+    if(d.shakeTimer>0) ctx.restore();
+    return;
+  }
+
+  // ── EMIR AI ───────────────────────────────────────────────────────
   if(em.hp>0){
     em.stateTimer++;
     em.dashCool=Math.max(0,em.dashCool-1);
     em.jumpCool=Math.max(0,em.jumpCool-1);
     em.shootTimer++;
+    if(em.invincTimer>0) em.invincTimer--;
 
     const dx=pl.x-em.x, dy=pl.y-em.y;
-    const dist=Math.sqrt(dx*dx+dy*dy);
-    const playerAbove = pl.y < em.y-20 && Math.abs(dx)<80;
-    const spd = 1.2+phase*0.5;
+    const dist=Math.sqrt(dx*dx+dy*dy)||1;
+    const playerAbove=pl.y<em.y-20&&Math.abs(dx)<80;
+    const spd=1.2+phase*0.5;
 
-    // ── AI state machine ───────────────────────────────────────────
     if(em.state==='patrol'){
-      // Move toward or away from player
-      if(playerAbove && em.grounded && em.dashCool===0){
-        // DODGE: player is jumping above — dash sideways fast
-        em.vx = dx>0 ? -5 : 5;
-        em.dashCool=40;
-        em.state='dodge';
-        em.stateTimer=0;
-        if(phase>=2) screenFlash=3;screenFlashColor='#ff8800';
+      if(playerAbove&&em.grounded&&em.dashCool===0){
+        em.vx=dx>0?-5.5:5.5; em.state='dodge'; em.stateTimer=0;
       } else {
-        // Chase at medium distance, back off if too close
-        if(dist>200){em.vx+=(dx>0?0.3:-0.3);}
-        else if(dist<80){em.vx+=(dx>0?-0.3:0.3);}
-        else{em.vx*=0.9;}
-        // Shoot
-        const shootRate=phase===1?80:phase===2?50:28;
-        if(em.shootTimer>shootRate&&dist<350){
-          fireEmir(em,pl,phase,d);
-          em.shootTimer=0;
+        if(dist>180) em.vx+=(dx>0?.25:-.25);
+        else if(dist<80&&phase>1) em.vx+=(dx>0?-.15:.15);
+        else em.vx*=0.9;
+        const sRate=phase===1?90:phase===2?55:30;
+        if(em.shootTimer>sRate&&dist<350){
+          fireEmir(em,pl,phase,d); em.shootTimer=0;
           if(phase===3){em.state='burst';em.stateTimer=0;}
         }
-        // Jump to a platform occasionally
-        if(em.grounded&&em.jumpCool===0&&(Math.random()<0.008||playerAbove)){
-          em.vy=-10-phase*0.8;
-          em.grounded=false;
-          em.jumpCool=90;
+        if(em.grounded&&em.jumpCool===0&&Math.random()<.008){
+          em.vy=-(10+phase*.8);em.grounded=false;em.jumpCool=90;
         }
       }
     } else if(em.state==='dodge'){
-      em.vx*=0.88;
-      if(em.stateTimer>30){em.state='patrol';em.stateTimer=0;}
+      em.vx*=.85;
+      if(em.stateTimer>28){em.state='patrol';em.stateTimer=0;}
     } else if(em.state==='burst'){
-      // Phase 3: rapid burst then cooldown
-      if(em.stateTimer%12===0&&em.stateTimer<48){
-        fireEmir(em,pl,phase,d);
-      }
-      if(em.stateTimer>60){em.state='patrol';em.stateTimer=0;}
+      if(em.stateTimer%10===0&&em.stateTimer<50) fireEmir(em,pl,phase,d);
+      if(em.stateTimer>65){em.state='patrol';em.stateTimer=0;}
     } else if(em.state==='dash'){
-      // Phase 2+: charge toward player
-      em.vx = dx>0?7:-7;
+      em.vx=dx>0?7:-7;
       if(em.stateTimer>20){em.state='patrol';em.stateTimer=0;}
     }
-
-    // Phase 2: occasionally charge at player
-    if(phase>=2&&em.grounded&&em.dashCool===0&&Math.random()<0.004){
+    if(phase>=2&&em.grounded&&em.dashCool===0&&Math.random()<.004){
       em.state='dash';em.stateTimer=0;em.dashCool=120;
-      queueDialogue('EMIR','...',40,'#ff4444');
     }
 
-    // Apply velocity + friction
-    em.vx=Math.max(-7,Math.min(7,em.vx));
-    em.vx*=0.85;
-    em.vy+=0.5;
-    em.x+=em.vx;
-    em.y+=em.vy;
+    // Physics
+    em.vx=Math.max(-7,Math.min(7,em.vx)); em.vx*=.84;
+    em.vy+=.5; em.x+=em.vx; em.y+=em.vy;
     em.x=Math.max(10,Math.min(W-10,em.x));
-    em.facing = em.vx<-0.1?-1:em.vx>0.1?1:em.facing;
-
-    // Platform collision for Emir
+    em.facing=em.vx<-.1?-1:em.vx>.1?1:em.facing;
     em.grounded=false;
     d.platforms.forEach(p=>{
       if(em.x>p.x&&em.x<p.x+p.w&&em.y+18>p.y&&em.y+18<p.y+p.h+Math.abs(em.vy)+2&&em.vy>=0){
         em.y=p.y-18;em.vy=0;em.grounded=true;
       }
     });
-    if(em.y>H+40){em.x=300;em.y=200;em.vy=0;}
+    if(em.y>H+40){em.x=300;em.y=180;em.vy=0;}
 
-    drawEmir(em.x,em.y,frameCount);
+    // Draw Emir — flash when invincible
+    const showEmir = em.invincTimer===0 || Math.floor(frameCount/6)%2===0;
+    if(showEmir) drawEmir(em.x,em.y,frameCount);
 
     // HP pips
     for(let i=0;i<em.hp;i++){
@@ -2909,43 +2929,73 @@ function runLevel8(){
       ctx.fillRect(em.x-44+i*10,em.y-54,8,6);
       ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(em.x-44+i*10,em.y-54,8,6);
     }
-    if(phase>1){
-      drawText(phase===3?'ENRAGED!':'ANGRY!',em.x-22,em.y-62,5,phase===3?'#ff2200':'#ff8800');
-    }
+    if(phase>1) drawText(phase===3?'ENRAGED!':'ANGRY!',em.x-22,em.y-62,5,phase===3?'#ff2200':'#ff8800');
 
-    // Stomp detection — Gorjan jumps ON Emir from above
-    if(Math.abs(pl.x-em.x)<32&&Math.abs(pl.y-em.y)<36&&pl.vy<-2){
-      em.hp--;
-      pl.vy=-10;
-      spawnParticle(em.x,em.y,'#ff4444',14,7);
-      screenFlash=12;screenFlashColor='#fff';
-      if(em.hp===6) queueDialogue('EMIR','You dare! I have a GUN!',140,'#ff4444');
-      if(em.hp===3) queueDialogue('EMIR','STOP MOVING!!',120,'#ff4444');
-      if(em.hp<=0){
-        Audio.sfx('enemydie');
-        spawnParticle(em.x,em.y,'#ffd700',30,10);
-        spawnParticle(em.x,em.y,'#ff69b4',20,7);
-        d.rescued=true;d.victoryTimer=0;score+=2000;
-        queueDialogue('EMIR','The hat... protect the hat...',180,'#ff4444');
-      }
-    } else if(Math.abs(pl.x-em.x)<32&&Math.abs(pl.y-em.y)<36&&pl.vy>=0){
-      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');pl.x=30;pl.vy=-5;
+    // ── STOMP (jump on Emir from above) ─────────────────────────────
+    if(em.invincTimer===0&&Math.abs(pl.x-em.x)<32&&Math.abs(pl.y-em.y)<36&&pl.vy<-2){
+      hitEmir(em,pl,d,phase,1);
+    } else if(em.invincTimer===0&&Math.abs(pl.x-em.x)<32&&Math.abs(pl.y-em.y)<36&&pl.vy>=0&&em.hp>0){
+      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';pl.x=80;pl.vy=-5;
+      Audio.sfx('damage');
     }
   }
 
-  // ── BULLETS ────────────────────────────────────────────────────────
+  // ── BULLETS ───────────────────────────────────────────────────────
   d.bullets=d.bullets.filter(b=>b.alive&&b.y<H+20&&b.x>-20&&b.x<W+20);
   d.bullets.forEach(b=>{
     b.x+=b.vx;b.y+=b.vy;
     ctx.fillStyle='#ff6600';ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#ffee00';ctx.beginPath();ctx.arc(b.x,b.y,2,0,Math.PI*2);ctx.fill();
+
+    // Punch knocks bullet away
+    if(pl.punchTimer>0&&Math.abs(b.x-pl.x)<55&&Math.abs(b.y-pl.y)<30){
+      b.vx*=-1.5; b.vy-=2; Audio.sfx('collect');
+    }
     if(Math.abs(b.x-pl.x)<12&&Math.abs(b.y-pl.y)<18){
       b.alive=false;lives=Math.max(0,lives-1);screenFlash=14;screenFlashColor='#ff4444';
-      if(lives<=0)gameState='gameover';
+      Audio.sfx('damage');if(lives<=0)gameState='gameover';
     }
   });
 
-  // ── VICTORY ────────────────────────────────────────────────────────
+  // ── PUNCH MECHANIC ────────────────────────────────────────────────
+  pl.punchCool=Math.max(0,pl.punchCool-1);
+  pl.punchTimer=Math.max(0,pl.punchTimer-1);
+  if((keys[' ']||keys['f']||keys['F'])&&pl.punchCool===0){
+    pl.punchTimer=12; pl.punchCool=28;
+    Audio.sfx('shoot');
+    // Hit Emir if close
+    if(em.hp>0&&em.invincTimer===0&&Math.abs(pl.x-em.x)<55&&Math.abs(pl.y-em.y)<40){
+      hitEmir(em,pl,d,phase,0);
+    }
+  }
+  // Draw punch fist
+  if(pl.punchTimer>0){
+    const px=pl.x+(pl.facing*44);
+    ctx.fillStyle='#ffd700';ctx.strokeStyle='#000';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(px,pl.y-8,10,0,Math.PI*2);ctx.fill();ctx.stroke();
+    // Impact lines
+    for(let a=0;a<6;a++){
+      const ang=(a/6)*Math.PI*2, r=14+pl.punchTimer*2;
+      ctx.strokeStyle='rgba(255,200,0,0.6)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(px+Math.cos(ang)*12,pl.y-8+Math.sin(ang)*12);
+      ctx.lineTo(px+Math.cos(ang)*r, pl.y-8+Math.sin(ang)*r);ctx.stroke();
+    }
+  }
+
+  // ── PLAYER PHYSICS ─────────────────────────────────────────────────
+  if(keys['a']||keys['A']){pl.vx=-pl.speed;pl.facing=-1;pl.frame++;}
+  else if(keys['d']||keys['D']){pl.vx=pl.speed;pl.facing=1;pl.frame++;}
+  else pl.vx*=0.75;
+  if((keys['w']||keys['W'])&&pl.grounded){pl.vy=-9;pl.grounded=false;Audio.sfx('jump');}
+  pl.vy+=.45;pl.x+=pl.vx;pl.y+=pl.vy;
+  pl.x=Math.max(10,Math.min(W-10,pl.x));
+  pl.grounded=false;
+  d.platforms.forEach(p=>{if(pl.x>p.x&&pl.x<p.x+p.w&&pl.y+18>p.y&&pl.y+18<p.y+p.h+Math.abs(pl.vy)+2&&pl.vy>=0){pl.y=p.y-18;pl.vy=0;pl.grounded=true;}});
+  if(pl.y>H+50){pl.x=80;pl.y=380;pl.vy=0;lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');if(lives<=0)gameState='gameover';}
+
+  drawGorjan(pl.x,pl.y,pl.facing,pl.frame);
+
+  // ── VICTORY ───────────────────────────────────────────────────────
   if(d.rescued){
     d.victoryTimer++;
     drawMartela(W-50,H-100,-1,frameCount);
@@ -2958,49 +3008,52 @@ function runLevel8(){
     if(d.victoryTimer>180) triggerLevelClear('GORJAN SAVED\nMARTELA!\nTRUE LOVE WINS! ♥');
   }
 
-  // ── PLAYER PHYSICS ─────────────────────────────────────────────────
-  if(keys['a']||keys['A']){pl.vx=-pl.speed;pl.facing=-1;pl.frame++;}
-  else if(keys['d']||keys['D']){pl.vx=pl.speed;pl.facing=1;pl.frame++;}
-  else pl.vx*=0.75;
-  if((keys['w']||keys['W'])&&pl.grounded){pl.vy=-9;pl.grounded=false;Audio.sfx('jump');}
-  pl.vy+=0.45;pl.x+=pl.vx;pl.y+=pl.vy;
-  pl.x=Math.max(10,Math.min(W-10,pl.x));
-  pl.grounded=false;
-  d.platforms.forEach(p=>{if(pl.x>p.x&&pl.x<p.x+p.w&&pl.y+18>p.y&&pl.y+18<p.y+p.h+Math.abs(pl.vy)+2&&pl.vy>=0){pl.y=p.y-18;pl.vy=0;pl.grounded=true;}});
-  if(pl.y>H+50){pl.x=30;pl.y=200;pl.vy=0;lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');if(lives<=0)gameState='gameover';}
-
-  drawGorjan(pl.x,pl.y,pl.facing,pl.frame);
-
-  // ── HUD ─────────────────────────────────────────────────────────────
+  // ── HUD ────────────────────────────────────────────────────────────
   ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,28);
   drawText('GORJAN SOLO!',10,20,7,'#ffd700');
   drawText('LIVES: '+'♥'.repeat(lives),W-130,20,7,'#ff4444');
-  if(em.hp>0) drawTextC('JUMP ON EMIR TO DAMAGE — DODGE THE BULLETS!',H/2,5,'#ff4444');
+  if(em.hp>0){
+    const hint=pl.punchCool===0?'SPACE=PUNCH':'';
+    if(hint) drawText(hint,W/2-50,H/2,6,'rgba(255,200,0,0.7)');
+  }
   if(!d.rescued&&!d.cageChat&&pl.x>W-180){
     d.cageChat=true;
     queueDialogue('MARTELA','Gorjan! Over here!',150,'#ff69b4');
     queueDialogue('GORJAN','I see you! Almost there!',130,'#00ff88');
   }
   updateDialogue();drawDialogue();
+  if(d.shakeTimer>0) ctx.restore();
   if(lives<=0)gameState='gameover';
 }
 
-// Helper: fire Emir's gun toward player
-function fireEmir(em,pl,phase,d){
-  const dx=pl.x-em.x, dy=pl.y-em.y;
-  const dist=Math.sqrt(dx*dx+dy*dy)||1;
-  const spd=phase===1?3.8:phase===2?4.8:5.5;
-  const count=phase===3?3:phase===2?2:1;
-  for(let i=0;i<count;i++){
-    const spread=(i-(count-1)/2)*0.35;
-    d.bullets.push({x:em.x,y:em.y+10,vx:dx/dist*spd+spread,vy:dy/dist*spd*0.65+(i===0?0:(Math.random()-.5)*0.5),alive:true});
+// Deal damage to Emir — shared by stomp and punch
+function hitEmir(em,pl,d,phase,isStomp){
+  if(isStomp) pl.vy=-10;
+  em.hp--;
+  em.invincTimer=85;  // ~1.4s invincibility
+  Audio.sfx('stomp');
+  spawnParticle(em.x,em.y,'#ff4444',14,7);
+  screenFlash=10;screenFlashColor='#fff';
+
+  // Phase transition at HP 6 and 3
+  const newPhase=em.hp>6?1:em.hp>3?2:3;
+  if(newPhase>phase&&em.hp>0){
+    em.phaseTransTimer=90;
+    d.shakeTimer=20;
+    screenFlash=30;screenFlashColor='#ff0000';
+    if(newPhase===2) queueDialogue('EMIR','You dare. I have a GUN and I know how to USE it.',160,'#ff4444');
+    if(newPhase===3) queueDialogue('EMIR','ENOUGH!!!',100,'#ff0000');
+    Audio.sfx('damage');
   }
-  screenFlash=4;screenFlashColor='#ff8800';
+  if(em.hp<=0){
+    Audio.sfx('enemydie');
+    spawnParticle(em.x,em.y,'#ffd700',30,10);
+    spawnParticle(em.x,em.y,'#ff69b4',20,7);
+    d.rescued=true;d.victoryTimer=0;score+=2000;
+    queueDialogue('EMIR','The hat... protect the hat...',180,'#ff4444');
+  }
 }
 
-// ==================================================================
-// == BONUS: MARTELA'S REVENGE =======================================
-// ==================================================================
 function initBonusLevel(){
   Audio.playLevelTheme(9);
   levelData={
