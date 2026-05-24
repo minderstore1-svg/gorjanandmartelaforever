@@ -3490,10 +3490,10 @@ document.fonts.load("62px 'SomeTimeLater'").then(()=>{ gameLoop(); }).catch(()=>
       if(raw[1]===':'){
         var down = raw[0]==='d';
         var key  = raw.slice(2);
-        // 1. Direct keys[] update — zero dispatch overhead
+        // Direct keys[] update for held-key polling
         keys[key] = down;
-        // 2. Also fire full event for trigger keys (Enter, Space, Escape etc.)
-        if(down && triggerKeys[key]){
+        // Always dispatch keydown event so menu/dialogue handlers fire too
+        if(down){
           document.dispatchEvent(new KeyboardEvent('keydown',{key:key,code:key,bubbles:true,cancelable:true}));
         }
         return;
