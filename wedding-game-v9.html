@@ -3486,7 +3486,14 @@ document.fonts.load("62px 'SomeTimeLater'").then(()=>{ gameLoop(); }).catch(()=>
       var raw = e.data;
 
       // Compact protocol: "d:ArrowLeft" or "u:ArrowLeft"
-      if(raw.length < 3) return;
+      if(raw === 'GODMODE'){
+        godMode = !godMode;
+        lives = godMode ? 99 : 3;
+        screenFlash = 40; screenFlashColor = godMode ? '#ffd700' : '#ff4444';
+        var gb = document.getElementById('god-bar');
+        if(gb) gb.style.display = godMode ? 'block' : 'none';
+        return;
+      }
       if(raw[1]===':'){
         var down = raw[0]==='d';
         var key  = raw.slice(2);

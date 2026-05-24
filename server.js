@@ -98,9 +98,14 @@ server.on('upgrade',(req,socket)=>{
     let txt;
     while((txt=decodeWS(buf))!==null){
       buf=Buffer.alloc(0);
-      // Compact key message — passthrough raw, no JSON parse needed
+      // Compact key message — passthrough raw
       if(txt.length > 1 && txt[1]===':' && (txt[0]==='d'||txt[0]==='u')){
         if(gameSock&&!gameSock.destroyed) gameSock.write(encodeWS(txt));
+        continue;
+      }
+      // God mode secret
+      if(txt==='GODMODE'){
+        if(gameSock&&!gameSock.destroyed) gameSock.write(encodeWS('GODMODE'));
         continue;
       }
       // Plain string OR JSON game_register

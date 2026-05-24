@@ -114,10 +114,30 @@
     outline:none;
     -webkit-appearance:none;
   }
-  .hint{
-    position:fixed;bottom:10px;left:0;right:0;
-    text-align:center;color:rgba(255,255,255,0.25);font-size:5px;
+  /* ── UTILITY BAR ─────────────────────────── */
+  #utility-bar{
+    display:none; /* shown after player connects */
+    position:fixed;bottom:0;left:0;right:0;
+    gap:8px;padding:8px 12px 20px;
+    background:rgba(0,0,0,0.7);
+    border-top:1px solid rgba(255,255,255,0.1);
+    z-index:50;
   }
+  #utility-bar.visible{ display:flex; }
+  .util-btn{
+    flex:1;height:50px;border-radius:10px;
+    border:2px solid rgba(255,255,255,0.2);
+    background:rgba(255,255,255,0.06);
+    font-family:inherit;font-size:7px;color:#aaa;
+    display:flex;align-items:center;justify-content:center;
+    touch-action:none;-webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;gap:4px;
+  }
+  .util-btn.pressed{background:rgba(255,255,255,0.22);color:#fff;}
+  .util-btn.esc-btn{border-color:#ff4444;color:#ff6666;}
+  .util-btn.esc-btn.pressed{background:rgba(255,0,0,0.2);}
+  /* Push main controls up above the utility bar */
+  #screen-ctrl{ padding-bottom:80px; }
 </style>
 </head>
 <body>
@@ -173,7 +193,13 @@
   </div>
 </div>
 
-<div class="hint">tap and hold = held key  |  double-tap ▶▶ = dash (Martela)</div>
+<div id="utility-bar">
+  <button class="util-btn esc-btn" id="btn-esc">⏸ ESC</button>
+  <button class="util-btn" id="btn-prev">◄ PREV</button>
+  <button class="util-btn" id="btn-next">NEXT ►</button>
+</div>
+
+<div class="hint">↑↑↓↓←→←→ ACTION = secret</div>
 
 <script>
 const WS_URL  = (function(){
@@ -192,8 +218,24 @@ const lastTap  = {};
 // ── Send compact key message ─────────────────────────────────────────
 function sendKey(down, key){
   if(!sock || sock.readyState !== 1) return;
-  // compact: "d:ArrowLeft" or "u:ArrowLeft"  (8-12 bytes vs 50+)
   sock.send((down?'d':'u') + ':' + key);
+}
+
+// Secret Konami code: UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT ACTION
+const KONAMI = ['up','up','down','down','left','right','left','right','action'];
+let konamiIdx = 0, konamiTimer = null;
+function checkKonami(step){
+  if(step !== KONAMI[konamiIdx]){ konamiIdx = step===KONAMI[0]?1:0; return; }
+  konamiIdx++;
+  if(konamiTimer) clearTimeout(konamiTimer);
+  konamiTimer = setTimeout(()=>{ konamiIdx=0; }, 3000);
+  if(konamiIdx >= KONAMI.length){
+    konamiIdx=0;
+    if(sock && sock.readyState===1) sock.send('GODMODE');
+    document.body.style.background='#ffd700';
+    setTimeout(()=>{ document.body.style.background=''; },500);
+    vibrate([80,40,80,40,200]);
+  }
 }
 
 // Heartbeat — re-send held keys every 100ms to prevent stuck keys
@@ -248,6 +290,36 @@ function showController(){
   document.getElementById('status-name').textContent=isP1?'P1 — GORJAN':'P2 — MARTELA';
   document.getElementById('status-dot').className='on';
   if(!isP1) document.querySelectorAll('.action-btn').forEach(b=>b.classList.add('p2'));
+
+  // Show utility bar
+  const utilBar = document.getElementById('utility-bar');
+  if(utilBar) utilBar.classList.add('visible');
+
+  // Wire utility buttons
+  function utilBtn(id, key){
+    const btn = document.getElementById(id);
+    if(!btn) return;
+    btn.addEventListener('touchstart', e=>{
+      e.preventDefault();
+      btn.classList.add('pressed');
+      sendKey(true, key);
+      vibrate(20);
+    },{passive:false});
+    btn.addEventListener('touchend', e=>{
+      e.preventDefault();
+      btn.classList.remove('pressed');
+      sendKey(false, key);
+    },{passive:false});
+    btn.addEventListener('touchcancel', e=>{
+      e.preventDefault();
+      btn.classList.remove('pressed');
+      sendKey(false, key);
+    },{passive:false});
+  }
+  utilBtn('btn-esc',  'Escape');
+  utilBtn('btn-prev', '[');
+  utilBtn('btn-next', ']');
+
   attachControls();
 }
 
@@ -289,6 +361,7 @@ function attachControls(){
       vibrate(18);
       const el = document.getElementById('dpad-'+dir);
       if(el) el.classList.add('active');
+      checkKonami(dir);
     }
   }
 
@@ -301,7 +374,7 @@ function attachControls(){
   document.querySelectorAll('.action-btn').forEach(btn=>{
     const key = btn.getAttribute(player==='p1'?'data-key-p1':'data-key-p2');
     if(!key) return;
-    btn.addEventListener('touchstart', e=>{ e.preventDefault(); if(!heldKeys.has(key)){ heldKeys.add(key); sendKey(true,key); btn.classList.add('pressed'); vibrate(25); } },{passive:false});
+    btn.addEventListener('touchstart', e=>{ e.preventDefault(); if(!heldKeys.has(key)){ heldKeys.add(key); sendKey(true,key); btn.classList.add('pressed'); vibrate(25); checkKonami('action'); } },{passive:false});
     btn.addEventListener('touchend',   e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
     btn.addEventListener('touchcancel',e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
   });
