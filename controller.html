@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>🎮 Wedding Game Controller</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Press Start 2P',monospace,sans-serif;}
+
+  /* Loading Google Font */
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  /* ── SCREENS ─────────────────────────────── */
+  .screen{display:none;width:100%;height:100%;position:absolute;top:0;left:0;}
+  .screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+  /* ── CONNECT SCREEN ──────────────────────── */
+  #screen-connect{background:linear-gradient(135deg,#000010,#1a0030);}
+  #screen-connect h1{color:#ffd700;font-size:10px;text-align:center;line-height:2;margin-bottom:24px;}
+  #screen-connect p{color:#888;font-size:6px;text-align:center;margin-bottom:32px;line-height:2;}
+  .player-btns{display:flex;gap:20px;}
+  .player-btn{
+    width:130px;height:130px;border-radius:16px;border:3px solid;
+    font-family:inherit;font-size:8px;font-weight:bold;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;cursor:pointer;transition:transform .1s,opacity .1s;
+    line-height:1.6;
+  }
+  .player-btn:active{transform:scale(.94);}
+  .player-btn.p1{background:#001a00;border-color:#00ff88;color:#00ff88;}
+  .player-btn.p2{background:#1a0010;border-color:#ff1493;color:#ff1493;}
+  .player-btn .emoji{font-size:32px;}
+  .connecting-msg{color:#aaa;font-size:6px;margin-top:20px;display:none;}
+
+  /* ── STATUS BAR ──────────────────────────── */
+  #status-bar{
+    position:fixed;top:0;left:0;right:0;height:36px;z-index:99;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 12px;font-size:5px;
+  }
+  #status-bar.p1{background:#001a00;border-bottom:2px solid #00ff88;}
+  #status-bar.p2{background:#1a0010;border-bottom:2px solid #ff1493;}
+  #status-name{font-size:7px;}
+  #status-dot{width:10px;height:10px;border-radius:50%;background:#555;}
+  #status-dot.on{background:#00ff88;box-shadow:0 0 6px #00ff88;}
+
+  /* ── CONTROLLER SCREEN ───────────────────── */
+  #screen-ctrl{
+    padding-top:36px;
+    flex-direction:row;
+    align-items:center;
+    justify-content:space-around;
+  }
+  #screen-ctrl.p1{background:linear-gradient(135deg,#000d00,#001a00);}
+  #screen-ctrl.p2{background:linear-gradient(135deg,#0d0010,#1a0018);}
+
+  /* ── D-PAD ───────────────────────────────── */
+  .dpad{
+    position:relative;width:180px;height:180px;
+    flex-shrink:0;
+  }
+  .dpad-btn{
+    position:absolute;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:10px;font-size:22px;
+    border:2px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.06);
+    transition:background .05s;
+  }
+  .dpad-btn.pressed{background:rgba(255,255,255,0.22)!important;}
+  /* UP */    .dpad-up   {top:0;left:60px;width:60px;height:60px;}
+  /* DOWN */  .dpad-down {bottom:0;left:60px;width:60px;height:60px;}
+  /* LEFT */  .dpad-left {top:60px;left:0;width:60px;height:60px;}
+  /* RIGHT */ .dpad-right{top:60px;right:0;width:60px;height:60px;}
+  /* CENTER */.dpad-center{top:60px;left:60px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.04);}
+
+  /* ── ACTION BUTTONS ─────────────────────── */
+  .action-area{
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+  }
+  .action-btn{
+    width:80px;height:80px;border-radius:50%;border:3px solid;
+    font-family:inherit;font-size:9px;font-weight:bold;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:transform .05s;
+    flex-shrink:0;
+  }
+  .action-btn:active,.action-btn.pressed{transform:scale(.88);}
+  .action-btn.jump{background:#001a00;border-color:#00ff88;color:#00ff88;}
+  .action-btn.shoot{background:#1a1000;border-color:#ffd700;color:#ffd700;}
+  .action-btn.p2{background:#1a0010;border-color:#ff1493;color:#ff1493;}
+
+  /* ── HINT LABEL ──────────────────────────── */
+  .hint{
+    position:fixed;bottom:10px;left:0;right:0;
+    text-align:center;color:rgba(255,255,255,0.25);font-size:5px;
+  }
+</style>
+</head>
+<body>
+
+<!-- CONNECT SCREEN -->
+<div id="screen-connect" class="screen active">
+  <h1>GORJAN &amp; MARTELA<br>FOREVER ♥</h1>
+  <p>Choose your player</p>
+  <div class="player-btns">
+    <button class="player-btn p1" onclick="choosePlayer('p1')">
+      <span class="emoji">🧔</span>
+      <span>GORJAN<br>Player 1</span>
+    </button>
+    <button class="player-btn p2" onclick="choosePlayer('p2')">
+      <span class="emoji">💜</span>
+      <span>MARTELA<br>Player 2</span>
+    </button>
+  </div>
+  <p class="connecting-msg" id="connecting-msg">Connecting...</p>
+</div>
+
+<!-- STATUS BAR (shown on controller screen) -->
+<div id="status-bar" style="display:none">
+  <span id="status-name">P1 — GORJAN</span>
+  <span id="status-dot"></span>
+</div>
+
+<!-- CONTROLLER SCREEN -->
+<div id="screen-ctrl" class="screen">
+  <!-- D-PAD -->
+  <div class="dpad" id="dpad">
+    <div class="dpad-btn dpad-up"    data-key-p1="w"         data-key-p2="ArrowUp">▲</div>
+    <div class="dpad-btn dpad-down"  data-key-p1="s"         data-key-p2="ArrowDown">▼</div>
+    <div class="dpad-btn dpad-left"  data-key-p1="a"         data-key-p2="ArrowLeft">◀</div>
+    <div class="dpad-btn dpad-right" data-key-p1="d"         data-key-p2="ArrowRight">▶</div>
+    <div class="dpad-center"></div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="action-area" id="action-area">
+    <!-- Jump / Up action -->
+    <button class="action-btn jump" id="btn-jump"
+      data-key-p1="w" data-key-p2="ArrowUp">JUMP</button>
+    <!-- Shoot / Enter action -->
+    <button class="action-btn shoot" id="btn-action"
+      data-key-p1=" " data-key-p2="Enter">ACTION</button>
+  </div>
+</div>
+
+<div class="hint">tap and hold = held key  |  double-tap ▶▶ = dash (Martela)</div>
+
+<script>
+const WS_URL  = (function(){
+  // Use injected URL if server replaced the placeholder; otherwise derive from page
+  var injected = '__WS_URL__';
+  if(injected.indexOf('__') === -1) return injected;
+  var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return proto + '//' + location.host;
+})();
+let player    = null;   // 'p1' | 'p2'
+let sock      = null;
+let connected = false;
+
+// Last tap time per button for double-tap dash detection
+const lastTap = {};
+
+// ── Choose player + connect ───────────────────────────────────────────
+function choosePlayer(p){
+  player = p;
+  document.getElementById('connecting-msg').style.display='block';
+  document.getElementById('connecting-msg').textContent='Connecting...';
+
+  sock = new WebSocket(WS_URL);
+
+  sock.onopen = function(){
+    sock.send(JSON.stringify({type:'player_register', player}));
+  };
+
+  sock.onmessage = function(e){
+    const msg = JSON.parse(e.data);
+    if(msg.type==='registered'){
+      connected = true;
+      showController();
+    }
+    if(msg.type==='pong'){} // keepalive
+  };
+
+  sock.onclose = function(){
+    connected = false;
+    const dot = document.getElementById('status-dot');
+    if(dot) dot.className='';
+    // Retry
+    setTimeout(()=>{ if(player) sock = new WebSocket(WS_URL); }, 2000);
+  };
+
+  sock.onerror = function(){
+    document.getElementById('connecting-msg').textContent='Cannot connect. Is the server running?';
+  };
+
+  // Keepalive ping
+  setInterval(()=>{ if(sock&&sock.readyState===1) sock.send(JSON.stringify({type:'ping'})); }, 5000);
+}
+
+function showController(){
+  document.getElementById('screen-connect').classList.remove('active');
+  document.getElementById('screen-ctrl').classList.add('active');
+  document.getElementById('status-bar').style.display='flex';
+
+  const isP1 = player==='p1';
+  document.getElementById('screen-ctrl').className = 'screen active '+(isP1?'p1':'p2');
+  document.getElementById('status-bar').className = isP1?'p1':'p2';
+  document.getElementById('status-name').textContent = isP1?'P1 — GORJAN':'P2 — MARTELA';
+  document.getElementById('status-dot').className = 'on';
+
+  // Tint action buttons for P2
+  if(!isP1){
+    document.querySelectorAll('.action-btn').forEach(b=>b.classList.add('p2'));
+  }
+
+  attachControls();
+}
+
+// ── Send key event to game ────────────────────────────────────────────
+function sendKey(event, key){
+  if(!sock || sock.readyState!==1) return;
+  sock.send(JSON.stringify({type:'key', event, key, player}));
+}
+
+// ── Attach touch controls ─────────────────────────────────────────────
+function attachControls(){
+  // D-pad buttons
+  document.querySelectorAll('.dpad-btn[data-key-p1]').forEach(btn=>{
+    const key = btn.getAttribute(player==='p1'?'data-key-p1':'data-key-p2');
+    if(!key) return;
+
+    btn.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      btn.classList.add('pressed');
+      sendKey('keydown', key);
+      vibrate(30);
+
+      // Double-tap detection for dash (right arrow P2)
+      if(player==='p2' && key==='ArrowRight'){
+        const now = Date.now();
+        if(lastTap[key] && now-lastTap[key] < 300){
+          // Double tap — send a second rapid keydown
+          sendKey('keydown', key);
+        }
+        lastTap[key] = now;
+      }
+    },{passive:false});
+
+    btn.addEventListener('touchend',e=>{
+      e.preventDefault();
+      btn.classList.remove('pressed');
+      sendKey('keyup', key);
+    },{passive:false});
+  });
+
+  // Action buttons (jump + action) — touchstart/end
+  document.querySelectorAll('.action-btn').forEach(btn=>{
+    const key = btn.getAttribute(player==='p1'?'data-key-p1':'data-key-p2');
+    if(!key) return;
+
+    btn.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      btn.classList.add('pressed');
+      sendKey('keydown', key);
+      vibrate(40);
+    },{passive:false});
+
+    btn.addEventListener('touchend',e=>{
+      e.preventDefault();
+      btn.classList.remove('pressed');
+      sendKey('keyup', key);
+    },{passive:false});
+  });
+
+  // Hide jump button for P1 since Up on D-pad = jump
+  // Keep it for P2 as extra thumb position
+  if(player==='p1'){
+    document.getElementById('btn-jump').style.display='none';
+  }
+}
+
+// ── Haptics ───────────────────────────────────────────────────────────
+function vibrate(ms){
+  try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){}
+}
+
+// ── Prevent scroll ────────────────────────────────────────────────────
+document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+</script>
+</body>
+</html>

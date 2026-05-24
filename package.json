@@ -1,0 +1,12 @@
+{
+  "name": "wedding-game-controller",
+  "version": "1.0.0",
+  "description": "Gorjan & Martela Forever - mobile controller server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
