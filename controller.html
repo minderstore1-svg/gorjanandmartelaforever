@@ -4,7 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
 <meta name="mobile-web-app-capable" content="yes">
+<style>
+  /* Fill the entire screen including notch/safe areas */
+  :root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+  }
+  html { height: 100%; background: #000; }
+  body {
+    height: 100dvh; /* dynamic viewport height — excludes browser chrome */
+    padding-top: max(var(--sat), 0px);
+    padding-bottom: max(var(--sab), 0px);
+  }
+</style>
 <title>🎮 Wedding Game Controller</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
@@ -163,6 +177,7 @@
       <span>MARTELA<br>Player 2</span>
     </button>
   </div>
+  <p style="font-size:5px;color:#444;margin-top:20px;font-family:'Press Start 2P',monospace;">TAP A BUTTON TO GO FULLSCREEN</p>
   <p class="connecting-msg" id="connecting-msg">Connecting...</p>
 </div>
 
@@ -293,9 +308,24 @@ function choosePlayer(p){
 }
 
 function showController(){
+  // Try to go fullscreen as soon as controller is shown
+  function requestFullscreen(){
+    const el = document.documentElement;
+    try{
+      if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'});
+      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
+    }catch(e){}
+    // Lock to portrait if supported
+    try{
+      if(screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait');
+    }catch(e){}
+  }
+
   document.getElementById('screen-connect').classList.remove('active');
   document.getElementById('screen-ctrl').classList.add('active');
   document.getElementById('status-bar').style.display='flex';
+  requestFullscreen();
   const isP1=player==='p1';
   document.getElementById('screen-ctrl').className='screen active '+(isP1?'p1':'p2');
   document.getElementById('status-bar').className=isP1?'p1':'p2';
