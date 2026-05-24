@@ -3492,10 +3492,14 @@ document.fonts.load("62px 'SomeTimeLater'").then(()=>{ gameLoop(); }).catch(()=>
         var key  = raw.slice(2);
         // Direct keys[] update for held-key polling
         keys[key] = down;
-        // Always dispatch keydown event so menu/dialogue handlers fire too
-        if(down){
+        // Dispatch keydown only on fresh press (not heartbeat repeats)
+        // Heartbeat sends 'd:key' but keys[key] is already true — skip re-dispatch
+        if(down && !window.__heldKeys) window.__heldKeys = {};
+        if(down && !window.__heldKeys[key]){
+          window.__heldKeys[key] = true;
           document.dispatchEvent(new KeyboardEvent('keydown',{key:key,code:key,bubbles:true,cancelable:true}));
         }
+        if(!down && window.__heldKeys) window.__heldKeys[key] = false;
         return;
       }
 
