@@ -310,8 +310,8 @@ const Audio = (function(){
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 // 2× internal resolution — text renders at 4× the pixel density for crispness
-canvas.width  = 1280;
-canvas.height = 960;
+canvas.width  = 1920;
+canvas.height = 1440;
 const W=640, H=480;
 
 // STATE
@@ -3611,7 +3611,7 @@ function drawGodOverlay(){
 function gameLoop(){
   requestAnimationFrame(gameLoop);
   // Apply 2× scale every frame so all drawing uses W=640/H=480 coords
-  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  ctx.setTransform(3, 0, 0, 3, 0, 0);
   try{
   if(paused){
     ctx.fillStyle='rgba(0,0,0,0.82)';ctx.fillRect(0,0,W,H);
