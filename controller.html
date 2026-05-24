@@ -170,7 +170,25 @@
 </head>
 <body>
 
-<!-- CONNECT SCREEN -->
+<!-- Rotate overlay — shown in portrait mode -->
+<div id="rotate-overlay" style="
+  display:none; position:fixed; inset:0; z-index:999;
+  background:#000; flex-direction:column;
+  align-items:center; justify-content:center; gap:24px;
+  font-family:'Press Start 2P',monospace; text-align:center; padding:32px;">
+  <div style="font-size:72px;animation:spin 2s ease-in-out infinite;">📱</div>
+  <div style="font-size:11px;color:#ffd700;line-height:2;">ROTATE YOUR<br>PHONE</div>
+  <div style="font-size:8px;color:#888;line-height:2;">LANDSCAPE MODE<br>REQUIRED TO PLAY</div>
+</div>
+
+<style>
+@keyframes spin {
+  0%   { transform: rotate(0deg);   }
+  40%  { transform: rotate(90deg);  }
+  60%  { transform: rotate(90deg);  }
+  100% { transform: rotate(90deg);  }
+}
+</style>
 <div id="screen-connect" class="screen active">
   <h1>GORJAN &amp; MARTELA<br>FOREVER ♥</h1>
   <p>Choose your player</p>
@@ -467,6 +485,17 @@ function vibrate(ms){
 
 document.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
 document.addEventListener('contextmenu', e=>e.preventDefault());
+
+// Show rotate overlay in portrait mode
+function checkOrientation(){
+  const overlay = document.getElementById('rotate-overlay');
+  if(!overlay) return;
+  const isPortrait = window.innerHeight > window.innerWidth;
+  overlay.style.display = isPortrait ? 'flex' : 'none';
+}
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', ()=>{ setTimeout(checkOrientation, 200); });
+checkOrientation();
 </script>
 </body>
 </html>

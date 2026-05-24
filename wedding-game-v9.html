@@ -1097,13 +1097,13 @@ function updateDialogue(){
 }
 function drawDialogue(){
   if(!currentDialogue)return;
-  const d=currentDialogue, progress=Math.min(1,d.timer/20), y=H-90+(1-progress)*30;
-  ctx.fillStyle='rgba(0,0,0,0.9)';ctx.fillRect(10,y,W-20,74);
-  ctx.strokeStyle=d.color;ctx.lineWidth=2;ctx.strokeRect(10,y,W-20,74);
-  ctx.fillStyle=d.color;ctx.font="bold 8px 'Press Start 2P'";ctx.fillText('> '+d.speaker+':',18,y+17);
-  ctx.font="7px 'Press Start 2P'";ctx.fillStyle='#fff';
-  const words=d.text.split(' ');let line='',lineY=y+34,maxW=W-44;
-  words.forEach(w=>{const t=line+(line?' ':'')+w;if(ctx.measureText(t).width>maxW){ctx.fillText(line,18,lineY);lineY+=16;line=w;}else line=t;});
+  const d=currentDialogue, progress=Math.min(1,d.timer/20), y=H-100+(1-progress)*30;
+  ctx.fillStyle='rgba(0,0,0,0.92)';ctx.fillRect(10,y,W-20,88);
+  ctx.strokeStyle=d.color;ctx.lineWidth=2.5;ctx.strokeRect(10,y,W-20,88);
+  ctx.fillStyle=d.color;ctx.font="bold 11px 'Press Start 2P'";ctx.fillText('> '+d.speaker+':',18,y+20);
+  ctx.font="10px 'Press Start 2P'";ctx.fillStyle='#fff';
+  const words=d.text.split(' ');let line='',lineY=y+40,maxW=W-44;
+  words.forEach(w=>{const t=line+(line?' ':'')+w;if(ctx.measureText(t).width>maxW){ctx.fillText(line,18,lineY);lineY+=20;line=w;}else line=t;});
   if(line)ctx.fillText(line,18,lineY);
 }
 function startNewsTicker(text){newsTicker=text;newsTickerX=W;newsTickerActive=true;}
@@ -1224,7 +1224,7 @@ function drawIntro() {
 
   ctx.fillStyle='#111';ctx.fillRect(0,0,W,36);
   ctx.strokeStyle='#ffd700';ctx.lineWidth=1;ctx.strokeRect(0,0,W,36);
-  drawTextC(introLevelName,24,8,'#ffd700');
+  drawTextC(introLevelName,24,10,'#ffd700');
 
   if(!introLines.length||!introLines[introIndex]) return;
   const line = introLines[introIndex];
@@ -1243,8 +1243,8 @@ function drawIntro() {
   // Speech bubble
   const bx = isLeft ? 170 : 30;
   const bw = W - 200;
-  const by = H/2 + 20;
-  const bh = 120;
+  const by = H/2 + 10;
+  const bh = 140;
   const animX = bx + (1-slideIn)*(isLeft?-50:50);
 
   ctx.fillStyle='rgba(0,0,0,0.93)';
@@ -1264,18 +1264,18 @@ function drawIntro() {
 
   // Speaker name
   ctx.fillStyle=line.color||'#ffd700';
-  ctx.font="bold 9px 'Press Start 2P'";
-  ctx.fillText(line.speaker, animX+14, by+20);
+  ctx.font="bold 13px 'Press Start 2P'";
+  ctx.fillText(line.speaker, animX+14, by+24);
 
   // Typewriter text
   const fullText = line.text;
   const shown = Math.min(fullText.length, Math.floor(introTimer*2));
-  ctx.font="7px 'Press Start 2P'"; ctx.fillStyle='#fff';
+  ctx.font="10px 'Press Start 2P'"; ctx.fillStyle='#fff';
   const words = fullText.substring(0,shown).split(' ');
-  let ls='', ly=by+38, mw=bw-28;
+  let ls='', ly=by+46, mw=bw-28;
   words.forEach(w=>{
     const t=ls+(ls?' ':'')+w;
-    if(ctx.measureText(t).width>mw){ctx.fillText(ls,animX+14,ly);ly+=18;ls=w;}
+    if(ctx.measureText(t).width>mw){ctx.fillText(ls,animX+14,ly);ly+=22;ls=w;}
     else ls=t;
   });
   if(ls) ctx.fillText(ls,animX+14,ly);
@@ -3547,7 +3547,7 @@ function drawCutscene(){
   ctx.strokeStyle='#ffd700';ctx.lineWidth=1;ctx.strokeRect(40,75,W-80,H-150);
   if(slide){
     const lines = Array.isArray(slide) ? slide : (slide.lines||[slide]);
-    lines.forEach((l,i)=>drawTextC(l,H/2-(lines.length-1)*18+i*36,9,i===0?'#ffd700':'#fff'));
+    lines.forEach((l,i)=>drawTextC(l,H/2-(lines.length-1)*22+i*44,i===0?13:11,i===0?'#ffd700':'#fff'));
   }
   if(Math.floor(frameCount/30)%2===0){
     const isFirst = cutsceneIndex===0;
