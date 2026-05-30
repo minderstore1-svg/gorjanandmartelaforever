@@ -46,7 +46,7 @@ canvas { display:block; image-rendering:auto; width:640px; height:480px; }
 #scanline-overlay { position:absolute; top:0;left:0;right:0;bottom:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px); pointer-events:none; z-index:20; }
 #hint-bar {
   position: fixed;
-  bottom: 10px;
+  bottom: 6px;
   left: 50%;
   transform: translateX(-50%);
   width: 700px;
@@ -56,7 +56,7 @@ canvas { display:block; image-rendering:auto; width:640px; height:480px; }
   opacity:1; transition:opacity 0.6s;
   pointer-events:none;
   background: rgba(0,0,0,0.72);
-  padding: 3px 12px 4px;
+  padding: 5px 12px 6px;
   border-radius: 6px;
   border-top: 1px solid rgba(255,255,255,0.08);
   z-index: 50;
@@ -85,14 +85,17 @@ canvas { display:block; image-rendering:auto; width:640px; height:480px; }
   <div id="scanline-overlay"></div>
 </div>
 <div id="hint-bar"></div>
-<div id="god-bar">★ GOD MODE ★ &nbsp; combo: UP UP DOWN DOWN ACTION &nbsp;|&nbsp; 1-9: jump &nbsp;|&nbsp; ] next &nbsp;|&nbsp; [ prev &nbsp;|&nbsp; 0 bonus</div>
+<div id="god-bar">★ GOD MODE ★ &nbsp; 1-9: jump to level &nbsp;|&nbsp; ]: next level &nbsp;|&nbsp; [: prev level &nbsp;|&nbsp; 0: bonus</div>
 
-<!-- QR panel — outside the game box, shown on title screen -->
+<!-- QR panel — fixed to a fullscreen-safe corner on title screen -->
 <div id="qr-panel" style="
-  display:none; position:fixed; text-align:center; z-index:200; pointer-events:none; transform:translateY(-50%);">
-  <img id="qr-img" style="width:200px;height:200px;border:8px solid #fff;display:block;border-radius:6px;"/>
-  <div style="font-family:'Press Start 2P',monospace;font-size:11px;color:#ffd700;margin-top:14px;line-height:1.8;">SCAN TO PLAY</div>
-  <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:#aaa;margin-top:6px;">ON YOUR PHONE</div>
+  display:none; position:fixed; text-align:center; z-index:200; pointer-events:none;
+  right:16px; top:16px; padding:8px; border-radius:10px;
+  background:rgba(0,0,0,0.72); border:1px solid rgba(255,215,0,0.35);
+  box-shadow:0 0 18px rgba(0,0,0,0.65);">
+  <img id="qr-img" style="width:clamp(96px,16vw,170px);height:clamp(96px,16vw,170px);border:6px solid #fff;display:block;border-radius:6px;background:#fff;"/>
+  <div style="font-family:'Press Start 2P',monospace;font-size:clamp(6px,0.9vw,9px);color:#ffd700;margin-top:8px;line-height:1.6;">SCAN TO PLAY</div>
+  <div style="font-family:'Press Start 2P',monospace;font-size:clamp(5px,0.75vw,7px);color:#aaa;margin-top:4px;">ON YOUR PHONE</div>
 </div>
 
 <!-- Mobile controller status (shown when server is running) -->
@@ -439,19 +442,16 @@ document.addEventListener('keydown',e=>{
   if(gameState==='levelclear'&&(e.key==='Enter'||e.key===' ')&&levelClearTimer>90) nextLevel();
   if(gameState==='gameover'&&(e.key==='Enter'||e.key===' ')) retryLevel();
   if(gameState==='credits'&&(e.key==='Enter'||e.key===' ')) gameState='title';
-  const godActionKey = (e.key===' '||e.key==='Enter');
-  const godDirKey = (e.key==='ArrowUp'||e.key==='ArrowDown');
-  if(godDirKey || godActionKey){
-    const token = e.key==='ArrowUp' ? 'U' : e.key==='ArrowDown' ? 'D' : 'A';
-    godModeBuffer=(godModeBuffer+token).slice(-5);
-    if(godModeBuffer==='UUDDA'){
+  if(e.key.length===1){
+    godModeBuffer=(godModeBuffer+e.key.toUpperCase()).slice(-3);
+    if(godModeBuffer==='GOD'){
       godMode=!godMode;lives=godMode?99:3;
       screenFlash=40;screenFlashColor=godMode?'#ffd700':'#ff4444';
       Audio.sfx('godmode');
       const gb=document.getElementById('god-bar');
       if(gb) gb.style.display=godMode?'block':'none';
-      godModeBuffer='';
     }
+
   }
   if(godMode){
     if(e.key===']'){ if(gameState==='playing') triggerLevelClear('SKIPPED!'); }
@@ -1696,7 +1696,7 @@ function drawSelect() {
 
   var labels   = ['GORJAN',              'MARTELA',             'CO-OP'];
   var subs     = ['SINGLE PLAYER  (P1)', 'SINGLE PLAYER  (P2)', '2 PLAYERS TOGETHER'];
-  var ctrlTxt  = ['JOYSTICK + ACTION',   'JOYSTICK + ACTION',   'JOYSTICKS + ACTION'];
+  var ctrlTxt  = ['WASD + SPACE',        'ARROWS + ENTER',      'BOTH CONTROLLERS'];
   var colors   = ['#00ff88',             '#ff69b4',             '#ffd700'];
   var nums     = ['1','2','3'];
 
@@ -1914,7 +1914,7 @@ function initLevel1(){
   levelData.midEvent=false;
   levelData.startFrame=frameCount;
   levelData.winTickerFired=false;
-  showHint('SHOOT THE POLLUTION CLOUDS BEFORE THEY REACH THE CITY!','P1: WASD + SPACE   |   P2: ARROWS + ENTER');
+  showHint('SHOOT THE POLLUTION CLOUDS BEFORE THEY REACH THE CITY!','JOYSTICK + ACTION');
   for(let i=0;i<5;i++) spawnCloud();
 }
 
@@ -2747,6 +2747,11 @@ function drawBottle(x,y,col,cap,name,bad){
   // shine
   ctx.fillStyle='rgba(255,255,255,0.25)';
   ctx.fillRect(bx-5,by-14,3,18);
+  if(bad){
+    ctx.strokeStyle='#ff0033'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(bx,by-8,18,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx-12,by+4); ctx.lineTo(bx+12,by-20); ctx.stroke();
+  }
 }
 
 function runLevel5(){
@@ -2799,11 +2804,10 @@ function runLevel5(){
         bottle.alive=false;
         if(bottle.bad){
           lives=Math.max(0,lives-1);
-          d.quota=Math.min(100,d.quota+18);
-          screenFlash=24; screenFlashColor='#ff0033';
-          Audio.sfx('damage');
+          screenFlash=18; screenFlashColor='#ff0033';
           spawnParticle(bottle.x,bottle.y,'#ff0033',14,6);
           queueDialogue('JOANA', bottle.name+'?! ABSOLUTELY NOT.',90,'#ff4444');
+          Audio.sfx('hurt');
         } else {
           d.caught++; score+=120; Audio.sfx('collect');
           spawnHeart(bottle.x,bottle.y);
@@ -2828,8 +2832,8 @@ function runLevel5(){
     'HYDRATION IS A WEDDING PRIORITY.',
     'THIS IS NOT A BAR. THIS IS A SALES TARGET.',
     'COKE. SPRITE. FANTA. ROMANCE.',
-    'ZLATEN DAB AND PEPSI ARE A WEDDING HAZARD.',
     'DO NOT QUESTION PROCUREMENT.',
+    'ZLATEN DAB AND PEPSI ARE A WEDDING HAZARD.',
   ];
   if(d.joanaTimer%500===0&&d.joanaIdx<joanaLines.length){
     queueDialogue('JOANA',joanaLines[d.joanaIdx],180,'#ff4444');
@@ -2855,7 +2859,7 @@ function runLevel5(){
 
   // HUD
   ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,28);
-  drawText('GOOD DRINKS: '+d.caught+'/'+d.goal,10,20,7,'#ffd700');
+  drawText('CAUGHT: '+d.caught+'/'+d.goal,10,20,7,'#ffd700');
   // quota / stress meter
   const qcol=d.quota>70?'#ff4444':d.quota>40?'#ffaa00':'#00ff88';
   ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(W-170,8,160,13);
@@ -3243,7 +3247,7 @@ function initLevel8(){
       {x:30,  y:220,w:120, h:14},    // upper left
       {x:490, y:220,w:120, h:14},    // upper right
     ],
-    emir:{x:480,y:200,vx:0,vy:0,grounded:false,hp:8,facing:-1,
+    emir:{x:480,y:200,vx:0,vy:0,grounded:false,hp:6,facing:-1,
           state:'patrol',stateTimer:0,shootTimer:0,dashCool:0,jumpCool:0,
           invincTimer:0,phaseTransTimer:0,lastPhase:1},
     bullets:[],rescued:false,victoryTimer:0,cageChat:false,
@@ -3251,7 +3255,7 @@ function initLevel8(){
   };
   setNarrator('');
   levelData.startFrame=frameCount;
-  showHint('BOSS FIGHT: PUNCH, STOMP, DODGE!','Emir now has 3 clearer phases and more HP.');
+  showHint('STOMP or PUNCH (SPACE) Emir — DODGE bullets!','WASD + W=jump   SPACE=punch   (P1 only)');
 }
 
 function runLevel8(){
@@ -3947,13 +3951,20 @@ function drawEnding(){
   }
   updateParticles(); drawParticles();
 
+  // ── WEDDING ARCH + CHARACTERS — top section ──────────────────
+  if(endingTimer>15){
+    ctx.globalAlpha=Math.min(1,(endingTimer-15)/35);
+    ctx.strokeStyle='#ffd700'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(W/2,170,116,Math.PI,0); ctx.stroke();
+    ctx.fillStyle='rgba(255,215,0,0.15)';
+    ctx.fillRect(W/2-118,170,6,80); ctx.fillRect(W/2+112,170,6,80);
+    ctx.globalAlpha=1;
+  }
+
   // ── CHARACTERS — top section ──────────────────────────────────
   if(endingTimer>20){
     ctx.globalAlpha=Math.min(1,(endingTimer-20)/40);
-    // Wedding arch and couple
-    ctx.strokeStyle='#ffd700'; ctx.lineWidth=4;
-    ctx.beginPath(); ctx.arc(W/2,150,120,Math.PI,0); ctx.stroke();
-    ctx.fillStyle='#ff69b4'; for(let fx=-105;fx<=105;fx+=35){ctx.beginPath();ctx.arc(W/2+fx,115+Math.sin(fx)*5,7,0,Math.PI*2);ctx.fill();}
+    // Draw at scale 1.0, positioned in top quarter
     drawGorjan(W/2-80, 145, 1, endingTimer);
     drawMartela(W/2+80, 145, -1, endingTimer);
     ctx.globalAlpha=1;
@@ -3981,7 +3992,7 @@ function drawEnding(){
     [210,'THEY ATE THEIR WAY THROUGH TOKYO.','#fff',7],
     [250,'THEY SAVED THEIR WINDOWS 95 PC.','#fff',7],
     [290,'THEY SAVED EACH OTHER.','#ff69b4',7],
-    [330,'AND SOMEHOW, THEY STILL GOT MARRIED.','#ffd700',6],
+    [330,'AND SOMEHOW, THEY STILL MADE IT TO THE WEDDING.','#ffd700',6],
   ];
   lines.forEach(([t,txt,col,sz],i)=>{
     if(endingTimer>t){
@@ -3996,8 +4007,9 @@ function drawEnding(){
     ctx.globalAlpha=Math.min(1,(endingTimer-420)/50);
     ctx.fillStyle='rgba(255,215,0,0.07)';ctx.fillRect(60,367,W-120,90);
     ctx.strokeStyle='#ffd700';ctx.lineWidth=2;ctx.strokeRect(60,367,W-120,90);
-    drawTextC('GORJAN & MARTELA ARE MARRIED.',395,7,'#ffd700');
-    drawTextC('31 MAY 2026',422,13,'#fff');
+    drawTextC('GORJAN & MARTELA ARE MARRIED.',392,7,'#ffd700');
+    drawTextC('31 MAY 2026',420,13,'#fff');
+    drawTextC('NOW COMES THE REAL ADVENTURE.',444,6,'#ffd700');
     ctx.globalAlpha=1;
   }
 
@@ -4213,26 +4225,40 @@ function gameLoop(){
   } catch(e) { console.error('GameLoop error:', e.message, e.stack); }
 }
 function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.globalAlpha=screenFlash/30*.4;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;screenFlash--;}}
+// Auto-scale game to fill browser window without overflow
+(function(){
+  function scaleGame(){
+    var container = document.getElementById('game-container');
+    if(!container) return;
+    var totalH = 488; // canvas(480) + border(8) — hint bar is now fixed position
+    var totalW = 648;
+    var scaleX = (window.innerWidth  - 16) / totalW;
+    var scaleY = (window.innerHeight - 16) / totalH;
+    var scale  = Math.min(scaleX, scaleY, 1.8);
+    container.style.transform = 'scale('+scale+')';
+    container.style.marginBottom = '0';
+  }
+  window.addEventListener('resize', scaleGame);
+  // Small delay to let browser settle after load
+  setTimeout(scaleGame, 100);
+  scaleGame();
+})();
+
+
 // Auto-scale game to fit fullscreen safely without clipping top/bottom
 (function(){
   function scaleGame(){
     var container = document.getElementById('game-container');
     if(!container) return;
-
-    // The game is internally 640x480 with a 4px border on each side.
-    // Keep a small safe margin because browser fullscreen can report a height
-    // that is a few pixels larger than the truly visible area, especially on TVs.
     var totalW = 648;
     var totalH = 488;
     var safeMargin = 28;
     var availableW = Math.max(320, window.innerWidth  - safeMargin);
     var availableH = Math.max(240, window.innerHeight - safeMargin);
     var scale = Math.min(availableW / totalW, availableH / totalH, 3);
-
     container.style.transform = 'scale(' + scale + ')';
     container.style.margin = '0';
   }
-
   window.addEventListener('resize', scaleGame);
   window.addEventListener('orientationchange', function(){ setTimeout(scaleGame, 150); });
   document.addEventListener('fullscreenchange', function(){ setTimeout(scaleGame, 150); });
@@ -4246,27 +4272,36 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
   var img = document.getElementById('qr-img');
   if(img) img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data=' + encodeURIComponent(CTRL_URL);
 
-  // Show QR panel only on title/select screens, positioned in right gap
+  // Show QR panel only on title/select screens. Keep it inside the fullscreen viewport.
   function updateQRPanel(){
     var panel = document.getElementById('qr-panel');
     if(!panel) return;
     var show = (gameState==='title'||gameState==='select');
     panel.style.display = show ? 'block' : 'none';
     if(!show) return;
-    // Position: center of space between right edge of (scaled) game box and right viewport edge
-    var container = document.getElementById('game-container');
-    var rect = container ? container.getBoundingClientRect() : null;
-    if(rect){
-      var gameRight = rect.right;
-      var vpRight   = window.innerWidth;
-      var gapWidth  = vpRight - gameRight;
-      var centerX   = gameRight + gapWidth / 2;
-      panel.style.left  = centerX + 'px';
-      panel.style.top   = '50%';
-      panel.style.transform = 'translate(-50%, -50%)';
+
+    var margin = 16;
+    panel.style.right = margin + 'px';
+    panel.style.top = margin + 'px';
+    panel.style.left = 'auto';
+    panel.style.bottom = 'auto';
+    panel.style.transform = 'none';
+
+    // On short screens, make the QR smaller so it never clips vertically.
+    var img = document.getElementById('qr-img');
+    if(img){
+      var maxByHeight = Math.max(82, Math.min(170, Math.floor((window.innerHeight - 90) * 0.55)));
+      var maxByWidth = Math.max(82, Math.min(170, Math.floor(window.innerWidth * 0.16)));
+      var size = Math.max(82, Math.min(maxByHeight, maxByWidth));
+      img.style.width = size + 'px';
+      img.style.height = size + 'px';
     }
   }
+  window.addEventListener('resize', updateQRPanel);
+  window.addEventListener('orientationchange', function(){ setTimeout(updateQRPanel,150); });
+  document.addEventListener('fullscreenchange', function(){ setTimeout(updateQRPanel,150); });
   setInterval(updateQRPanel, 500);
+  updateQRPanel();
 })();
 
 // Preload custom font then start loop
