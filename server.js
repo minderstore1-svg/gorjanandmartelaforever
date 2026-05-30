@@ -83,6 +83,22 @@ const server=http.createServer((req,res)=>{
     res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});
     res.end(html);
 
+  } else if(url.startsWith('/music/') && url.endsWith('.mp3')){
+    const fname = path.basename(url);
+    const fpath = path.join(__dirname,'music',fname);
+    if(fs.existsSync(fpath)){
+      const stat = fs.statSync(fpath);
+      res.writeHead(200,{
+        'Content-Type':'audio/mpeg',
+        'Content-Length':stat.size,
+        'Accept-Ranges':'bytes',
+        'Cache-Control':'public, max-age=86400',
+      });
+      fs.createReadStream(fpath).pipe(res);
+    } else {
+      res.writeHead(404); res.end('Music not found');
+    }
+
   } else {
     res.writeHead(404);res.end('Not found');
   }

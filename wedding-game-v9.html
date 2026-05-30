@@ -104,134 +104,116 @@ canvas { display:block; image-rendering:auto; width:640px; height:480px; }
 // == AUDIO SYSTEM ==================================================
 // ==================================================================
 const Audio = (function(){
-  let ctx=null, masterGain, musicGain, sfxGain;
+  let ctx=null, masterGain, sfxGain;
   let musicEnabled=true, sfxEnabled=true;
-  let scheduleTimer=null, nextNoteTime=0;
-  let melodyPos=0, theme=null, currentThemeName=null;
-  const LOOKAHEAD=0.12, TICK=50;
 
+  // ── HTML5 Audio music system ───────────────────────────────────
+  // Track assignment per level (level 7 = null = no music)
+  const MUSIC_TRACKS = {
+    0: 'floating-also.mp3',   // Title / select screen
+    1: 'powerup.mp3',         // Level 1 — Clean Air
+    2: 'maze.mp3',             // Level 2 — Squid Games
+    3: 'night-shade.mp3',     // Level 3 — Tokyo / Ramen
+    4: 'sour-rock.mp3',       // Level 4 — Bubble Trouble
+    5: 'coupe.mp3',            // Level 5 — Wedding Planning
+    6: '8bit-dungeon.mp3',    // Level 6 — Windows 95
+    7: null,                   // Level 7 — The Kidnapping (silence)
+    8: 'underclocked.mp3',    // Level 8 — Gorjan Saves Her
+    9: 'floating-also.mp3',   // Level 9 — Martela's Revenge (bookend)
+  };
+
+  let currentAudio = null;
+  let currentTrack = null;
+  const MUSIC_VOL = 0.35;
+
+  function loadTrack(filename){
+    if(!filename) return null;
+    const a = new window.Audio('/music/' + filename);
+    a.loop = true;
+    a.volume = MUSIC_VOL;
+    return a;
+  }
+
+  // Preload all tracks so they start quickly
+  const preloaded = {};
+  Object.entries(MUSIC_TRACKS).forEach(([lvl, file])=>{
+    if(file && !preloaded[file]){
+      preloaded[file] = loadTrack(file);
+    }
+  });
+
+  function stopMusic(){
+    if(currentAudio){
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    currentTrack = null;
+  }
+
+  function playTrackFile(filename){
+    if(!musicEnabled || !filename){ stopMusic(); return; }
+    if(currentTrack === filename) return; // already playing
+    stopMusic();
+    currentTrack = filename;
+    const a = preloaded[filename] || loadTrack(filename);
+    preloaded[filename] = a;
+    currentAudio = a;
+    a.volume = MUSIC_VOL;
+    // Resume Web Audio context on first gesture
+    if(ctx && ctx.state==='suspended') ctx.resume();
+    const playPromise = a.play();
+    if(playPromise) playPromise.catch(()=>{}); // suppress autoplay error
+  }
+
+  function playLevelTheme(lvl){
+    const file = MUSIC_TRACKS[lvl] !== undefined ? MUSIC_TRACKS[lvl] : null;
+    playTrackFile(file);
+  }
+
+  function playTheme(name){
+    // name→level mapping for legacy calls
+    const nameMap={title:0,l1:1,l2:2,l3:3,l4:4,l5:5,l6:6,l7:7,l8:8,l9:9};
+    playLevelTheme(nameMap[name] ?? 0);
+  }
+
+  function stop(){ stopMusic(); }
+
+  function toggleMusic(){
+    musicEnabled = !musicEnabled;
+    if(!musicEnabled){
+      if(currentAudio) currentAudio.pause();
+    } else {
+      if(currentAudio){ const p=currentAudio.play(); if(p)p.catch(()=>{}); }
+    }
+    return musicEnabled;
+  }
+
+  // ── Web Audio API — SFX only ───────────────────────────────────
   function init(){
     if(ctx) return;
     try{
       ctx=new(window.AudioContext||window.webkitAudioContext)();
       masterGain=ctx.createGain(); masterGain.gain.value=0.65;
-      musicGain=ctx.createGain(); musicGain.gain.value=0.32;
-      sfxGain=ctx.createGain();   sfxGain.gain.value=0.75;
-      musicGain.connect(masterGain); sfxGain.connect(masterGain);
+      sfxGain=ctx.createGain(); sfxGain.gain.value=0.75;
+      sfxGain.connect(masterGain);
       masterGain.connect(ctx.destination);
     }catch(e){}
   }
 
   function ensureRunning(){
-    // Call this on any user gesture to create + resume the context
     init();
     if(ctx && ctx.state==='suspended') ctx.resume();
-  }
-
-  // Note name → frequency
-  function nf(note){
-    if(!note||note==='_') return 0;
-    const nm={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
-    const m=note.match(/^([A-G])(#?)(\d)$/);
-    if(!m) return 0;
-    const st=nm[m[1]]+(m[2]==='#'?1:0)+(parseInt(m[3])-4)*12-9;
-    return 440*Math.pow(2,st/12);
-  }
-
-  function osc(freq,start,dur,type,vol,dest){
-    if(!ctx||!freq||!musicEnabled) return;
-    const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type=type; o.frequency.value=freq;
-    g.gain.setValueAtTime(0.001,start);
-    g.gain.linearRampToValueAtTime(vol,start+0.012);
-    g.gain.exponentialRampToValueAtTime(0.001,start+dur*0.88);
-    o.connect(g); g.connect(dest||musicGain);
-    o.start(start); o.stop(start+dur+0.02);
-  }
-
-  // Themes: melody=16th notes, bass=quarter notes (plays every 4 melody steps)
-  const T={
-    title:{bpm:140,
-      mel:'C4 E4 G4 C5 B4 G4 E4 _ F4 A4 C5 F5 E5 C5 A4 _ G4 B4 D5 G5 F5 D5 B4 _ E4 G4 C5 E5 D5 C5 B4 _'.split(' '),
-      bas:'C3 F3 G3 C3'.split(' ')},
-    l1:{bpm:170,
-      mel:'E4 G4 A4 B4 E4 G4 A4 C5 D5 B4 A4 G4 F#4 D4 E4 _ A4 C5 B4 A4 G4 E4 F#4 G4 A4 B4 C5 A4 B4 _ E4 _'.split(' '),
-      bas:'E3 A3 D3 E3'.split(' ')},
-    l2:{bpm:112,
-      mel:'_ _ _ _ A4 _ _ _ _ _ _ _ G#4 _ _ _ _ _ _ _ A4 _ G4 _ F4 _ E4 _ _ _ _ _'.split(' '),
-      bas:'A2 E3 G#2 E3'.split(' ')},
-    l3:{bpm:158,
-      mel:'D4 _ F#4 _ A4 _ B4 _ D5 B4 A4 F#4 D4 _ _ _ F#4 _ A4 _ B4 _ D5 _ A4 B4 D5 _ B4 _ A4 _'.split(' '),
-      bas:'D3 A3 G3 D3'.split(' ')},
-    l4:{bpm:192,
-      mel:'C5 G4 E4 G4 C5 G4 A4 G4 F5 C5 A4 C5 F5 C5 G5 _ E5 B4 G4 B4 E5 B4 C5 B4 A4 E4 C4 E4 A4 E4 G5 _'.split(' '),
-      bas:'C3 F3 G3 C3'.split(' ')},
-    l5:{bpm:178,
-      mel:'G4 C5 E5 G5 F5 A4 C5 F5 E5 G4 B4 E5 D5 F#4 A4 D5 C5 E4 G4 C5 B4 D5 G5 _ A4 C5 E5 A5 G5 _ _ _'.split(' '),
-      bas:'C3 F3 G3 C3'.split(' ')},
-    l6:{bpm:132,
-      mel:'C4 D4 E4 F4 G4 A4 B4 C5 D5 C5 B4 A4 G4 F4 E4 D4 E4 G4 C5 E5 F5 E5 D5 C5 B4 D5 G5 B4 C5 _ _ _'.split(' '),
-      bas:'C3 G3 F3 C3'.split(' ')},
-    l7:{bpm:96,
-      mel:'A4 _ _ _ _ _ _ _ E4 _ _ _ D4 _ _ _ C4 _ _ _ B3 _ _ _ A3 _ _ _ _ _ _ _'.split(' '),
-      bas:'A2 E2 D2 A2'.split(' ')},
-    l8:{bpm:205,
-      mel:'E5 _ E5 _ E5 D5 C5 _ B4 _ B4 _ B4 A4 G4 _ A4 _ A4 _ A4 G4 F4 _ E4 _ G4 _ B4 _ E5 _'.split(' '),
-      bas:'E3 E3 G3 A3'.split(' ')},
-    l9:{bpm:188,
-      mel:'D5 _ F5 _ A5 _ F5 _ E5 _ D5 _ C5 _ A4 _ A#4 _ D5 _ F5 _ A#5 _ G5 _ F5 _ D5 _ _ _'.split(' '),
-      bas:'D3 C3 A#2 A2'.split(' ')},
-  };
-
-  const LEVEL_THEME={0:'title',1:'l1',2:'l2',3:'l3',4:'l4',5:'l5',6:'l6',7:'l7',8:'l8',9:'l9'};
-
-  function schedule(){
-    if(!ctx||!theme||!musicEnabled) return;
-    const bd=60/theme.bpm/2; // 16th note duration
-    while(nextNoteTime < ctx.currentTime+LOOKAHEAD){
-      const m=theme.mel[melodyPos%theme.mel.length];
-      const f=nf(m);
-      if(f) osc(f,nextNoteTime,bd*0.88,'square',0.18);
-      if(melodyPos%4===0&&theme.bas){
-        const b=theme.bas[Math.floor(melodyPos/4)%theme.bas.length];
-        const bf=nf(b);
-        if(bf) osc(bf,nextNoteTime,bd*3.8,'triangle',0.22);
-      }
-      melodyPos++; nextNoteTime+=bd;
+    // Also try to start music if it was blocked by autoplay policy
+    if(musicEnabled && currentAudio && currentAudio.paused && currentTrack){
+      const p=currentAudio.play(); if(p)p.catch(()=>{});
     }
   }
 
-  function playTheme(name){
-    if(!ctx) return;
-    if(currentThemeName===name) return;
-    stop();
-    currentThemeName=name; theme=T[name]; melodyPos=0;
-    nextNoteTime=ctx.currentTime+0.05;
-    if(musicEnabled) scheduleTimer=setInterval(schedule,TICK);
-  }
-
-  function playLevelTheme(lvl){
-    ensureRunning();
-    playTheme(LEVEL_THEME[lvl]||'l1');
-  }
-
-  function stop(){
-    if(scheduleTimer){clearInterval(scheduleTimer);scheduleTimer=null;}
-    currentThemeName=null; theme=null;
-  }
-
-  function toggleMusic(){
-    musicEnabled=!musicEnabled;
-    if(!musicEnabled) stop();
-    else { playLevelTheme(currentLevel||0); }
-    return musicEnabled;
-  }
-
-  // SFX
+  // SFX (unchanged — all procedural Web Audio)
   function sfx(type){
     if(!ctx||!sfxEnabled) return;
     const t=ctx.currentTime;
-    function so(f,st,dur,tp,vol){ // sfx osc
+    function so(f,st,dur,tp,vol){
       const o=ctx.createOscillator(),g=ctx.createGain();
       o.type=tp||'square'; o.frequency.value=f;
       g.gain.setValueAtTime(vol||0.3,st);
@@ -305,8 +287,6 @@ const Audio = (function(){
          get sfxOn(){ return sfxEnabled; }};
 })();
 
-
-
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 // 2× internal resolution — text renders at 4× the pixel density for crispness
@@ -318,6 +298,7 @@ const W=640, H=480;
 let gameState='title', currentLevel=0, score=0, lives=3, frameCount=0;
 let keys={}, particles=[], screenFlash=0, screenFlashColor='#fff';
 let cutsceneText=[], cutsceneIndex=0, cutsceneTimer=0;
+let endingTimer=0, endingParticleTimer=0;
 let levelClearTimer=0, levelClearMsg='', levelData={};
 let p1={}, p2={}, godMode=false, godModeBuffer='', paused=false, homeBuffer='', pauseOption=0;
 
@@ -1062,6 +1043,41 @@ function drawMalina(x,y,anim){
   ctx.strokeStyle='#ddd'; ctx.lineWidth=1.5;
   [-6,-2,2,6].forEach(ox=>{ctx.beginPath();ctx.moveTo(hx2+ox,hy2+6);ctx.lineTo(hx2+ox,hy2+13);ctx.stroke();});
 }
+
+// Malina — IT nerd version for Level 6 (no chef hat, hoodie, glasses, USB stick)
+function drawMalinaIT(x,y,anim){
+  const bx=Math.round(x), by=Math.round(y);
+  const bob=Math.sin(anim*.07)*3;
+  // hoodie body — dark grey
+  spOval(bx,by+20,28,36,'#444');
+  spOval(bx,by+20,24,32,'#555');
+  // hoodie pocket
+  ctx.fillStyle='#333';ctx.fillRect(bx-8,by+28,16,12);ctx.strokeStyle='#666';ctx.lineWidth=1;ctx.strokeRect(bx-8,by+28,16,12);
+  // USB stick in hand — yellow
+  ctx.fillStyle='#ffd700';ctx.fillRect(bx+22,by+16,14,7);ctx.strokeStyle='#cc8800';ctx.lineWidth=1.5;ctx.strokeRect(bx+22,by+16,14,7);
+  ctx.fillStyle='#aaa';ctx.fillRect(bx+22,by+19,5,4);
+  // head
+  spOval(bx,by+bob-12,20,22,'#c4855a');
+  // messy hair — dark, sticking up
+  ctx.fillStyle='#222';
+  ctx.fillRect(bx-14,by+bob-22,28,14);
+  // hair spikes
+  [[0,-8],[-8,-5],[8,-5],[-14,-2],[14,-2]].forEach(([hx,hhh])=>{ctx.fillRect(bx+hx-4,by+bob+hhh-22,8,10);});
+  // glasses — nerdy square frames
+  ctx.strokeStyle='#333';ctx.lineWidth=2.5;
+  ctx.strokeRect(bx-14,by+bob-17,12,9);
+  ctx.strokeRect(bx+2,by+bob-17,12,9);
+  ctx.beginPath();ctx.moveTo(bx-2,by+bob-13);ctx.lineTo(bx+2,by+bob-13);ctx.stroke();
+  // lens glint
+  ctx.fillStyle='rgba(200,220,255,0.4)';ctx.fillRect(bx-12,by+bob-16,4,3);ctx.fillRect(bx+4,by+bob-16,4,3);
+  // eyes behind glasses
+  ctx.fillStyle='#222';ctx.fillRect(bx-10,by+bob-14,4,4);ctx.fillRect(bx+6,by+bob-14,4,4);
+  // mouth — nervous thin line
+  ctx.strokeStyle='#7a4530';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(bx-6,by+bob-5);ctx.lineTo(bx+6,by+bob-5);ctx.stroke();
+  // legs
+  spOval(bx-8,by+50,8,14,'#333');spOval(bx+8,by+50,8,14,'#333');
+}
 // ==================================================================
 // == LEVEL SYSTEM ==================================================
 // ==================================================================
@@ -1323,10 +1339,12 @@ function drawIntro() {
   });
   if(ls) ctx.fillText(ls,animX+14,ly);
 
-  // Progress dots
+  // Progress dots — rendered BELOW the bubble to avoid text overlap
+  const dotY = by+bh+18;
   for(let i=0;i<introLines.length;i++){
+    if(introLines[i].spongebob) continue; // skip spongebob entries in dot count
     ctx.fillStyle=i===introIndex?'#ffd700':'#333';
-    ctx.beginPath();ctx.arc(W/2-(introLines.length-1)*9+i*18,by+bh-14,5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(W/2-(introLines.length-1)*9+i*18,dotY,5,0,Math.PI*2);ctx.fill();
   }
 
   // Continue prompt (only when text fully shown, no auto-timer)
@@ -1337,7 +1355,7 @@ function drawIntro() {
       const nextMsg = isLast ? 'ENTER — LET\'S GO!' : 'ENTER — NEXT ►';
       const backMsg = isFirst ? '' : '◄ BACK';
       const fullMsg = (!isFirst ? backMsg+'   ' : '') + nextMsg;
-      drawTextC(fullMsg, by+bh+18, 7, '#aaa');
+      drawTextC(fullMsg, by+bh+36, 7, '#aaa');
     }
   }
 }
@@ -1363,8 +1381,10 @@ const INTROS = {
   3:[
     {speaker:'MARTELA',text:'JAPAN! Gorjan we are actually here! I cannot believe this is real!',color:'#ff69b4',drawFn:drawMartela},
     {speaker:'GORJAN',text:'Indeed. I will be posting this on Instagram for months.',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MARTELA',text:'That is the most romantic thing you have ever said. Now find me ramen.',color:'#ff69b4',drawFn:drawMartela},
-    {speaker:'GORJAN',text:'There is a whole city full of it. Race you?',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'MARTELA',text:'Gorjan. Is that... Vladimir and Dora? At the ramen queue? In Tokyo?',color:'#ff69b4',drawFn:drawMartela},
+    {speaker:'GORJAN',text:'It is a business trip, apparently. They filed expenses. For ramen.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'VLAD',text:'WE FOUND THE BEST RAMEN FIRST. THIS BOWL IS OURS. COMPANY PROPERTY.',color:'#ff4444',drawFn:drawVladimir},
+    {speaker:'DORA',text:'I already Instagrammed it. It has forty-seven likes. We are not leaving.',color:'#d49060',drawFn:drawDora},
   ],
   4:[
     {speaker:'MARTELA',text:'That trip was amazing! I cannot wait to tell all our friends!',color:'#ff69b4',drawFn:drawMartela},
@@ -1382,10 +1402,12 @@ const INTROS = {
     {speaker:'JOANA',text:'I NEED TO MEET MY QUARTERLY QUOTAS. LOVE IS TEMPORARY. SALES TARGETS ARE FOREVER.',color:'#ff4444',drawFn:drawJoana},
   ],
   6:[
-    {speaker:'DORA',text:'I was just trying to install ONE small program on the wedding slideshow computer. A tiny one.',color:'#d49060',drawFn:drawDora},
-    {speaker:'VLADIMIR',text:'And I was helping her. By installing a second small virus. It seemed efficient at the time.',color:'#ff4444',drawFn:drawVladimir},
-    {speaker:'GORJAN',text:'You two DESTROYED the computer with our WEDDING PHOTOS on it!!',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MARTELA',text:'Both of you. Fix it. Right now. The wedding is in four days.',color:'#ff69b4',drawFn:drawMartela},
+    {speaker:'GORJAN',text:'Malina. Thank you for coming. The slideshow PC is completely broken.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'MALINA',text:'Yes. I see that. Very unfortunate. No idea what happened.',color:'#ff8888',drawFn:drawMalinaIT},
+    {speaker:'GORJAN',text:'Wait. That error code. This is the Prankmaster 3000. We wrote that in 2008.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'MALINA',text:'I can explain. I had a USB stick. I just wanted to see if it still worked. It does.',color:'#ff8888',drawFn:drawMalinaIT},
+    {speaker:'GORJAN',text:'You broke our WEDDING SLIDESHOW with a SEVENTEEN YEAR OLD PRANK PROGRAM.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'MALINA',text:'On the bright side... it still works. That is impressive. Architecturally speaking.',color:'#ff8888',drawFn:drawMalinaIT},
   ],
   7:[
     {speaker:'GORJAN',text:'Something feels wrong tonight. Have you noticed the man in the white hat watching us?',color:'#00ff88',drawFn:drawGorjan},
@@ -1595,10 +1617,10 @@ function nextLevel(){
     ],
     6:[
       ['4 DAYS BEFORE 31 MAY 2026.','THE SLIDESHOW IS ALMOST READY.','GORJAN SAVED 3 YEARS OF PHOTOS.'],
-      ['"I JUST WANTED TO SEE"','"WHAT CTRL+ALT+DELETE DID."','"— DORA, BRIEFLY UNSUPERVISED"'],
-      ['"I ALSO INSTALLED A SMALL VIRUS."','"FOR FUN."','"— VLAD, MAKING IT WORSE"'],
-      ['VLAD.EXE IS EVERYWHERE.','THE PHOTOS ARE TRAPPED.','4 DAYS. FIX IT. NOW.'],
-      ['ALSO THERE IS A FOLDER CALLED:','PROPERTY_FINAL_FINAL_EMIR_DO_NOT_OPEN','NOBODY HAS TIME TO DISCUSS THIS.'],
+      ['GORJAN CALLS MALINA.','THEY FIXED COMPUTERS TOGETHER IN HIGH SCHOOL.','MALINA IS SUSPICIOUSLY HELPFUL.'],
+      ['"DON\'T WORRY." — MALINA.','THIS IS ALREADY WORRYING.','GORJAN DRIVES OVER IMMEDIATELY.'],
+      ['THE VIRUS IS FROM 2008.','MALINA HAD IT ON A USB STICK.','HE JUST WANTED TO SEE IF IT STILL WORKED.'],
+      ['IT STILL WORKS.','ALSO THERE IS A FOLDER CALLED:','PROPERTY_FINAL_FINAL_EMIR_DO_NOT_OPEN'],
     ],
     7:[
       ['3 DAYS BEFORE 31 MAY 2026.','EVERYTHING IS READY.','OR SO THEY THINK.'],
@@ -2128,32 +2150,67 @@ function runLevel3(){
   d.songNotes=d.songNotes.filter(n=>n.life>0);
   d.songNotes.forEach(n=>{n.y-=0.8;n.x+=n.vx;n.life-=0.005;ctx.globalAlpha=n.life*.7;ctx.fillStyle='#ffd700';ctx.font='13px serif';ctx.fillText(n.note,n.x,n.y);});
   ctx.globalAlpha=1;
-  // chef obstacle at halfway
+  // Vlad & Dora — rival ramen eaters roaming the grid
   const total=(p1Active()?d.eaten1:0)+(p2Active()?d.eaten2:0);
-  if(total>=9&&!d.chef){d.chef={x:Math.floor(COLS/2),y:Math.floor(ROWS/2),timer:0};queueDialogue('MALINA','MY RAMEN RECIPE IS MINE! YOU SHALL NOT PASS!',160,'#ff4444');}
-  if(d.chef&&!d.chefEaten){
-    d.chef.timer++;
-    if(d.chef.timer%150===0){d.chef.x=1+Math.floor(Math.random()*(COLS-2));d.chef.y=1+Math.floor(Math.random()*(ROWS-2));}
-    // red danger tile
-    ctx.fillStyle='rgba(255,80,80,0.35)';ctx.fillRect(d.chef.x*CELL-2,d.chef.y*CELL-2,CELL*2+4,CELL*2+4);
-    ctx.strokeStyle='#ff4444';ctx.lineWidth=1.5;ctx.strokeRect(d.chef.x*CELL-2,d.chef.y*CELL-2,CELL*2+4,CELL*2+4);
-    // draw Malina scaled to fit the cell
-    ctx.save(); ctx.scale(0.55,0.55);
-    drawMalina((d.chef.x*CELL+CELL)/0.55,(d.chef.y*CELL+CELL*1.2)/0.55,frameCount);
-    ctx.restore();
-    // name label BELOW the danger zone — correct center, large, never covers the hat
-    const mLabel='MALINA';
-    ctx.font="8px 'Press Start 2P'";
-    const mw=ctx.measureText(mLabel).width;
-    const mCX = d.chef.x*CELL + CELL;          // true screen center of character
-    const mly = d.chef.y*CELL + CELL*2 + 6;    // below the 2-cell danger box
-    ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillRect(mCX-mw/2-8,mly,mw+16,18);
-    ctx.strokeStyle='#ff4444'; ctx.lineWidth=1.5; ctx.strokeRect(mCX-mw/2-8,mly,mw+16,18);
-    drawText(mLabel, mCX-mw/2, mly+13, 8,'#ff4444',false);
-    if(d.snake1[0]&&d.snake1[0].x===d.chef.x&&d.snake1[0].y===d.chef.y){d.chefEaten=true;score+=300;spawnHeart(d.chef.x*CELL,d.chef.y*CELL);queueDialogue('GORJAN','Malina down. The ramen is ours.',130,'#00ff88');}
-    else if(d.snake2[0]&&d.snake2[0].x===d.chef.x&&d.snake2[0].y===d.chef.y){lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');}
+  if(!d.rivals&&total>=4){
+    d.rivals=[
+      {x:Math.floor(COLS*0.7),y:Math.floor(ROWS*0.3),timer:0,moveTimer:0,type:'vlad'},
+      {x:Math.floor(COLS*0.3),y:Math.floor(ROWS*0.7),timer:0,moveTimer:0,type:'dora'},
+    ];
+    queueDialogue('VLAD','WE FOUND THE BEST RAMEN FIRST. THIS IS OURS.',150,'#ff4444');
   }
-  if(total===6&&!d.midTalk){d.midTalk=true;queueDialogue('MARTELA','This is the best trip of my life.',160,'#ff69b4');queueDialogue('GORJAN','Wait until you see what I planned next...',180,'#00ff88');}
+  if(d.rivals){
+    // Rival in-game commentary
+    if(!d.rivalChat) d.rivalChat=0;
+    d.rivalChat++;
+    const rivalLines=[
+      {s:'DORA',t:'I already posted it. Forty-seven likes.',c:'#d49060'},
+      {s:'VLAD',t:'I am expensing this. Under "team building."',c:'#ff4444'},
+      {s:'DORA',t:'Vlad ate the last bowl. I watched him do it.',c:'#d49060'},
+      {s:'VLAD',t:'WE FOUND IT FIRST. THE RAMEN IS COMPANY PROPERTY.',c:'#ff4444'},
+    ];
+    if(d.rivalChat%420===0&&d.rivalChatIdx===undefined) d.rivalChatIdx=0;
+    if(d.rivalChat%420===0&&d.rivalChatIdx<rivalLines.length){
+      const rl=rivalLines[d.rivalChatIdx++];
+      queueDialogue(rl.s,rl.t,160,rl.c);
+    }
+    d.rivals.forEach(rv=>{
+      rv.moveTimer++;
+      // Move every 40 frames — slower than snake so beatable
+      if(rv.moveTimer>=40){
+        rv.moveTimer=0;
+        const dirs=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+        const dir=dirs[Math.floor(Math.random()*4)];
+        rv.x=Math.max(0,Math.min(COLS-1,rv.x+dir.x));
+        rv.y=Math.max(0,Math.min(ROWS-1,rv.y+dir.y));
+        // Eat ramen if they land on it!
+        const ate=d.ramen.find(r=>r.x===rv.x&&r.y===rv.y);
+        if(ate){d.ramen.splice(d.ramen.indexOf(ate),1);spawnRamen();}
+      }
+      // Draw rival — tinted cell
+      const rx=rv.x*CELL, ry=rv.y*CELL;
+      ctx.fillStyle=rv.type==='vlad'?'rgba(255,50,50,0.4)':'rgba(212,144,96,0.4)';
+      ctx.fillRect(rx,ry,CELL*2,CELL*2);
+      ctx.strokeStyle=rv.type==='vlad'?'#ff4444':'#d49060';
+      ctx.lineWidth=1.5;ctx.strokeRect(rx,ry,CELL*2,CELL*2);
+      ctx.save();ctx.scale(0.55,0.55);
+      if(rv.type==='vlad') drawVladimir((rv.x*CELL+CELL)/0.55,(rv.y*CELL+CELL*1.2)/0.55,frameCount);
+      else drawDora((rv.x*CELL+CELL)/0.55,(rv.y*CELL+CELL*1.2)/0.55,frameCount);
+      ctx.restore();
+      // Label
+      const lbl=rv.type==='vlad'?'VLAD':'DORA';
+      ctx.font="7px 'Press Start 2P'";
+      const lw=ctx.measureText(lbl).width;
+      const lcx=rv.x*CELL+CELL, lcy=rv.y*CELL+CELL*2+6;
+      ctx.fillStyle='rgba(0,0,0,0.9)';ctx.fillRect(lcx-lw/2-6,lcy,lw+12,16);
+      ctx.strokeStyle=rv.type==='vlad'?'#ff4444':'#d49060';ctx.lineWidth=1;ctx.strokeRect(lcx-lw/2-6,lcy,lw+12,16);
+      drawText(lbl,lcx-lw/2,lcy+12,7,rv.type==='vlad'?'#ff4444':'#d49060',false);
+      // Snake hits rival = lose a life
+      if(d.snake1[0]&&d.snake1[0].x===rv.x&&d.snake1[0].y===rv.y){lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');}
+      if(d.snake2[0]&&d.snake2[0].x===rv.x&&d.snake2[0].y===rv.y){lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');}
+    });
+  }
+  if(total===6&&!d.midTalk){d.midTalk=true;queueDialogue('MARTELA','This is the best trip of my life. Even with Vlad here.',160,'#ff69b4');queueDialogue('GORJAN','Wait until you see what I planned next...',180,'#00ff88');}
   if(total>=d.goal){
     startNewsTicker('EASTERN EUROPEAN COUPLE EATS ENTIRE TOKYO RAMEN SUPPLY. LOCAL RESTAURANTS OUT OF STOCK.');
     triggerLevelClear('RAMEN EATEN!\nITADAKIMASU! ♥\nBEST TRIP EVER!\n\nNEXT STOP: THE WEDDING ERA.');
@@ -2276,9 +2333,11 @@ function runLevel4(){
     if(b.x-b.r<0){b.x=b.r;b.vx=Math.abs(b.vx);}
     if(b.x+b.r>W){b.x=W-b.r;b.vx=-Math.abs(b.vx);}
     d.platforms.forEach(pl=>{
-      if(b.y+b.r>pl.y&&b.y-b.r<pl.y+pl.h&&b.x>pl.x&&b.x<pl.x+pl.w&&b.vy>0){b.vy=-Math.abs(b.vy)*0.85;}
+      if(b.y+b.r>pl.y&&b.y-b.r<pl.y+pl.h&&b.x>pl.x&&b.x<pl.x+pl.w&&b.vy>0){
+        b.vy=-Math.max(Math.abs(b.vy)*0.85, 2.5);  // minimum bounce speed
+      }
     });
-    if(b.y-b.r<0){b.vy=Math.abs(b.vy)*0.8;}
+    if(b.y-b.r<0){b.vy=Math.max(Math.abs(b.vy)*0.8, 2);}
     ctx.globalAlpha=0.75;
     ctx.fillStyle=b.col;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=0.3;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(b.x-b.r*.3,b.y-b.r*.3,b.r*.35,0,Math.PI*2);ctx.fill();
@@ -2543,18 +2602,16 @@ function initLevel6(){
   Audio.playLevelTheme(6);
     levelData={
     ball:{x:W/2,y:H/2,vx:3,vy:-3.5,r:8},
-    dora:{x:200,y:180,vx:-1.4,vy:0.8,hp:2},
-    pad1:{x:80,w:90,y:H-50},   // P1 bottom left half
-    pad2:{x:480,w:90,y:H-50},  // P2 bottom right half
+    malina:{x:200,y:180,vx:-1.5,vy:0.9,hp:4,dropTimer:0},
+    pad1:{x:80,w:90,y:H-50},
+    pad2:{x:480,w:90,y:H-50},
     bricks:[],
     broken:0,goal:0,
-    vladHP:6,vladX:W/2,vladY:80,vladVX:1.8,vladPhase:'normal',
     bossDefeated:false,
     popups:[],popupTimer:0,
-    lives3:3,
   };
   // Error popups as bricks
-  const errors=['ERROR','CRASH','BSOD','FAIL','VLAD','DORA','BUG','VIRUS'];
+  const errors=['ERROR','CRASH','BSOD','USB.EXE','2008','PRANK','BUG','VIRUS'];
   for(let row=0;row<4;row++){
     for(let col=0;col<8;col++){
       levelData.bricks.push({x:60+col*70,y:100+row*36,w:62,h:28,alive:true,hits:row<2?1:2,label:errors[(row*8+col)%errors.length],color:['#ff4444','#ff8800','#0000cc','#008080'][row]});
@@ -2564,7 +2621,7 @@ function initLevel6(){
   setNarrator('');
   levelData.bsodTimer=0; levelData.bsodActive=false;
   levelData.startFrame=frameCount;
-  showHint('SMASH THE BRICKS — DEFEAT VLAD.EXE!','P1: A/D to move   |   P2: ARROWS to move');
+  showHint('SMASH THE VIRUS BRICKS — STOP MALINA ADDING MORE!','P1: A/D to move   |   P2: ARROWS to move');
 }
 
 function runLevel6(){
@@ -2652,45 +2709,55 @@ function runLevel6(){
     drawText(pi===0?'P1':'P2',pad.x+pad.w/2-10,pad.y-10,6,col);
   });
 
-  // Dora - steals bricks back (bounces around, if ball hits her she re-seals a brick)
-  d.dora.x+=d.dora.vx; d.dora.y+=d.dora.vy;
-  if(d.dora.x<30||d.dora.x>W-30) d.dora.vx*=-1;
-  if(d.dora.y<40||d.dora.y>300) d.dora.vy*=-1;
-  if(d.dora.hp>0){
-    drawDora(d.dora.x,d.dora.y,frameCount);
-    if(Math.sqrt((ball.x-d.dora.x)**2+(ball.y-d.dora.y)**2)<36){
-      d.dora.hp--; ball.vy=-Math.abs(ball.vy);
-      spawnParticle(d.dora.x,d.dora.y,'#d49060',10,5);
-      screenFlash=8; screenFlashColor='#d49060';
-      if(d.dora.hp<=0){
-        spawnParticle(d.dora.x,d.dora.y,'#ffd700',15,7); score+=300;
-        queueDialogue('DORA','Fine. I was trying to remove the virus. Then Vlad installed another one. Also... who is Emir?',200,'#d49060');
+  // Malina — bounces around dropping new virus bricks
+  d.malina.x+=d.malina.vx; d.malina.y+=d.malina.vy;
+  if(d.malina.x<30||d.malina.x>W-50) d.malina.vx*=-1;
+  if(d.malina.y<36||d.malina.y>260) d.malina.vy*=-1;
+  if(d.malina.hp>0){
+    drawMalinaIT(d.malina.x,d.malina.y,frameCount);
+    // HP bar above him
+    for(let i=0;i<d.malina.hp;i++){
+      ctx.fillStyle='#ff8888';ctx.fillRect(d.malina.x-26+i*14,d.malina.y-55,12,6);
+      ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(d.malina.x-26+i*14,d.malina.y-55,12,6);
+    }
+    // Ball hits Malina = damage him
+    if(Math.sqrt((ball.x-d.malina.x)**2+(ball.y-d.malina.y)**2)<36){
+      d.malina.hp--;
+      ball.vy=-Math.abs(ball.vy);
+      spawnParticle(d.malina.x,d.malina.y,'#ff8888',10,5);
+      screenFlash=8;screenFlashColor='#ff8888';
+      Audio.sfx('enemyhit');
+      if(d.malina.hp===2) queueDialogue('MALINA','Okay. Maybe the program was a little too good.',140,'#ff8888');
+      if(d.malina.hp<=0){
+        d.bossDefeated=true;
+        spawnParticle(d.malina.x,d.malina.y,'#ffd700',20,8);score+=600;
+        queueDialogue('MALINA','Fine. I admit it. But architecturally, that virus was impressive.',200,'#ff8888');
+        startNewsTicker('PRANKMASTER 3000 DEFEATED. PC RESTORED. MALINA APOLOGISED. SORT OF.');
       }
     }
-    for(let i=0;i<d.dora.hp;i++){ctx.fillStyle='#d49060';ctx.fillRect(d.dora.x-10+i*14,d.dora.y-48,12,6);}
-  }
-
-  // Vladimir -- virus boss at top
-  if(!d.bossDefeated&&d.broken>10){
-    d.vladX+=d.vladVX+(5-Math.max(0,d.vladHP))*0.4;
-    if(d.vladX<40||d.vladX>W-40)d.vladVX*=-1;
-    drawVladimir(d.vladX,d.vladY,frameCount,d.vladHP<=3);
-    if(Math.sqrt((ball.x-d.vladX)**2+(ball.y-d.vladY)**2)<40){
-      d.vladHP--;ball.vy=Math.abs(ball.vy);spawnParticle(d.vladX,d.vladY,'#00ff44',12,6);screenFlash=8;screenFlashColor='#00ff44';
-      if(d.vladHP<=0){d.bossDefeated=true;spawnParticle(d.vladX,d.vladY,'#ffd700',25,10);score+=800;
-        queueDialogue('VLAD','The virus... was just trying to... make friends...',180,'#ff4444');
-        startNewsTicker('VLAD.EXE DEFEATED. PC RESTORED. WEDDING SLIDESHOW SAVED. DORA.EXE QUARANTINED.');}
+    // Malina periodically drops a new virus brick
+    d.malina.dropTimer++;
+    if(d.malina.dropTimer>220&&d.bricks.filter(b=>b.alive).length<d.goal){
+      d.malina.dropTimer=0;
+      // Find an empty spot and re-add a brick
+      const dead=d.bricks.filter(b=>!b.alive);
+      if(dead.length>0){
+        const b=dead[Math.floor(Math.random()*dead.length)];
+        b.alive=true;b.hits=1;b.label='USB';b.color='#aa2200';
+        spawnParticle(b.x+b.w/2,b.y,'#ff4444',8,4);
+        screenFlash=5;screenFlashColor='#ff4444';
+      }
+      queueDialogue('MALINA',['ADDING MORE.','YOU CANNOT DELETE ME.','THERE ARE BACKUPS.','THE USB HAS LAYERS.'][Math.floor(Math.random()*4)],90,'#ff8888');
     }
-    for(let i=0;i<Math.max(0,d.vladHP);i++){ctx.fillStyle=d.vladHP<=3?'#00ff44':'#ff4444';ctx.fillRect(d.vladX-30+i*12,d.vladY-42,10,6);}
   }
 
   ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(0,0,W,28);
-  drawText(`BRICKS: ${d.broken}/${d.goal} LIVES: ${'♥'.repeat(lives)}`,10,20,7,'#00ff44');
+  drawText(`BRICKS: ${d.broken}/${d.goal}  ♥:${lives}`,10,20,7,'#00ff44');
 
   updateDialogue(); drawDialogue();
-  if(frameCount%300===0&&!d.bossDefeated){
-    const dq=['ERROR 404: WEDDING NOT FOUND','DORA.EXE PANICKING','THIS IS NOT MY FAULT. IT IS A LITTLE MY FAULT.','WHY IS VLAD.EXE EVERYWHERE?','WHO NAMED A FOLDER PROPERTY_FINAL_FINAL?'];
-    queueDialogue('DORA',dq[Math.floor(Math.random()*dq.length)],100,'#d49060');
+  if(frameCount%320===0&&!d.bossDefeated&&d.malina.hp>0){
+    const mq=['I just wanted to see if it worked.','In 2008 this was very funny.','The USB still had the original readme.','I kept it for sentimental reasons.','This is technically my fault. Partially.'];
+    queueDialogue('MALINA',mq[Math.floor(Math.random()*mq.length)],110,'#ff8888');
   }
   // Mid-level BSOD flash
   if(d.broken===16&&!d.bsodActive){d.bsodActive=true;d.bsodTimer=60;}
@@ -2699,8 +2766,8 @@ function runLevel6(){
     ctx.fillStyle='#0000aa'; ctx.fillRect(0,0,W,H);
     drawTextC(':(', 120, 60,'#fff');
     drawTextC('YOUR PC RAN INTO A PROBLEM',180,8,'#fff');
-    drawTextC('VLAD.EXE CAUSED AN EXCEPTION',200,6,'#fff');
-    drawTextC('DORA IS RESPONSIBLE',220,6,'#fff');
+    drawTextC('PRANKMASTER3000.EXE EXCEPTION',200,6,'#fff');
+    drawTextC('MALINA IS RESPONSIBLE',220,6,'#fff');
     drawTextC('RESTARTING IN '+(d.bsodTimer)+' FRAMES...',260,6,'#aaa');
     return;
   }
@@ -2709,22 +2776,22 @@ function runLevel6(){
   if(!d.bsodDone&&d.broken>=Math.floor(d.goal/2)){
     d.bsodDone=true;
     if(!d.bsodTimer) d.bsodTimer=0;
-    setNarrator('BSOD!\n\nDORA.EXE caused\na problem.\nVLAD helped.\n\nPress SPACE/ENTER\nto dismiss!\nBall speeds up after!');
+    setNarrator('');
   }
   if(d.bsodDone&&(d.bsodTimer||0)<200&&d.bsodActive!==false){
     if(!d.bsodShowing) d.bsodShowing=true;
     d.bsodTimer=(d.bsodTimer||0)+1;
     ctx.fillStyle='rgba(0,0,200,0.88)'; ctx.fillRect(0,0,W,H);
     drawTextC('A PROBLEM HAS OCCURRED',140,8,'#fff');
-    drawTextC('DORA_LAPTOP.EXE',170,7,'#fff');
-    drawTextC('STOP: 0x0000DORA',195,6,'#aaa');
+    drawTextC('PRANKMASTER3000.EXE',170,7,'#fff');
+    drawTextC('STOP: 0xUSB2008',195,6,'#aaa');
     drawTextC('COLLECTED ERRORS: '+d.broken,220,6,'#aaa');
     drawTextC('PRESS SPACE/ENTER TO CONTINUE',260,6,'#fff');
     if((keys[' ']||keys['Enter'])){d.bsodActive=false;d.bsodShowing=false;d.ball.vx*=1.15;d.ball.vy*=1.15;}
     return;
   }
-  if(allBricks&&d.bossDefeated) triggerLevelClear('WINDOWS FIXED!\nVLAD.EXE DELETED!\nDORA GROUNDED!\nEMIR FOLDER: STILL SUSPICIOUS');
-  else if(allBricks) {setNarrator('BRICKS DONE!\nNow hit VLAD\nwith the ball!');}
+  if(allBricks&&d.bossDefeated) triggerLevelClear('WINDOWS FIXED!\nPRANKMASTER DEFEATED!\nMALINA: GROUNDED.\nEMIR FOLDER: STILL SUSPICIOUS');
+  else if(allBricks) {queueDialogue('MALINA','...I can fix this. Probably.',120,'#ff8888');}
 }
 
 // ==================================================================
@@ -2794,16 +2861,16 @@ function runLevel7(){
     ctx.restore();
 
   // PHASE 3: Kidnapping animation (580-820)
-  } else if(d.timer<820){
-    const prog=Math.min(1,(d.timer-580)/210);
+  } else if(d.timer<1000){
+    const prog=Math.min(1,(d.timer-580)/280);
     const mly=p2y-prog*210, mlx=p2x+(d.emirX-p2x)*prog;
     drawGorjan(p1gx,p1gy+(d.timer>640?Math.sin((d.timer-640)*.18)*5:0),1,0);
     drawEmir(d.emirX,H-100-prog*210,frameCount);
     drawMartela(mlx,mly,1,0,prog>0.25);
-    if(d.timer===608){screenFlash=32;screenFlashColor='#ff0000';}
-    if(d.timer>660){
+    if(d.timer===620){screenFlash=32;screenFlashColor='#ff0000';}
+    if(d.timer>750){
       ctx.save();
-      ctx.globalAlpha=Math.max(0,Math.min(1,(d.timer-660)/40));
+      ctx.globalAlpha=Math.max(0,Math.min(1,(d.timer-750)/40));
       ctx.fillStyle='rgba(0,0,0,0.88)';ctx.fillRect(0,H/2-28,W,56);
       ctx.strokeStyle='#ff4444';ctx.lineWidth=2;ctx.strokeRect(0,H/2-28,W,56);
       drawTextC('MARTELA IS BEING TAKEN!',H/2-10,9,'#ff4444');
@@ -3065,7 +3132,7 @@ function runLevel8(){
   // ── PUNCH MECHANIC ────────────────────────────────────────────────
   pl.punchCool=Math.max(0,pl.punchCool-1);
   pl.punchTimer=Math.max(0,pl.punchTimer-1);
-  if((keys[' ']||keys['f']||keys['F'])&&pl.punchCool===0){
+  if((keys[' ']||keys['f']||keys['F']||keys['Enter'])&&pl.punchCool===0){
     pl.punchTimer=12; pl.punchCool=28;
     Audio.sfx('shoot');
     // Hit Emir if close
@@ -3088,10 +3155,11 @@ function runLevel8(){
   }
 
   // ── PLAYER PHYSICS ─────────────────────────────────────────────────
-  if(keys['a']||keys['A']){pl.vx=-pl.speed;pl.facing=-1;pl.frame++;}
-  else if(keys['d']||keys['D']){pl.vx=pl.speed;pl.facing=1;pl.frame++;}
+  if(keys['a']||keys['A']||keys['ArrowLeft']){pl.vx=-pl.speed;pl.facing=-1;pl.frame++;}
+  else if(keys['d']||keys['D']||keys['ArrowRight']){pl.vx=pl.speed;pl.facing=1;pl.frame++;}
   else pl.vx*=0.75;
-  if((keys['w']||keys['W'])&&pl.grounded){pl.vy=-9;pl.grounded=false;Audio.sfx('jump');}
+  if((keys['w']||keys['W']||keys['ArrowUp'])&&pl.grounded){pl.vy=-9;pl.grounded=false;Audio.sfx('jump');}
+  if((keys[' ']||keys['f']||keys['F']||keys['Enter'])&&pl.punchCool===0){} // punch handled above
   pl.vy+=.45;pl.x+=pl.vx;pl.y+=pl.vy;
   pl.x=Math.max(10,Math.min(W-10,pl.x));
   pl.grounded=false;
@@ -3264,7 +3332,7 @@ function runBonusLevel(){
   // ── HAIR FLIP ATTACK ─────────────────────────────────────────────
   pl.flipCool=Math.max(0,pl.flipCool-1);
   pl.flipTimer=Math.max(0,pl.flipTimer-1);
-  if((keys['Enter']||keys['ArrowDown'])&&pl.flipCool===0){
+  if((keys['Enter']||keys['ArrowDown']||keys[' ']||keys['s']||keys['S'])&&pl.flipCool===0){
     pl.flipTimer=14; pl.flipCool=32;
     pl.vx=pl.facing*5; // small lunge
     Audio.sfx('pop');
@@ -3452,10 +3520,10 @@ function runBonusLevel(){
 
   // ── PLAYER PHYSICS ────────────────────────────────────────────────
   const curSpeed=boosted?6.5:pl.speed;
-  if(keys['ArrowLeft']){pl.vx=Math.min(pl.vx,-curSpeed);pl.facing=-1;pl.frame++;}
-  else if(keys['ArrowRight']){pl.vx=Math.max(pl.vx,curSpeed);pl.facing=1;pl.frame++;}
+  if(keys['ArrowLeft']||keys['a']||keys['A']){pl.vx=Math.min(pl.vx,-curSpeed);pl.facing=-1;pl.frame++;}
+  else if(keys['ArrowRight']||keys['d']||keys['D']){pl.vx=Math.max(pl.vx,curSpeed);pl.facing=1;pl.frame++;}
   else pl.vx*=0.72;
-  if(keys['ArrowUp']&&pl.grounded){pl.vy=-11;pl.grounded=false;Audio.sfx('jump');}
+  if((keys['ArrowUp']||keys['w']||keys['W'])&&pl.grounded){pl.vy=-11;pl.grounded=false;Audio.sfx('jump');}
   pl.vy+=.42;pl.x+=pl.vx;pl.y+=pl.vy;
   pl.x=Math.max(10,Math.min(W-10,pl.x));
   pl.grounded=false;
@@ -3594,6 +3662,7 @@ function runTitle(){
 
 function startEnding(){
   gameState='ending'; endingTimer=0; particles=[];
+  Audio.playLevelTheme(0); // Floating Also bookends the game
 }
 
 function drawEnding(){
@@ -3661,7 +3730,7 @@ function drawEnding(){
   if(endingTimer>520){
     if(Math.floor(endingTimer/28)%2===0)
       drawTextC('PRESS ENTER FOR CREDITS',H-18,7,'#888');
-    if(keys['Enter']||keys[' ']||endingTimer>1000){
+    if(keys['Enter']||keys[' ']||endingTimer>700){
       gameState='credits'; cutsceneTimer=frameCount; setNarrator('');
     }
   }
@@ -3727,7 +3796,22 @@ function drawCutscene(){
   ctx.strokeStyle='#ffd700';ctx.lineWidth=1;ctx.strokeRect(40,75,W-80,H-150);
   if(slide){
     const lines = Array.isArray(slide) ? slide : (slide.lines||[slide]);
-    lines.forEach((l,i)=>drawTextC(l,H/2-(lines.length-1)*22+i*44,i===0?13:11,i===0?'#ffd700':'#fff'));
+    // Auto word-wrap: split lines that exceed canvas width
+    function wrapLine(txt, size){
+      ctx.font = size+"px 'Press Start 2P'";
+      if(ctx.measureText(txt).width <= W-80) return [txt];
+      const words=txt.split(' '); let cur='', out=[];
+      words.forEach(w=>{
+        const t=cur+(cur?' ':'')+w;
+        if(ctx.measureText(t).width>W-80){out.push(cur);cur=w;}else cur=t;
+      });
+      if(cur)out.push(cur);
+      return out;
+    }
+    const wrapped=[];
+    lines.forEach((l,i)=>wrapLine(l,i===0?13:11).forEach((wl,wi)=>wrapped.push({t:wl,s:i===0&&wi===0?13:11,c:i===0&&wi===0?'#ffd700':'#fff'})));
+    const step=38, total=(wrapped.length-1)*step;
+    wrapped.forEach((w,i)=>drawTextC(w.t,H/2-total/2+i*step,w.s,w.c));
   }
   if(Math.floor(frameCount/30)%2===0){
     const isFirst = cutsceneIndex===0;
