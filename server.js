@@ -84,9 +84,21 @@ const server=http.createServer((req,res)=>{
     res.end(html);
 
   } else if(url.startsWith('/music/') && url.endsWith('.mp3')){
-    const fname = path.basename(url);
-    const fpath = path.join(__dirname,'music',fname);
-    if(fs.existsSync(fpath)){
+    // Map clean names → actual filenames in repo root
+    const nameMap = {
+      'floating-also.mp3':  'William Rosati - Floating Also.mp3',
+      'powerup.mp3':        'Jeremy Blake - Powerup!.mp3',
+      'maze.mp3':           'Density & Time - MAZE.mp3',
+      'night-shade.mp3':    'AdhesiveWombat - Night Shade.mp3',
+      'sour-rock.mp3':      'Jeremy Korpas - Sour Rock.mp3',
+      'coupe.mp3':          'The Grand Affair - Coupe.mp3',
+      '8bit-dungeon.mp3':   'Kevin MacLeod - 8bit Dungeon Level.mp3',
+      'underclocked.mp3':   'Eric Skiff - Underclocked (underunderclocked mix).mp3',
+    };
+    const clean = path.basename(url);
+    const actual = nameMap[clean];
+    const fpath = actual ? path.join(__dirname, actual) : null;
+    if(fpath && fs.existsSync(fpath)){
       const stat = fs.statSync(fpath);
       res.writeHead(200,{
         'Content-Type':'audio/mpeg',
@@ -96,7 +108,7 @@ const server=http.createServer((req,res)=>{
       });
       fs.createReadStream(fpath).pipe(res);
     } else {
-      res.writeHead(404); res.end('Music not found');
+      res.writeHead(404); res.end('Music not found: '+clean);
     }
 
   } else {
