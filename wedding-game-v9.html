@@ -579,23 +579,61 @@ function drawMartela(x,y,facing=1,anim=0,captured=false){
   spRect(bx+(facing>0?-12:8),by+8,4,10,'#e74c3c');
 
   const hx=bx, hy=by-22+Math.round(bob);
+
+  // ── FLOWING DARK HAIR (behind head first) ──────────────────
+  const hairColor='#2a1508', hairHi='#5a3018';
+  ctx.fillStyle=hairColor; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  // Long hair flowing down the back
+  ctx.beginPath();
+  ctx.moveTo(hx-10,hy-28);
+  ctx.quadraticCurveTo(hx-22,hy-10,hx-20,hy+10);
+  ctx.quadraticCurveTo(hx-18,hy+30,hx-12,hy+38);
+  ctx.quadraticCurveTo(hx-4,hy+42,hx+2,hy+36);
+  ctx.quadraticCurveTo(hx+16,hy+20,hx+18,hy+4);
+  ctx.quadraticCurveTo(hx+20,hy-8,hx+10,hy-28);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
   // face
   spOval(hx,hy,18,21,'#f0c8a8');
-  // PURPLE HAIR - south park big poofy style, very distinctive
-  ctx.fillStyle='#7b1fa2'; ctx.strokeStyle='#000'; ctx.lineWidth=2.5;
-  // big top poof
-  ctx.beginPath(); ctx.ellipse(hx,hy-18,22,16,0,0,Math.PI); ctx.fill(); ctx.stroke();
-  // side volume
-  ctx.beginPath(); ctx.ellipse(hx-16,hy-4,8,16,-.3,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(hx+16,hy-4,8,14,.3,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  // pink highlights - her signature look
-  ctx.fillStyle='#e040fb'; ctx.strokeStyle='none';
-  ctx.beginPath(); ctx.ellipse(hx-5,hy-22,5,8,-.2,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(hx+8,hy-20,4,6,.2,0,Math.PI*2); ctx.fill();
+
+  // ── HAIR ON TOP / FRONT ─────────────────────────────────────
+  ctx.fillStyle=hairColor; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  // Top of head - natural volume with gentle wave
+  ctx.beginPath();
+  ctx.moveTo(hx-9,hy-9);
+  ctx.quadraticCurveTo(hx-14,hy-32,hx-4,hy-38);
+  ctx.quadraticCurveTo(hx+4,hy-42,hx+10,hy-36);
+  ctx.quadraticCurveTo(hx+16,hy-28,hx+9,hy-9);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Hair highlight / shine streak
+  ctx.strokeStyle=hairHi; ctx.lineWidth=2.5;
+  ctx.beginPath();
+  ctx.moveTo(hx-4,hy-38);
+  ctx.quadraticCurveTo(hx-8,hy-30,hx-10,hy-18);
+  ctx.stroke();
+
+  // Side hair strands framing face
+  ctx.fillStyle=hairColor; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(hx-9,hy-9);
+  ctx.quadraticCurveTo(hx-22,hy+2,hx-20,hy+14);
+  ctx.quadraticCurveTo(hx-18,hy+20,hx-14,hy+18);
+  ctx.quadraticCurveTo(hx-12,hy+10,hx-10,hy+2);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Small decorative hair clip
+  ctx.fillStyle='#ffd700'; ctx.strokeStyle='#aa8800'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.ellipse(hx+6,hy-30,4,2.5,0.4,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
   // ears
-  spOval(hx-19,hy,4,6,'#ddb898');
-  spOval(hx+19,hy,4,6,'#ddb898');
-  // BIG eyes with lashes (feminine SP style)
+  spOval(hx-9,hy,4,6,'#ddb898');
+  spOval(hx+9,hy,4,6,'#ddb898');
+  // small earring
+  ctx.fillStyle='#ffd700';
+  ctx.beginPath(); ctx.arc(hx+9,hy+5,2,0,Math.PI*2); ctx.fill();
+
+  // BIG eyes with lashes
   spOval(hx-7,hy-5,6,6,'#fff');
   spOval(hx+7,hy-5,6,6,'#fff');
   ctx.fillStyle='#3d1a5a'; ctx.beginPath(); ctx.arc(hx-6,hy-5,4,0,Math.PI*2); ctx.fill();
@@ -605,6 +643,7 @@ function drawMartela(x,y,facing=1,anim=0,captured=false){
   ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
   [-3,-1,1].forEach(ox=>{ ctx.beginPath(); ctx.moveTo(hx-6+ox,hy-9); ctx.lineTo(hx-6+ox-1,hy-12); ctx.stroke(); });
   [-3,-1,1].forEach(ox=>{ ctx.beginPath(); ctx.moveTo(hx+8+ox,hy-9); ctx.lineTo(hx+8+ox-1,hy-12); ctx.stroke(); });
+
   // smile + pink lips
   ctx.fillStyle='#e0748a'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.ellipse(hx,hy+10,8,5,0,0,Math.PI); ctx.fill(); ctx.stroke();
@@ -619,7 +658,7 @@ function drawMartela(x,y,facing=1,anim=0,captured=false){
     ctx.strokeRect(hx-22,hy-35,44,65);
     for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(hx-22+i*11,hy-35);ctx.lineTo(hx-22+i*11,hy+30);ctx.stroke();}
   }
-  spNameTag('MARTELA',hx,by-50,'#ff69b4');
+  spNameTag('MARTELA',hx,by-56,'#ff69b4');
   if(!captured) drawText('P2',bx-8,by+36,6,'#ff69b4');
 }
 
