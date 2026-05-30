@@ -416,17 +416,19 @@ document.addEventListener('keydown',e=>{
     const fullText = introLines[introIndex]?.text||'';
     const shown = Math.min(fullText.length, Math.floor(introTimer*2));
     const textDone = shown >= fullText.length;
-    if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='d'||e.key==='D'){
+    const introCool = introTimer > 60; // block input for first 1s of each slide
+    if(introCool&&(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='d'||e.key==='D')){
       if(!textDone){ introTimer=9999; }
       else advanceIntro();
     }
-    if((e.key==='ArrowLeft'||e.key==='Backspace'||e.key==='a'||e.key==='A') && introIndex>0){ introIndex--; introTimer=9999; }
+    if(introCool&&(e.key==='ArrowLeft'||e.key==='Backspace'||e.key==='a'||e.key==='A') && introIndex>0){ introIndex--; introTimer=9999; }
   }
   if(gameState==='cutscene'){
-    if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='d'||e.key==='D') advanceCutscene();
-    if((e.key==='ArrowLeft'||e.key==='Backspace'||e.key==='a'||e.key==='A') && cutsceneIndex>0) cutsceneIndex--;
+    const cutCool = (frameCount - cutsceneTimer) > 60; // block for 1s after each slide
+    if(cutCool&&(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='d'||e.key==='D')) advanceCutscene();
+    if(cutCool&&(e.key==='ArrowLeft'||e.key==='Backspace'||e.key==='a'||e.key==='A') && cutsceneIndex>0) cutsceneIndex--;
   }
-  if(gameState==='levelclear'&&(e.key==='Enter'||e.key===' ')) nextLevel();
+  if(gameState==='levelclear'&&(e.key==='Enter'||e.key===' ')&&levelClearTimer>90) nextLevel();
   if(gameState==='gameover'&&(e.key==='Enter'||e.key===' ')) retryLevel();
   if(gameState==='credits'&&(e.key==='Enter'||e.key===' ')) gameState='title';
   if(e.key.length===1){
@@ -679,7 +681,7 @@ function drawMartela(x,y,facing=1,anim=0,captured=false){
   if(captured){
     ctx.strokeStyle='#888'; ctx.lineWidth=2;
     ctx.strokeRect(hx-22,hy-35,44,65);
-    for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(hx-22+i*11,hy-35);ctx.lineTo(hx-22+i*11,hy+30);ctx.stroke();}
+    for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(hx-22+i*11,hy-35);ctx.lineTo(hx-22+i*11,hy+30);ctx.stroke();}
   }
   spNameTag('MARTELA',hx,by-56,'#ff69b4');
   if(!captured) drawText('P2',bx-8,by+36,6,'#ff69b4');
@@ -1625,11 +1627,11 @@ const INTROS = {
     {speaker:'JOANA',text:'I NEED TO MEET MY QUARTERLY QUOTAS. LOVE IS TEMPORARY. SALES TARGETS ARE FOREVER.',color:'#ff4444',drawFn:drawJoana},
   ],
   6:[
-    {speaker:'GORJAN',text:'Malina. The Windows 95 PC is completely broken. The boot screen just says PRANKMASTER HELLO.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'GORJAN',text:'Malina. The wedding website is down. 87 RSVPs. Gone. The boot screen just says PRANKMASTER HELLO.',color:'#00ff88',drawFn:drawGorjan},
     {speaker:'MALINA',text:'Yes. Very unfortunate. No idea what could cause that. On a Windows 95 machine specifically.',color:'#ff8888',drawFn:drawMalinaIT},
-    {speaker:'GORJAN',text:'This is the Prankmaster 3000. We wrote this together in 2008. You installed it on a 1997 PC.',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MALINA',text:'I just wanted to see if it was backwards compatible. It is. That is actually impressive.',color:'#ff8888',drawFn:drawMalinaIT},
-    {speaker:'GORJAN',text:'This PC survived 29 years. Our ENTIRE WEDDING is on it. And you gave it a virus from 2008.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'GORJAN',text:'This is the Prankmaster 3000. We wrote this in 2008. You installed a 2008 virus on a 1997 PC.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'MALINA',text:'I just wanted to see if it was backwards compatible. It is. That is genuinely impressive.',color:'#ff8888',drawFn:drawMalinaIT},
+    {speaker:'GORJAN',text:'I do not know who is coming. I do not know what they eat. The wedding is in FOUR DAYS.',color:'#00ff88',drawFn:drawGorjan},
     {speaker:'MALINA',text:'To be fair, the last 29 years were fine. I just wanted to test the final stretch.',color:'#ff8888',drawFn:drawMalinaIT},
   ],
   7:[
@@ -1843,11 +1845,11 @@ function nextLevel(){
       ['ALSO, SOMEONE NAMED EMIR','KEEPS ASKING ABOUT "THE PROPERTY SECTION."','NOBODY KNOWS WHAT THAT MEANS. YET.'],
     ],
     6:[
-      ['4 DAYS BEFORE 31 MAY 2026.','THE SLIDESHOW IS ALMOST READY.','GORJAN SAVED 3 YEARS OF PHOTOS.'],
-      ['THE SLIDESHOW RUNS ON A 1997 FAMILY PC.','IT HAS WINDOWS 95.','IT HAS WORKED FINE FOR 29 YEARS.'],
+      ['4 DAYS BEFORE 31 MAY 2026.','87 GUESTS CONFIRMED.','FOOD PREFERENCES COLLECTED.'],
+      ['THE WEDDING WEBSITE RUNS ON A 1997 FAMILY PC.','IT HAS WINDOWS 95.','IT HAS WORKED FINE FOR 29 YEARS.'],
       ['GORJAN CALLS MALINA.','THEY FIXED COMPUTERS TOGETHER IN HIGH SCHOOL.','MALINA IS SUSPICIOUSLY HELPFUL.'],
       ['THE VIRUS IS FROM 2008.','MALINA HAD IT ON A USB STICK.','HE JUST WANTED TO SEE IF IT WAS BACKWARDS COMPATIBLE.'],
-      ['IT IS.','ALSO THERE IS A FOLDER CALLED:','PROPERTY_FINAL_FINAL_EMIR_DO_NOT_OPEN'],
+      ['THE RSVPS ARE GONE.','THE FOOD PREFERENCES ARE GONE.','ALSO THERE IS A FOLDER: PROPERTY_FINAL_FINAL_EMIR_DO_NOT_OPEN'],
     ],
     7:[
       ['3 DAYS BEFORE 31 MAY 2026.','EVERYTHING IS READY.','OR SO THEY THINK.'],
@@ -2314,7 +2316,7 @@ function runLevel3(){
 
     if(p1Active()&&!d.dead1){
       const head1={x:((d.snake1[0].x+d.dir1.x)+COLS)%COLS,y:((d.snake1[0].y+d.dir1.y)+ROWS)%ROWS};
-      const hit1=d.snake1.some(s=>s.x===head1.x&&s.y===head1.y)||d.snake2.some(s=>s.x===head1.x&&s.y===head1.y);
+      const hit1=d.snake1.some(s=>s.x===head1.x&&s.y===head1.y)||(p2Active()&&!d.dead2&&d.snake2.some(s=>s.x===head1.x&&s.y===head1.y));
       if(hit1){d.dead1=true;lives=Math.max(0,lives-1);screenFlash=20;screenFlashColor='#ff0000';}
       else{
         d.snake1.unshift(head1);
@@ -2325,7 +2327,7 @@ function runLevel3(){
     }
     if(p2Active()&&!d.dead2){
       const head2={x:((d.snake2[0].x+d.dir2.x)+COLS)%COLS,y:((d.snake2[0].y+d.dir2.y)+ROWS)%ROWS};
-      const hit2=d.snake2.some(s=>s.x===head2.x&&s.y===head2.y)||d.snake1.some(s=>s.x===head2.x&&s.y===head2.y);
+      const hit2=d.snake2.some(s=>s.x===head2.x&&s.y===head2.y)||(p1Active()&&!d.dead1&&d.snake1.some(s=>s.x===head2.x&&s.y===head2.y));
       if(hit2){d.dead2=true;lives=Math.max(0,lives-1);screenFlash=20;screenFlashColor='#ff0000';}
       else{
         d.snake2.unshift(head2);
@@ -2389,7 +2391,7 @@ function runLevel3(){
   d.songNotes.forEach(n=>{n.y-=0.8;n.x+=n.vx;n.life-=0.005;ctx.globalAlpha=n.life*.7;ctx.fillStyle='#ffd700';ctx.font='13px serif';ctx.fillText(n.note,n.x,n.y);});
   ctx.globalAlpha=1;
   // Vlad & Dora — rival ramen eaters roaming the grid
-  const total=(p1Active()?d.eaten1:0)+(p2Active()?d.eaten2:0);
+  const total=d.eaten1+d.eaten2; // count all eaten regardless of solo/co-op
   if(!d.rivals&&total>=4){
     d.rivals=[
       {x:Math.floor(COLS*0.7),y:Math.floor(ROWS*0.3),timer:0,moveTimer:0,type:'vlad'},
@@ -2965,12 +2967,12 @@ function runLevel6(){
       spawnParticle(d.malina.x,d.malina.y,'#ff8888',10,5);
       screenFlash=8;screenFlashColor='#ff8888';
       Audio.sfx('enemyhit');
-      if(d.malina.hp===2) queueDialogue('MALINA','Okay. Windows 95 was not built for this kind of backwards compatibility.',150,'#ff8888');
+      if(d.malina.hp===2) queueDialogue('MALINA','Some of the RSVPs might still be recoverable. Probably. Statistically.',150,'#ff8888');
       if(d.malina.hp<=0){
         d.bossDefeated=true;
         spawnParticle(d.malina.x,d.malina.y,'#ffd700',20,8);score+=600;
-        queueDialogue('MALINA','Fine. I admit it. A 2008 program running on Windows 95 in 2026. You have to respect that.',210,'#ff8888');
-        startNewsTicker('PRANKMASTER 3000 DEFEATED. WINDOWS 95 PC RESTORED. MALINA APOLOGISED. SORT OF. WINDOWS 95 SURVIVES AGAIN.');
+        queueDialogue('MALINA','Fine. I will restore the RSVPs. I remember most of them. Roughly. Give or take ten people.',220,'#ff8888');
+        startNewsTicker('PRANKMASTER 3000 DEFEATED. RSVPS RESTORED. 87 GUESTS BACK ON THE LIST. DIETARY REQUIREMENTS: MOSTLY INTACT. MALINA: GROUNDED.');
       }
     }
     // Malina periodically drops a new virus brick
@@ -2994,7 +2996,7 @@ function runLevel6(){
 
   updateDialogue(); drawDialogue();
   if(frameCount%320===0&&!d.bossDefeated&&d.malina.hp>0){
-    const mq=['Windows 95 was not designed for this. Neither was 2008.','The backwards compatibility is genuinely impressive.','I kept the USB for sentimental reasons.','In 2008 this was very funny. Still a little funny.','This PC survived Y2K. I am sorry.'];
+    const mq=['The RSVPs are technically still in memory. Somewhere.','87 people do not know they are coming.','In 2008 this was very funny. Different context.','The dietary requirements are also gone. All 47 of them.','This PC survived Y2K. It did not survive me.'];
     queueDialogue('MALINA',mq[Math.floor(Math.random()*mq.length)],110,'#ff8888');
   }
   // Mid-level BSOD flash
@@ -3004,8 +3006,8 @@ function runLevel6(){
     ctx.fillStyle='#0000aa'; ctx.fillRect(0,0,W,H);
     drawTextC(':(', 120, 60,'#fff');
     drawTextC('YOUR PC RAN INTO A PROBLEM',180,8,'#fff');
-    drawTextC('PRANKMASTER3000.EXE EXCEPTION',200,6,'#fff');
-    drawTextC('STOP: 0xUSB2008 ON WINDOWS 95',220,6,'#fff');
+    drawTextC('PRANKMASTER3000.EXE — RSVP DATA CORRUPTED',200,6,'#fff');
+    drawTextC('STOP: 0xUSB2008 — DIETARY PREFS LOST',220,6,'#fff');
     drawTextC('RESTARTING IN '+(d.bsodTimer)+' FRAMES...',260,6,'#aaa');
     return;
   }
@@ -3028,7 +3030,7 @@ function runLevel6(){
     if((keys[' ']||keys['Enter'])){d.bsodActive=false;d.bsodShowing=false;d.ball.vx*=1.15;d.ball.vy*=1.15;}
     return;
   }
-  if(allBricks&&d.bossDefeated) triggerLevelClear('WINDOWS 95 RESTORED!\nPRANKMASTER DEFEATED!\nMALINA: GROUNDED.\nEMIR FOLDER: STILL SUSPICIOUS');
+  if(allBricks&&d.bossDefeated) triggerLevelClear('WINDOWS 95 RESTORED!\nRSVPS RECOVERED!\nMALINA: GROUNDED.\nEMIR FOLDER: STILL SUSPICIOUS');
   else if(allBricks) {queueDialogue('MALINA','...I can fix this. Probably.',120,'#ff8888');}
 }
 
@@ -3205,7 +3207,7 @@ function initLevel8(){
       {x:30,  y:220,w:120, h:14},    // upper left
       {x:490, y:220,w:120, h:14},    // upper right
     ],
-    emir:{x:480,y:200,vx:0,vy:0,grounded:false,hp:9,facing:-1,
+    emir:{x:480,y:200,vx:0,vy:0,grounded:false,hp:6,facing:-1,
           state:'patrol',stateTimer:0,shootTimer:0,dashCool:0,jumpCool:0,
           invincTimer:0,phaseTransTimer:0,lastPhase:1},
     bullets:[],rescued:false,victoryTimer:0,cageChat:false,
@@ -3290,17 +3292,17 @@ function runLevel8(){
 
     if(em.state==='patrol'){
       if(playerAbove&&em.grounded&&em.dashCool===0){
-        em.vx=dx>0?-5.5:5.5; em.state='dodge'; em.stateTimer=0;
+        em.vx=dx>0?-3.5:3.5; em.state='dodge'; em.stateTimer=0;
       } else {
         if(dist>180) em.vx+=(dx>0?.25:-.25);
         else if(dist<80&&phase>1) em.vx+=(dx>0?-.15:.15);
         else em.vx*=0.9;
-        const sRate=phase===1?90:phase===2?55:30;
+        const sRate=phase===1?130:phase===2?85:55;
         if(em.shootTimer>sRate&&dist<350){
           fireEmir(em,pl,phase,d); em.shootTimer=0;
           if(phase===3){em.state='burst';em.stateTimer=0;}
         }
-        if(em.grounded&&em.jumpCool===0&&Math.random()<.008){
+        if(em.grounded&&em.jumpCool===0&&Math.random()<.004){
           em.vy=-(10+phase*.8);em.grounded=false;em.jumpCool=90;
         }
       }
@@ -3314,12 +3316,12 @@ function runLevel8(){
       em.vx=dx>0?7:-7;
       if(em.stateTimer>20){em.state='patrol';em.stateTimer=0;}
     }
-    if(phase>=2&&em.grounded&&em.dashCool===0&&Math.random()<.004){
+    if(phase>=3&&em.grounded&&em.dashCool===0&&Math.random()<.003){
       em.state='dash';em.stateTimer=0;em.dashCool=120;
     }
 
     // Physics
-    em.vx=Math.max(-7,Math.min(7,em.vx)); em.vx*=.84;
+    em.vx=Math.max(-5,Math.min(5,em.vx)); em.vx*=.82;
     em.vy+=.5; em.x+=em.vx; em.y+=em.vy;
     em.x=Math.max(10,Math.min(W-10,em.x));
     em.facing=em.vx<-.1?-1:em.vx>.1?1:em.facing;
@@ -3496,7 +3498,7 @@ function initBonusLevel(){
       {x:60,y:240,w:90,h:14},
       {x:490,y:240,w:90,h:14},
     ],
-    mihaela:{x:380,y:310,vx:0,vy:0,grounded:false,hp:5,facing:-1,
+    mihaela:{x:380,y:310,vx:0,vy:0,grounded:false,hp:4,facing:-1,
              state:'patrol',stateTimer:0,shootTimer:0,phase:1,
              invincTimer:0},
     notes:[],
@@ -3636,9 +3638,9 @@ function runBonusLevel(){
     }
 
     // Phase-based movement
-    if(phase===1){mh.vx+=(dx>0?.12:-.12);mh.vx*=.88;}
+    if(phase===1){mh.vx+=(dx>0?.08:-.08);mh.vx*=.86;}
     else if(phase===2){
-      mh.vx+=(dx>0?.2:-.2);mh.vx*=.85;
+      mh.vx+=(dx>0?.13:-.13);mh.vx*=.84;
       if(mh.grounded&&Math.random()<.005){mh.vy=-(10+phase*.8);mh.grounded=false;}
     } else {
       // Phase 3: stay back, play power ballad
@@ -3647,7 +3649,7 @@ function runBonusLevel(){
     }
 
     // Fire notes
-    const rates=[0,120,80,50];
+    const rates=[0,160,110,75];
     if(mh.shootTimer>rates[phase]){
       mh.shootTimer=0;
       fireNotes(mh,pl,phase,d);
@@ -3766,16 +3768,16 @@ function fireNotes(mh,pl,phase,d){
     for(let i=0;i<2;i++){
       const spread=(i-0.5)*0.5;
       d.notes.push({x:mh.x,y:mh.y-10,
-        vx:dx/dist*2.8+spread, vy:dy/dist*2+(i===0?-1.5:-0.5),
+        vx:dx/dist*2.0+spread, vy:dy/dist*1.5+(i===0?-1.2:-0.4),
         alive:true,deflected:false,
         type:noteTypes[i%2],color:colors[i%colors.length]});
     }
   } else if(phase===2){
-    // 4-note chord burst
-    for(let i=0;i<4;i++){
+    // 3-note chord burst
+    for(let i=0;i<3;i++){
       const spread=(i-1.5)*0.6;
       d.notes.push({x:mh.x,y:mh.y-10,
-        vx:dx/dist*3.5+spread, vy:dy/dist*2.5+(i%2===0?-2:-0.8),
+        vx:dx/dist*2.5+spread, vy:dy/dist*1.8+(i%2===0?-1.5:-0.6),
         alive:true,deflected:false,
         type:noteTypes[i%2],color:colors[i%colors.length]});
     }
@@ -3785,17 +3787,15 @@ function fireNotes(mh,pl,phase,d){
     for(let i=0;i<5;i++){
       const side=i%2===0?1:-1;
       d.notes.push({x:mh.x+(side*i*12),y:mh.y-10,
-        vx:dx/dist*4.5+(i-2)*0.4, vy:dy/dist*3+wavePhase*1.5-2,
+        vx:dx/dist*3.0+(i-1)*0.4, vy:dy/dist*2+wavePhase*1.0-1.5,
         alive:true,deflected:false,
         type:i%2===0?'quarter':'eighth',color:colors[i%colors.length]});
     }
-    // Extra notes from screen edges in phase 3
-    if(frameCount%60===0){
-      for(let j=0;j<2;j++){
-        d.notes.push({x:j===0?-10:W+10,y:pl.y-20+Math.random()*80,
-          vx:j===0?4:-4, vy:-1+Math.random()*2,
-          alive:true,deflected:false,type:'eighth',color:'#ff88cc'});
-      }
+    // Edge notes: only every 90 frames in phase 3 (much less frequent)
+    if(frameCount%90===0){
+      d.notes.push({x:Math.random()>0.5?-10:W+10,y:pl.y+Math.random()*60,
+        vx:Math.random()>0.5?3:-3, vy:-0.5,
+        alive:true,deflected:false,type:'eighth',color:'#ff88cc'});
     }
   }
   screenFlash=3;screenFlashColor='#ff69b4';
@@ -3806,7 +3806,7 @@ function fireNotes(mh,pl,phase,d){
 function fireSpreadsheet(mh,pl,phase,d){
   const dx=pl.x-mh.x,dy=pl.y-mh.y;
   const dist=Math.sqrt(dx*dx+dy*dy)||1;
-  const spd=phase===1?3.2:phase===2?4.2:5;
+  const spd=phase===1?2.2:phase===2?3.0:3.8;
   const count=phase===3?3:phase===2?2:1;
   for(let i=0;i<count;i++){
     const spread=(i-(count-1)/2)*0.4;
@@ -4080,7 +4080,8 @@ function drawLevelClear(){
   drawTextC('+'+score+' PTS', scoreY, 9, '#00ff88');
 
   const promptY = scoreY + 30;
-  if(Math.floor(levelClearTimer/30)%2===0) drawTextC('PRESS ENTER TO CONTINUE', promptY, 6, '#888');
+  if(levelClearTimer>90&&Math.floor(levelClearTimer/30)%2===0) drawTextC('PRESS ENTER TO CONTINUE', promptY, 6, '#888');
+  else if(levelClearTimer<=90) drawTextC('...', promptY, 6, '#444');
 }
 
 // == GAME OVER ====================================================
