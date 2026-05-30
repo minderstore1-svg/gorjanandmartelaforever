@@ -2858,7 +2858,7 @@ function runLevel5(){
 function initLevel6(){
   Audio.playLevelTheme(6);
     levelData={
-    ball:{x:W/2,y:H/2,vx:3,vy:-3.5,r:8},
+    ball:{x:W/2,y:H/2,vx:4,vy:-4.5,r:8},
     malina:{x:200,y:180,vx:-1.5,vy:0.9,hp:4,dropTimer:0},
     pad1:{x:80,w:90,y:H-50},
     pad2:{x:480,w:90,y:H-50},
@@ -2923,7 +2923,7 @@ function runLevel6(){
   // fell off bottom
   if(ball.y>H){
     lives=Math.max(0,lives-1);screenFlash=20;screenFlashColor='#0000ff';
-    ball.x=W/2;ball.y=H/2;ball.vx=3*(Math.random()>.5?1:-1);ball.vy=-3.5;
+    ball.x=W/2;ball.y=H/2;ball.vx=4*(Math.random()>.5?1:-1);ball.vy=-4.5;
     if(lives<=0)gameState='gameover';
   }
   // pad bounce
