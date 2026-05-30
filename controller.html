@@ -472,9 +472,24 @@ function attachControls(){
   document.querySelectorAll('.action-btn').forEach(btn=>{
     const key = btn.getAttribute(player==='p1'?'data-key-p1':'data-key-p2');
     if(!key) return;
-    btn.addEventListener('touchstart', e=>{ e.preventDefault(); if(!heldKeys.has(key)){ heldKeys.add(key); sendKey(true,key); btn.classList.add('pressed'); vibrate(25); checkKonami('action'); } },{passive:false});
-    btn.addEventListener('touchend',   e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
-    btn.addEventListener('touchcancel',e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
+    let longPressTimer = null;
+    btn.addEventListener('touchstart', e=>{
+      e.preventDefault();
+      // Always call checkKonami regardless of heldKeys (fixes stuck-key issue)
+      checkKonami('action');
+      // Long press 3s → god mode
+      longPressTimer = setTimeout(()=>{
+        if(sock && sock.readyState===1) sock.send('GODMODE');
+        document.body.style.background='#ffd700';
+        setTimeout(()=>{ document.body.style.background=''; },500);
+        vibrate([80,40,80,40,200]);
+      }, 3000);
+      if(!heldKeys.has(key)){
+        heldKeys.add(key); sendKey(true,key); btn.classList.add('pressed'); vibrate(25);
+      }
+    },{passive:false});
+    btn.addEventListener('touchend',   e=>{ e.preventDefault(); clearTimeout(longPressTimer); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
+    btn.addEventListener('touchcancel',e=>{ e.preventDefault(); clearTimeout(longPressTimer); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
   });
 
 }
