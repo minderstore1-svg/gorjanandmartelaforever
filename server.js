@@ -94,11 +94,11 @@ const server=http.createServer((req,res)=>{
       'coupe.mp3':               'The Grand Affair - Coupe.mp3',
       '8bit-dungeon.mp3':        'Kevin MacLeod - 8bit Dungeon Level.mp3',
       'underclocked.mp3':        'Eric Skiff - Underclocked (underunderclocked mix).mp3',
-      '8bit-love.mp3':           'HeatleyBros_-_HeatleyBros_I_-_06_8_Bit_Love.mp3',
-      '8bit-space-groove.mp3':   'HeatleyBros_-_HeatleyBros_I_-_08_8_Bit_Space_Groove.mp3',
-      'fun-puzzle-quest.mp3':    'HeatleyBros_-_HeatleyBros_I_-_05_Fun_Puzzle_Quest.mp3',
-      'back-to-business.mp3':    'HeatleyBros_-_HeatleyBros_I_-_07_Back_To_Business.mp3',
-      'dreams-of-childhood.mp3': 'HeatleyBros_-_HeatleyBros_I_-_10_Dreams_Of_Childhood.mp3',
+      '8bit-love.mp3':           'HeatleyBros - HeatleyBros I - 06 8 Bit Love.mp3',
+      '8bit-space-groove.mp3':   'HeatleyBros - HeatleyBros I - 08 8 Bit Space Groove.mp3',
+      'fun-puzzle-quest.mp3':    'HeatleyBros - HeatleyBros I - 05 Fun Puzzle Quest.mp3',
+      'back-to-business.mp3':    'HeatleyBros - HeatleyBros I - 07 Back To Business.mp3',
+      'dreams-of-childhood.mp3': 'HeatleyBros - HeatleyBros I - 10 Dreams Of Childhood.mp3',
     };
     const clean = path.basename(url);
     const actual = nameMap[clean];
