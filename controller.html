@@ -142,15 +142,17 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
 /* ── UTILITY PANEL — hidden by default, available when needed ── */
 #util-toggle{
   position:fixed;
-  top:max(6px, var(--sat));
-  right:max(10px, env(safe-area-inset-right,0px));
-  z-index:130;
-  width:54px;
-  height:30px;
-  border-radius:8px;
-  border:1.5px solid rgba(255,255,255,0.22);
-  background:rgba(0,0,0,0.35);
-  color:#aaa;
+  top:calc(50px + var(--sat));
+  right:max(12px, env(safe-area-inset-right,0px));
+  z-index:9999;
+  min-width:86px;
+  height:38px;
+  padding:0 10px;
+  border-radius:10px;
+  border:2px solid rgba(255,215,0,0.9);
+  background:rgba(0,0,0,0.82);
+  color:#ffd700;
+  box-shadow:0 0 14px rgba(255,215,0,0.35);
   font-family:inherit;
   font-size:7px;
   display:none;
@@ -158,16 +160,16 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
   justify-content:center;
   touch-action:none;
 }
-#util-toggle.visible{display:flex;}
-#util-toggle.pressed{background:rgba(255,255,255,0.18);color:#fff;}
+#util-toggle.visible{display:flex !important;}
+#util-toggle.pressed{background:rgba(255,215,0,0.24);color:#fff;}
 #util-col{
   display:none;
   position:fixed;
-  top:calc(44px + var(--sat));
-  right:max(8px, env(safe-area-inset-right,0px));
+  top:calc(92px + var(--sat));
+  right:max(10px, env(safe-area-inset-right,0px));
   bottom:max(8px, var(--sab));
-  z-index:120;
-  width:78px;
+  z-index:9998;
+  width:96px;
   flex-direction:column;
   align-items:stretch;
   justify-content:center;
@@ -270,7 +272,7 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
   </div>
 
   <!-- Utility toggle and hidden utility buttons -->
-  <button id="util-toggle" aria-label="Show utility buttons">MENU</button>
+  <button id="util-toggle" class="visible" aria-label="Show utility buttons">OPTIONS</button>
   <div id="util-col">
     <button class="util-btn esc-btn"  id="btn-esc">⏸ ESC</button>
     <button class="util-btn"          id="btn-prev">◄ PREV</button>
@@ -400,7 +402,7 @@ function showController(){
   document.getElementById('status-name').textContent=player==='p1'?'P1 — GORJAN':'P2 — MARTELA';
   document.getElementById('status-dot').classList.add('on');
   const utilToggle = document.getElementById('util-toggle');
-  if(utilToggle) utilToggle.classList.add('visible');
+  if(utilToggle){ utilToggle.classList.add('visible'); utilToggle.textContent='OPTIONS'; }
   // Style action button
   const ab = document.getElementById('btn-action');
   ab.classList.add(player==='p1'?'p1-style':'p2-style');
@@ -532,7 +534,7 @@ function attachUtilButtons(){
       e.preventDefault();
       utilToggle.classList.add('pressed');
       utilPanel.classList.toggle('visible');
-      utilToggle.textContent = utilPanel.classList.contains('visible') ? '×' : 'MENU';
+      utilToggle.textContent = utilPanel.classList.contains('visible') ? '× CLOSE' : 'OPTIONS';
       vibrate(12);
       setTimeout(()=>utilToggle.classList.remove('pressed'),100);
     };

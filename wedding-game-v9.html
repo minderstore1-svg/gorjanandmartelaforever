@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gorjan & Martela Forever</title>
+<!-- v26: dialogue cleanup fix, built from v24 stable base with credits order preserved -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 @font-face {
@@ -1661,6 +1662,8 @@ const INTROS = {
 };
 
 function launchLevel(num) {
+  // Defensive cleanup: no dialogue from a previous level should appear in the new level intro/gameplay.
+  dialogueQueue=[]; currentDialogue=null; narratorText=''; setNarrator('');
   initCurrentLevel();
   // Level 2: skip intro after first time (retry shouldn't replay dialogue)
   const skipIntro = (num === 2 && level2IntroShown);
@@ -1813,6 +1816,8 @@ function startGame(){
   requestGameFullscreen();
   window.__goSfx=false;
   currentLevel=1; score=0; particles=[];
+  // Clear any queued/active level dialogue so Level 9 lines cannot carry into a new Level 1 run.
+  dialogueQueue=[]; currentDialogue=null; narratorText=''; setNarrator('');
   lives = playerMode==='multi' ? 6 : 3;
   level2BridgeReached=false; level2IntroShown=false; // reset on full new game
   gameState='cutscene';
