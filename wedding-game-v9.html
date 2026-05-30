@@ -1647,12 +1647,12 @@ const INTROS = {
     {speaker:'MARTELA',text:'Good. Also, if this delays hair and makeup, Emir is finished.',color:'#ff69b4',drawFn:drawMartela},
   ],
   9:[
-    {speaker:'MIHAELA',text:'We secured the groom. The wedding is under control. Everything is going according to plan.',color:'#ff4444',drawFn:drawMihaela},
-    {speaker:'MARTELA',text:'...You got Gorjan.',color:'#ff1493',drawFn:drawMartela},
-    {speaker:'MIHAELA',text:'Oh no. She is doing the calm voice.',color:'#ff4444',drawFn:drawMihaela},
-    {speaker:'MARTELA',text:'I coordinated nothing. I just showed up and people loved me. That must be infuriating.',color:'#ff1493',drawFn:drawMartela},
-    {speaker:'MIHAELA',text:'I also learned guitar. FOR THIS EXACT MOMENT.',color:'#ff4444',drawFn:drawMihaela},
-    {speaker:'MARTELA',text:'I did not eat all that ramen in Tokyo to be stopped by a maid of honour with a guitar.',color:'#ff1493',drawFn:drawMartela},
+    {speaker:'MIHAELA',text:'The Ringtones? You hired The Ringtones?',color:'#ff4444',drawFn:drawMihaela},
+    {speaker:'MARTELA',text:'They were available. They are very good.',color:'#ff1493',drawFn:drawMartela},
+    {speaker:'MIHAELA',text:'I play guitar. I wanted to perform at this wedding. And you hired The Ringtones.',color:'#ff4444',drawFn:drawMihaela},
+    {speaker:'MARTELA',text:'...You wanted to perform at our wedding.',color:'#ff1493',drawFn:drawMartela},
+    {speaker:'MIHAELA',text:'I have been playing guitar for years. THIS was supposed to be my moment.',color:'#ff4444',drawFn:drawMihaela},
+    {speaker:'MARTELA',text:'The Ringtones have a sound system. You have a grudge. This is not the same.',color:'#ff1493',drawFn:drawMartela},
   ],
 };
 
@@ -1868,9 +1868,9 @@ function nextLevel(){
       ['GORJAN MOVES.','GO GET HER.',''],
     ],
     9:[
-      ['GORJAN SAVED MARTELA. THEN THE MAID OF HONOUR SNATCHED HIM BACK.','BECAUSE APPARENTLY,','THE GROOM DELIVERY PROCESS WAS NOT UNDER CONTROL.'],
-      ['MIHAELA JANEVSKA. MAID OF HONOUR. VILLAIN.','SHE HAD ONE JOB: MAKE SURE THE WEDDING HAPPENS.','UNFORTUNATELY, SHE CHOSE VIOLENCE.'],
-      ['"SHE IS DOING THE CALM VOICE."','— MIHAELA, TOO LATE','MARTELA\'S TURN NOW.'],
+      ['THE WEDDING HAS A BAND.','THE RINGTONES.','VERY POPULAR. VERY BOOKED.'],
+      ['MIHAELA ALSO PLAYS GUITAR.','MIHAELA WANTED TO PERFORM.','NOBODY ASKED MIHAELA.'],
+      ['THE RINGTONES ARE ALREADY AT THE VENUE.','MIHAELA DOES NOT ACCEPT THIS.','MIHAELA HAS NEVER ACCEPTED THINGS.'],
     ],
   };
   if(intros[currentLevel]){ gameState='cutscene'; cutsceneText=intros[currentLevel]; cutsceneIndex=0; }
@@ -3560,9 +3560,9 @@ function runBonusLevel(){
     drawGorjan(d.gorjanCapturedX,d.gorjanCapturedY,1,frameCount%40<20?frameCount:0);
     d.cheerTimer++;
     const cheerLines=[
-      {s:'GORJAN',t:'She is actually pretty good. I mean — she is evil. But technically good.',c:'#00ff88'},
-      {s:'GORJAN',t:'You got this! Also her chord transition was slightly off!',c:'#00ff88'},
-      {s:'GORJAN',t:'MARTELA!! HAIR FLIP! NOW!',c:'#ffd700'},
+      {s:'GORJAN',t:'She is actually really good. I am still Team Ringtones.',c:'#00ff88'},
+      {s:'GORJAN',t:'MARTELA! HAIR FLIP! The Ringtones need you!',c:'#ffd700'},
+      {s:'GORJAN',t:'We paid a deposit. The Ringtones are playing.',c:'#00ff88'},
     ];
     if(d.cheerTimer%480===0&&d.cheerIdx<cheerLines.length){
       const cl=cheerLines[d.cheerIdx++];
@@ -3671,7 +3671,7 @@ function runBonusLevel(){
       mh.shootTimer=0;
       fireNotes(mh,pl,phase,d);
       // Phase 3 dialog
-      if(phase===3&&Math.random()<.3) queueDialogue('MIHAELA',['YOU CANNOT DODGE THE MUSIC!!','FEEL THE POWER BALLAD!','THE SPREADSHEET HAS A PLAYLIST!'][Math.floor(Math.random()*3)],100,'#ff4444');
+      if(phase===3&&Math.random()<.3) queueDialogue('MIHAELA',['THE RINGTONES CANNOT DO THIS!!','I AM LITERALLY THE BETTER CHOICE!!','DO YOU HEAR THAT CHORD PROGRESSION?!'][Math.floor(Math.random()*3)],100,'#ff4444');
     }
 
     mh.vx=Math.max(-6,Math.min(6,mh.vx));
@@ -3723,9 +3723,9 @@ function runBonusLevel(){
   // ── ATTITUDE LINES ────────────────────────────────────────────
   d.attTimer++;
   const attLines=[
-    {s:'MARTELA',t:'Purple hair. Bad attitude. Your problem now.',c:'#ff1493'},
-    {s:'MARTELA',t:'I survived Tokyo ramen queues. You are nothing.',c:'#ff1493'},
-    {s:'MARTELA',t:'You kidnapped my groom. Bad decision.',c:'#ff1493'},
+    {s:'MARTELA',t:'The Ringtones are professionals. You are the maid of honour.',c:'#ff1493'},
+    {s:'MARTELA',t:'You cannot fire the band by fighting me.',c:'#ff1493'},
+    {s:'MARTELA',t:'This is not in the maid of honour handbook.',c:'#ff1493'},
   ];
   if(d.attTimer%380===0&&d.attIdx<attLines.length){const al=attLines[d.attIdx++];queueDialogue(al.s,al.t,160,al.c);}
 
@@ -3739,11 +3739,11 @@ function runBonusLevel(){
     drawGorjan(W/2+30,H-100,-1,frameCount);
     ctx.fillStyle='rgba(0,0,0,0.9)';ctx.fillRect(40,70,W-80,100);
     ctx.strokeStyle='#ff1493';ctx.lineWidth=2;ctx.strokeRect(40,70,W-80,100);
-    if(d.victoryTimer===1) queueDialogue('GORJAN','You came for me!',130,'#00ff88');
-    if(d.victoryTimer===55) queueDialogue('MARTELA','Obviously. Now let us go get married.',150,'#ff1493');
+    if(d.victoryTimer===1) queueDialogue('GORJAN','You came for me! Also The Ringtones say thank you.',140,'#00ff88');
+    if(d.victoryTimer===55) queueDialogue('MARTELA','Obviously. The Ringtones are setting up. Let us go.',155,'#ff1493');
     if(d.victoryTimer===115) queueDialogue('GORJAN','31 May 2026. No more side quests.',180,'#ffd700');
-    drawTextC('MARTELA SAVES GORJAN!',110,10,'#ff1493');
-    drawTextC('FASTER. STRONGER. SASSIER.',132,6,'#ffd700');
+    drawTextC('THE RINGTONES ARE SAFE!',110,10,'#ff1493');
+    drawTextC('MARTELA SAVES THE WEDDING BAND.',132,6,'#ffd700');
     drawTextC('TRUE PARTNERSHIP ♥',152,6,'#fff');
     if(d.victoryTimer>180&&!d.endingStarted){d.endingStarted=true;setTimeout(startEnding,600);}
   }
@@ -3763,14 +3763,14 @@ function hitMihaela(mh,d,phase){
   mh.hp--;mh.invincTimer=80;
   spawnParticle(mh.x,mh.y,'#ff1493',14,7);screenFlash=12;screenFlashColor='#fff';
   if(mh.hp===3){
-    queueDialogue('MIHAELA','The spreadsheet did NOT predict this.',140,'#ff69b4');
+    queueDialogue('MIHAELA','The Ringtones cannot even do this. I am literally better.',150,'#ff69b4');
     Audio.sfx('damage');
   }
-  if(mh.hp===1) queueDialogue('MIHAELA','Column H was supposed to prevent this!!',140,'#ff1493');
+  if(mh.hp===1) queueDialogue('MIHAELA','The Ringtones do not even have a guitarist this good!!',140,'#ff1493');
   if(mh.hp<=0){
     Audio.sfx('enemydie');
     spawnParticle(mh.x,mh.y,'#ffd700',30,10);
-    queueDialogue('MIHAELA','Fine. The spreadsheet allowed for this outcome.',240,'#ff4444');
+    queueDialogue('MIHAELA','Fine. But for the record — I sound better than The Ringtones.',230,'#ff4444');
   }
 }
 
