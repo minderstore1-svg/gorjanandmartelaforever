@@ -86,14 +86,19 @@ const server=http.createServer((req,res)=>{
   } else if(url.startsWith('/music/') && url.endsWith('.mp3')){
     // Map clean names → actual filenames in repo root
     const nameMap = {
-      'floating-also.mp3':  'William Rosati - Floating Also.mp3',
-      'powerup.mp3':        'Jeremy Blake - Powerup!.mp3',
-      'maze.mp3':           'Density & Time - MAZE.mp3',
-      'night-shade.mp3':    'AdhesiveWombat - Night Shade.mp3',
-      'sour-rock.mp3':      'Jeremy Korpas - Sour Rock.mp3',
-      'coupe.mp3':          'The Grand Affair - Coupe.mp3',
-      '8bit-dungeon.mp3':   'Kevin MacLeod - 8bit Dungeon Level.mp3',
-      'underclocked.mp3':   'Eric Skiff - Underclocked (underunderclocked mix).mp3',
+      'floating-also.mp3':       'William Rosati - Floating Also.mp3',
+      'powerup.mp3':             'Jeremy Blake - Powerup!.mp3',
+      'maze.mp3':                'Density & Time - MAZE.mp3',
+      'night-shade.mp3':         'AdhesiveWombat - Night Shade.mp3',
+      'sour-rock.mp3':           'Jeremy Korpas - Sour Rock.mp3',
+      'coupe.mp3':               'The Grand Affair - Coupe.mp3',
+      '8bit-dungeon.mp3':        'Kevin MacLeod - 8bit Dungeon Level.mp3',
+      'underclocked.mp3':        'Eric Skiff - Underclocked (underunderclocked mix).mp3',
+      '8bit-love.mp3':           'HeatleyBros_-_HeatleyBros_I_-_06_8_Bit_Love.mp3',
+      '8bit-space-groove.mp3':   'HeatleyBros_-_HeatleyBros_I_-_08_8_Bit_Space_Groove.mp3',
+      'fun-puzzle-quest.mp3':    'HeatleyBros_-_HeatleyBros_I_-_05_Fun_Puzzle_Quest.mp3',
+      'back-to-business.mp3':    'HeatleyBros_-_HeatleyBros_I_-_07_Back_To_Business.mp3',
+      'dreams-of-childhood.mp3': 'HeatleyBros_-_HeatleyBros_I_-_10_Dreams_Of_Childhood.mp3',
     };
     const clean = path.basename(url);
     const actual = nameMap[clean];

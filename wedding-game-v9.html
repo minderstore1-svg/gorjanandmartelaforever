@@ -120,16 +120,16 @@ const Audio = (function(){
   // ── HTML5 Audio music system ───────────────────────────────────
   // Track assignment per level (level 7 = null = no music)
   const MUSIC_TRACKS = {
-    0: 'floating-also.mp3',   // Title / select screen
-    1: 'powerup.mp3',         // Level 1 — Clean Air
-    2: 'maze.mp3',             // Level 2 — Squid Games
-    3: 'night-shade.mp3',     // Level 3 — Tokyo / Ramen
-    4: 'sour-rock.mp3',       // Level 4 — Bubble Trouble
-    5: 'coupe.mp3',            // Level 5 — Wedding Planning
-    6: '8bit-dungeon.mp3',    // Level 6 — Windows 95
-    7: null,                   // Level 7 — The Kidnapping (silence)
-    8: 'underclocked.mp3',    // Level 8 — Gorjan Saves Her
-    9: 'floating-also.mp3',   // Level 9 — Martela's Revenge (bookend)
+    0: '8bit-love.mp3',           // Title / select — 8 Bit Love (user specified)
+    1: '8bit-space-groove.mp3',   // Level 1 — Clean Air (space shooter fits perfectly)
+    2: 'maze.mp3',                 // Level 2 — Squid Games (tense)
+    3: 'night-shade.mp3',         // Level 3 — Tokyo / Ramen (cool, flowing)
+    4: 'fun-puzzle-quest.mp3',    // Level 4 — Bubble Trouble (puzzle/quest energy)
+    5: 'back-to-business.mp3',    // Level 5 — Wedding Planning (Joana's quota energy)
+    6: '8bit-dungeon.mp3',        // Level 6 — Windows 95 (retro 8-bit)
+    7: null,                       // Level 7 — The Kidnapping (silence)
+    8: 'underclocked.mp3',        // Level 8 — Boss fight (intense chiptune)
+    9: 'dreams-of-childhood.mp3', // Level 9 — Martela's Revenge (emotional closer)
   };
 
   let currentAudio = null;
@@ -998,14 +998,47 @@ function drawJoana(x,y,anim){
 // == MIHAELA: dark shoulder-length hair, subtle features, knowing smirk ==
 function drawMihaela(x,y,anim=0){
   const bx=Math.round(x), by=Math.round(y);
+  const strum=Math.sin(anim*.18)*3; // strumming arm bob
+
+  // ── GUITAR (drawn behind body) ────────────────────────────────
+  const gx=bx+18, gy=by+8;
+  // body — warm wood colour, figure-8 shape
+  ctx.fillStyle='#8b4513'; ctx.strokeStyle='#4a2000'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(gx+4,gy+2,8,10,0.3,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(gx-2,gy+14,7,9,0.1,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // sound hole
+  ctx.fillStyle='#2a0e00'; ctx.beginPath(); ctx.arc(gx+2,gy+6,3.5,0,Math.PI*2); ctx.fill();
+  // binding stripe
+  ctx.strokeStyle='#ffd070'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.ellipse(gx+4,gy+2,8,10,0.3,0,Math.PI*2); ctx.stroke();
+  // neck
+  ctx.fillStyle='#6b3a1a'; ctx.strokeStyle='#4a2000'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(gx-4,gy-6); ctx.lineTo(gx+4,gy-6);
+  ctx.lineTo(gx+4,gy-28); ctx.lineTo(gx-4,gy-28); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  // frets
+  ctx.strokeStyle='#ffd070'; ctx.lineWidth=1;
+  for(let fi=0;fi<4;fi++){ctx.beginPath();ctx.moveTo(gx-3,gy-10-fi*5);ctx.lineTo(gx+3,gy-10-fi*5);ctx.stroke();}
+  // headstock
+  ctx.fillStyle='#8b4513'; ctx.strokeStyle='#4a2000'; ctx.lineWidth=1.5;
+  ctx.fillRect(gx-5,gy-34,10,8); ctx.strokeRect(gx-5,gy-34,10,8);
+  // strings
+  ctx.strokeStyle='rgba(200,200,200,0.7)'; ctx.lineWidth=1;
+  for(let si=0;si<3;si++){ctx.beginPath();ctx.moveTo(gx-2+si*2,gy-28);ctx.lineTo(gx-2+si*2,gy+20);ctx.stroke();}
+  // strumming hand position (animated)
+  ctx.fillStyle='#d4a574'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.ellipse(gx,gy+8+strum,5,4,0.2,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+  // ── BODY ─────────────────────────────────────────────────────
   spRect(bx-8,by+4,16,18,'#4a2060');
   spRect(bx-4,by+6,8,10,'#8b4a8b');
   spRect(bx-5,by+22,4,8,'#2a1040'); spRect(bx+1,by+22,4,8,'#2a1040');
-  spRect(bx+8,by+6,4,12,'#4a2060'); spRect(bx-12,by+8,4,10,'#4a2060');
+  spRect(bx-12,by+8,4,10,'#4a2060'); // left arm only (right holds guitar)
 
   const hx=bx, hy=by-20;
   spOval(hx,hy,16,20,'#d4a574');
-  // DARK SHOULDER-LENGTH HAIR with slight wave
+  // dark hair
   ctx.fillStyle='#1a1020'; ctx.strokeStyle='#000'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.ellipse(hx,hy-14,17,10,0,Math.PI,0); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(hx-17,hy-14); ctx.quadraticCurveTo(hx-20,hy+5,hx-16,by+8); ctx.lineTo(hx-8,by+8); ctx.quadraticCurveTo(hx-14,hy+4,hx-13,hy-10); ctx.closePath(); ctx.fill(); ctx.stroke();
@@ -1016,11 +1049,11 @@ function drawMihaela(x,y,anim=0){
   ctx.fillStyle='#2d1a2a'; ctx.beginPath(); ctx.arc(hx-6,hy-5,3,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#2d1a2a'; ctx.beginPath(); ctx.arc(hx+8,hy-5,3,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#fff'; ctx.fillRect(hx-8,hy-7,2,2); ctx.fillRect(hx+7,hy-7,2,2);
-  // slight smirk - knowing expression
+  // smirk
   ctx.strokeStyle='#000'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(hx-4,hy+8); ctx.quadraticCurveTo(hx+3,hy+12,hx+8,hy+8); ctx.stroke();
   ctx.fillStyle='#c0607a'; ctx.fillRect(hx-4,hy+8,12,3);
-  // villain gold star
+  // villain star
   ctx.fillStyle='#ffd700'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.arc(hx+12,hy-18,5,0,Math.PI*2); ctx.fill(); ctx.stroke();
   drawText('★',hx+8,hy-14,7,'#ffd700',false);
@@ -1590,12 +1623,12 @@ const INTROS = {
     {speaker:'JOANA',text:'I NEED TO MEET MY QUARTERLY QUOTAS. LOVE IS TEMPORARY. SALES TARGETS ARE FOREVER.',color:'#ff4444',drawFn:drawJoana},
   ],
   6:[
-    {speaker:'GORJAN',text:'Malina. Thank you for coming. The slideshow PC is completely broken.',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MALINA',text:'Yes. I see that. Very unfortunate. No idea what happened.',color:'#ff8888',drawFn:drawMalinaIT},
-    {speaker:'GORJAN',text:'Wait. That error code. This is the Prankmaster 3000. We wrote that in 2008.',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MALINA',text:'I can explain. I had a USB stick. I just wanted to see if it still worked. It does.',color:'#ff8888',drawFn:drawMalinaIT},
-    {speaker:'GORJAN',text:'You broke our WEDDING SLIDESHOW with a SEVENTEEN YEAR OLD PRANK PROGRAM.',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MALINA',text:'On the bright side... it still works. That is impressive. Architecturally speaking.',color:'#ff8888',drawFn:drawMalinaIT},
+    {speaker:'GORJAN',text:'Malina. The Windows 95 PC is completely broken. The boot screen just says PRANKMASTER HELLO.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'MALINA',text:'Yes. Very unfortunate. No idea what could cause that. On a Windows 95 machine specifically.',color:'#ff8888',drawFn:drawMalinaIT},
+    {speaker:'GORJAN',text:'This is the Prankmaster 3000. We wrote this together in 2008. You installed it on a 1997 PC.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'MALINA',text:'I just wanted to see if it was backwards compatible. It is. That is actually impressive.',color:'#ff8888',drawFn:drawMalinaIT},
+    {speaker:'GORJAN',text:'This PC survived 29 years. Our ENTIRE WEDDING is on it. And you gave it a virus from 2008.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'MALINA',text:'To be fair, the last 29 years were fine. I just wanted to test the final stretch.',color:'#ff8888',drawFn:drawMalinaIT},
   ],
   7:[
     {speaker:'GORJAN',text:'Something feels wrong tonight. Have you noticed the man in the white hat watching us?',color:'#00ff88',drawFn:drawGorjan},
@@ -1610,10 +1643,12 @@ const INTROS = {
     {speaker:'MARTELA',text:'Good. Also, if this delays hair and makeup, Emir is finished.',color:'#ff69b4',drawFn:drawMartela},
   ],
   9:[
-    {speaker:'MIHAELA',text:'We secured the groom. The plan is complete. The wedding timeline is safe.',color:'#ff4444',drawFn:drawMihaela},
+    {speaker:'MIHAELA',text:'We secured the groom. The wedding is under control. Everything is going according to plan.',color:'#ff4444',drawFn:drawMihaela},
     {speaker:'MARTELA',text:'...You got Gorjan.',color:'#ff1493',drawFn:drawMartela},
-    {speaker:'MIHAELA',text:'Oh no. She is doing the calm voice. Everyone run.',color:'#ff4444',drawFn:drawMihaela},
-    {speaker:'MARTELA',text:'I did not eat all that ramen in Tokyo to be stopped by you. Move.',color:'#ff1493',drawFn:drawMartela},
+    {speaker:'MIHAELA',text:'Oh no. She is doing the calm voice.',color:'#ff4444',drawFn:drawMihaela},
+    {speaker:'MARTELA',text:'I coordinated nothing. I just showed up and people loved me. That must be infuriating.',color:'#ff1493',drawFn:drawMartela},
+    {speaker:'MIHAELA',text:'I also learned guitar. FOR THIS EXACT MOMENT.',color:'#ff4444',drawFn:drawMihaela},
+    {speaker:'MARTELA',text:'I did not eat all that ramen in Tokyo to be stopped by a maid of honour with a guitar.',color:'#ff1493',drawFn:drawMartela},
   ],
 };
 
@@ -1807,10 +1842,10 @@ function nextLevel(){
     ],
     6:[
       ['4 DAYS BEFORE 31 MAY 2026.','THE SLIDESHOW IS ALMOST READY.','GORJAN SAVED 3 YEARS OF PHOTOS.'],
+      ['THE SLIDESHOW RUNS ON A 1997 FAMILY PC.','IT HAS WINDOWS 95.','IT HAS WORKED FINE FOR 29 YEARS.'],
       ['GORJAN CALLS MALINA.','THEY FIXED COMPUTERS TOGETHER IN HIGH SCHOOL.','MALINA IS SUSPICIOUSLY HELPFUL.'],
-      ['"DON\'T WORRY." — MALINA.','THIS IS ALREADY WORRYING.','GORJAN DRIVES OVER IMMEDIATELY.'],
-      ['THE VIRUS IS FROM 2008.','MALINA HAD IT ON A USB STICK.','HE JUST WANTED TO SEE IF IT STILL WORKED.'],
-      ['IT STILL WORKS.','ALSO THERE IS A FOLDER CALLED:','PROPERTY_FINAL_FINAL_EMIR_DO_NOT_OPEN'],
+      ['THE VIRUS IS FROM 2008.','MALINA HAD IT ON A USB STICK.','HE JUST WANTED TO SEE IF IT WAS BACKWARDS COMPATIBLE.'],
+      ['IT IS.','ALSO THERE IS A FOLDER CALLED:','PROPERTY_FINAL_FINAL_EMIR_DO_NOT_OPEN'],
     ],
     7:[
       ['3 DAYS BEFORE 31 MAY 2026.','EVERYTHING IS READY.','OR SO THEY THINK.'],
@@ -2928,12 +2963,12 @@ function runLevel6(){
       spawnParticle(d.malina.x,d.malina.y,'#ff8888',10,5);
       screenFlash=8;screenFlashColor='#ff8888';
       Audio.sfx('enemyhit');
-      if(d.malina.hp===2) queueDialogue('MALINA','Okay. Maybe the program was a little too good.',140,'#ff8888');
+      if(d.malina.hp===2) queueDialogue('MALINA','Okay. Windows 95 was not built for this kind of backwards compatibility.',150,'#ff8888');
       if(d.malina.hp<=0){
         d.bossDefeated=true;
         spawnParticle(d.malina.x,d.malina.y,'#ffd700',20,8);score+=600;
-        queueDialogue('MALINA','Fine. I admit it. But architecturally, that virus was impressive.',200,'#ff8888');
-        startNewsTicker('PRANKMASTER 3000 DEFEATED. PC RESTORED. MALINA APOLOGISED. SORT OF.');
+        queueDialogue('MALINA','Fine. I admit it. A 2008 program running on Windows 95 in 2026. You have to respect that.',210,'#ff8888');
+        startNewsTicker('PRANKMASTER 3000 DEFEATED. WINDOWS 95 PC RESTORED. MALINA APOLOGISED. SORT OF. WINDOWS 95 SURVIVES AGAIN.');
       }
     }
     // Malina periodically drops a new virus brick
@@ -2957,7 +2992,7 @@ function runLevel6(){
 
   updateDialogue(); drawDialogue();
   if(frameCount%320===0&&!d.bossDefeated&&d.malina.hp>0){
-    const mq=['I just wanted to see if it worked.','In 2008 this was very funny.','The USB still had the original readme.','I kept it for sentimental reasons.','This is technically my fault. Partially.'];
+    const mq=['Windows 95 was not designed for this. Neither was 2008.','The backwards compatibility is genuinely impressive.','I kept the USB for sentimental reasons.','In 2008 this was very funny. Still a little funny.','This PC survived Y2K. I am sorry.'];
     queueDialogue('MALINA',mq[Math.floor(Math.random()*mq.length)],110,'#ff8888');
   }
   // Mid-level BSOD flash
@@ -2968,7 +3003,7 @@ function runLevel6(){
     drawTextC(':(', 120, 60,'#fff');
     drawTextC('YOUR PC RAN INTO A PROBLEM',180,8,'#fff');
     drawTextC('PRANKMASTER3000.EXE EXCEPTION',200,6,'#fff');
-    drawTextC('MALINA IS RESPONSIBLE',220,6,'#fff');
+    drawTextC('STOP: 0xUSB2008 ON WINDOWS 95',220,6,'#fff');
     drawTextC('RESTARTING IN '+(d.bsodTimer)+' FRAMES...',260,6,'#aaa');
     return;
   }
@@ -2991,7 +3026,7 @@ function runLevel6(){
     if((keys[' ']||keys['Enter'])){d.bsodActive=false;d.bsodShowing=false;d.ball.vx*=1.15;d.ball.vy*=1.15;}
     return;
   }
-  if(allBricks&&d.bossDefeated) triggerLevelClear('WINDOWS FIXED!\nPRANKMASTER DEFEATED!\nMALINA: GROUNDED.\nEMIR FOLDER: STILL SUSPICIOUS');
+  if(allBricks&&d.bossDefeated) triggerLevelClear('WINDOWS 95 RESTORED!\nPRANKMASTER DEFEATED!\nMALINA: GROUNDED.\nEMIR FOLDER: STILL SUSPICIOUS');
   else if(allBricks) {queueDialogue('MALINA','...I can fix this. Probably.',120,'#ff8888');}
 }
 
@@ -3449,33 +3484,29 @@ function hitEmir(em,pl,d,phase,isStomp){
 function initBonusLevel(){
   Audio.playLevelTheme(9);
   levelData={
-    p2:{x:40,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:4.2,
+    p2:{x:60,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:4.2,
         flipCool:0,flipTimer:0,boostTimer:0},
     platforms:[
       {x:0,y:420,w:W,h:60},
-      {x:100,y:350,w:100,h:14},{x:270,y:305,w:100,h:14},
-      {x:430,y:260,w:100,h:14},{x:520,y:215,w:100,h:14},
-      {x:60,y:275,w:85,h:14},{x:210,y:235,w:85,h:14},{x:360,y:195,w:85,h:14},
+      {x:80,y:330,w:120,h:14},
+      {x:420,y:330,w:120,h:14},
+      {x:230,y:255,w:180,h:14},
+      {x:60,y:240,w:90,h:14},
+      {x:490,y:240,w:90,h:14},
     ],
-    mihaela:{x:380,y:190,vx:0,vy:0,grounded:false,hp:5,facing:-1,
-             state:'patrol',stateTimer:0,jumpCool:0,shootTimer:0,phase:1,
+    mihaela:{x:380,y:310,vx:0,vy:0,grounded:false,hp:5,facing:-1,
+             state:'patrol',stateTimer:0,shootTimer:0,phase:1,
              invincTimer:0},
-    guards:[
-      {type:'dragan',x:180,y:300,vx:1.4,hp:3,alive:true,shootTimer:0},
-      {type:'emir',  x:460,y:255,vx:1.8,hp:3,alive:true,shootTimer:0},
-    ],
-    projectiles:[],
-    guardProjectiles:[],
+    notes:[],
     gorjanCapturedX:W-50,gorjanCapturedY:150,
     rescued:false,victoryTimer:0,
-    dashCool:0,lastLeft:0,lastRight:0,
-    attTimer:0,attIdx:0,
-    guardDefeated:0,
     cheerTimer:0,cheerIdx:0,
+    attTimer:0,attIdx:0,
+    dashCool:0,lastLeft:0,lastRight:0,
   };
   setNarrator('');
   levelData.startFrame=frameCount;
-  showHint('ENTER = HAIR FLIP ATTACK   ← ← or → → = DASH','P2 / Martela only');
+  showHint('DODGE NOTES! ENTER = HAIR FLIP (deflects notes back!)','P2 / Martela — ARROWS + ENTER');
 }
 
 function runBonusLevel(){
@@ -3491,12 +3522,8 @@ function runBonusLevel(){
   const gr=ctx.createLinearGradient(0,0,0,H);
   gr.addColorStop(0,'#2d003d');gr.addColorStop(1,'#1a001a');
   ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
-  for(let i=0;i<40;i++){
-    const sx=(i*137+frameCount)%W,sy=(i*97+frameCount*.3)%H;
-    ctx.fillStyle=`rgba(255,100,200,${0.25+Math.sin(i+frameCount*.05)*.15})`;
-    ctx.fillRect(sx,sy,2,2);
-  }
-  if(phase===3){ctx.fillStyle=`rgba(255,0,100,${0.04+Math.sin(frameCount*.3)*.03})`;ctx.fillRect(0,0,W,H);}
+  for(let i=0;i<40;i++){const sx=(i*137+frameCount)%W,sy=(i*97+frameCount*.3)%H;ctx.fillStyle=`rgba(255,100,200,${0.2+Math.sin(i+frameCount*.05)*.1})`;ctx.fillRect(sx,sy,2,2);}
+  if(phase===3){ctx.fillStyle=`rgba(255,0,100,${0.05+Math.sin(frameCount*.3)*.03})`;ctx.fillRect(0,0,W,H);}
   ctx.fillStyle='#3d0030';ctx.fillRect(0,H-60,W,60);
   ctx.fillStyle='#ff1493';ctx.fillRect(0,H-60,W,3);
   d.platforms.forEach(p=>{
@@ -3504,224 +3531,162 @@ function runBonusLevel(){
     ctx.fillStyle='#ff1493';ctx.fillRect(p.x,p.y,p.w,2);
   });
 
-  // Gorjan in cage — cheers Martela
+  // Gorjan in cage — cheers
   if(!d.rescued){
     ctx.fillStyle='#1a1a2a';ctx.fillRect(W-85,100,70,90);
     ctx.strokeStyle='#ff1493';ctx.lineWidth=2;ctx.strokeRect(W-85,100,70,90);
     for(let bi=0;bi<4;bi++){ctx.strokeStyle='#888';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W-83+bi*17,102);ctx.lineTo(W-83+bi*17,188);ctx.stroke();}
     drawGorjan(d.gorjanCapturedX,d.gorjanCapturedY,1,frameCount%40<20?frameCount:0);
-
-    // Gorjan cheer — every ~8s gives Martela a speed boost
     d.cheerTimer++;
     const cheerLines=[
-      {s:'GORJAN',t:'You got this! GO MARTELA!',c:'#00ff88'},
-      {s:'GORJAN',t:'Take her down!! I believe in you!',c:'#00ff88'},
-      {s:'GORJAN',t:'MARTELA!! She is wide open!!',c:'#ffd700'},
+      {s:'GORJAN',t:'She is actually pretty good. I mean — she is evil. But technically good.',c:'#00ff88'},
+      {s:'GORJAN',t:'You got this! Also her chord transition was slightly off!',c:'#00ff88'},
+      {s:'GORJAN',t:'MARTELA!! HAIR FLIP! NOW!',c:'#ffd700'},
     ];
     if(d.cheerTimer%480===0&&d.cheerIdx<cheerLines.length){
       const cl=cheerLines[d.cheerIdx++];
       queueDialogue(cl.s,cl.t,160,cl.c);
-      pl.boostTimer=180; // 3s speed boost
+      pl.boostTimer=180;
       spawnParticle(d.gorjanCapturedX,d.gorjanCapturedY,'#00ff88',12,6);
       screenFlash=10;screenFlashColor='#00ff88';
     }
-    // Boost visual — gold glow on Martela
     if(boosted&&Math.floor(frameCount/8)%2===0){
       ctx.fillStyle='rgba(255,215,0,0.15)';
       ctx.beginPath();ctx.arc(pl.x,pl.y,28,0,Math.PI*2);ctx.fill();
     }
   }
 
-  // ── HAIR FLIP ATTACK ─────────────────────────────────────────────
+  // ── HAIR FLIP ATTACK ─────────────────────────────────────────
   pl.flipCool=Math.max(0,pl.flipCool-1);
   pl.flipTimer=Math.max(0,pl.flipTimer-1);
   if((keys['Enter']||keys['ArrowDown']||keys[' ']||keys['s']||keys['S'])&&pl.flipCool===0){
-    pl.flipTimer=14; pl.flipCool=32;
-    pl.vx=pl.facing*5; // small lunge
+    pl.flipTimer=14;pl.flipCool=32;
+    pl.vx=pl.facing*5;
     Audio.sfx('pop');
     spawnParticle(pl.x+pl.facing*30,pl.y,'#ff1493',10,5);
   }
-  // Flip hitbox — arc in front of Martela
-  const flipX=pl.x+pl.facing*35, flipY=pl.y-5;
   if(pl.flipTimer>0){
-    // Visual arc
-    ctx.strokeStyle=`rgba(255,20,147,${pl.flipTimer/14})`;
-    ctx.lineWidth=4;
-    ctx.beginPath();
-    ctx.arc(pl.x,pl.y-5,42,pl.facing===1?-0.8:Math.PI+0.8,pl.facing===1?0.8:Math.PI-0.8);
-    ctx.stroke();
-    ctx.lineWidth=2;
-    ctx.strokeStyle=`rgba(255,150,200,${pl.flipTimer/20})`;
-    ctx.beginPath();
-    ctx.arc(pl.x,pl.y-5,52,pl.facing===1?-0.6:Math.PI+0.6,pl.facing===1?0.6:Math.PI-0.6);
-    ctx.stroke();
-
-    // Deflect projectiles
-    d.projectiles.forEach(b=>{
-      if(b.alive&&Math.abs(b.x-flipX)<50&&Math.abs(b.y-flipY)<35){
-        b.vx*=-1.2; b.vy-=3; Audio.sfx('collect');
-      }
-    });
-    d.guardProjectiles.forEach(b=>{
-      if(b.alive&&Math.abs(b.x-flipX)<50&&Math.abs(b.y-flipY)<35){
-        b.alive=false; Audio.sfx('collect');
-      }
-    });
+    ctx.strokeStyle=`rgba(255,20,147,${pl.flipTimer/14})`;ctx.lineWidth=4;
+    ctx.beginPath();ctx.arc(pl.x,pl.y-5,42,pl.facing===1?-0.8:Math.PI+0.8,pl.facing===1?0.8:Math.PI-0.8);ctx.stroke();
+    ctx.lineWidth=2;ctx.strokeStyle=`rgba(255,150,200,${pl.flipTimer/20})`;
+    ctx.beginPath();ctx.arc(pl.x,pl.y-5,52,pl.facing===1?-0.6:Math.PI+0.6,pl.facing===1?0.6:Math.PI-0.6);ctx.stroke();
   }
 
-  // ── GUARDS ───────────────────────────────────────────────────────
-  d.guards.forEach(en=>{
-    if(!en.alive)return;
-    en.x+=en.vx;
-    if(en.x<30||en.x>W-80) en.vx*=-1;
-    en.facing=en.vx>0?1:-1;
+  // ── MUSICAL NOTES ────────────────────────────────────────────
+  d.notes=d.notes.filter(n=>n.alive&&n.x>-30&&n.x<W+30&&n.y<H+30);
+  d.notes.forEach(n=>{
+    n.x+=n.vx;n.y+=n.vy;
+    if(!n.deflected) n.vy+=0.06;
+    else n.vy+=0.12;
 
-    if(en.type==='dragan') drawDragan(en.x,en.y,frameCount);
-    else drawEmir(en.x,en.y,frameCount);
-    for(let i=0;i<en.hp;i++){ctx.fillStyle='#ff6600';ctx.fillRect(en.x-15+i*11,en.y-48,9,5);}
+    // Draw note — filled note head + stem
+    const nc=n.deflected?'#ff4400':n.color||'#ffd700';
+    ctx.fillStyle=nc;ctx.strokeStyle='#000';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.ellipse(n.x,n.y+4,7,5,0.4,0,Math.PI*2);ctx.fill();ctx.stroke();
+    // stem
+    ctx.strokeStyle=nc;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(n.x+6,n.y+2);ctx.lineTo(n.x+6,n.y-14);ctx.stroke();
+    if(n.type==='eighth'){ctx.beginPath();ctx.moveTo(n.x+6,n.y-14);ctx.quadraticCurveTo(n.x+16,n.y-10,n.x+12,n.y-4);ctx.stroke();}
+    // glow trail
+    if(n.deflected){ctx.fillStyle='rgba(255,100,0,0.3)';ctx.beginPath();ctx.arc(n.x,n.y,10,0,Math.PI*2);ctx.fill();}
 
-    // Guards shoot at Martela
-    en.shootTimer=(en.shootTimer||0)+1;
-    const gdx=pl.x-en.x, gdy=pl.y-en.y;
-    const gdist=Math.sqrt(gdx*gdx+gdy*gdy)||1;
-    const shootRate=en.type==='dragan'?200:150;
-    if(en.shootTimer>shootRate&&gdist<300){
-      en.shootTimer=0;
-      const spd=en.type==='dragan'?2.5:4;
-      d.guardProjectiles.push({
-        x:en.x,y:en.y-10,
-        vx:gdx/gdist*spd,vy:gdy/gdist*spd*0.5,
-        alive:true,type:en.type,rot:0
-      });
-    }
-
-    // Stomp detection
-    const hitByFlip=pl.flipTimer>0&&Math.abs(pl.x+pl.facing*35-en.x)<50&&Math.abs(pl.y-5-en.y)<35;
-    if((Math.abs(pl.x-en.x)<28&&Math.abs(pl.y-en.y)<34&&pl.vy<-2)||hitByFlip){
-      if(hitByFlip&&pl.vy>=0) pl.vy=-4; else pl.vy=-8;
-      en.hp--;pl.flipCool=Math.max(pl.flipCool,hitByFlip?16:0);
-      spawnParticle(en.x,en.y,'#ff1493',12,6);screenFlash=7;screenFlashColor='#ff1493';
-      Audio.sfx('stomp');
-      if(en.hp<=0){
-        en.alive=false;d.guardDefeated++;spawnParticle(en.x,en.y,'#ffd700',18,8);score+=300;
-        if(en.type==='dragan') queueDialogue('DRAGAN','Tell my son Papa fought a woman with purple hair. He will understand.',180,'#ffaa00');
-        else queueDialogue('EMIR','The hat... at least I still have the hat...',160,'#ff4444');
+    // Hair flip deflects note
+    if(pl.flipTimer>0&&!n.deflected){
+      const fx=pl.x+pl.facing*35;
+      if(Math.abs(n.x-fx)<55&&Math.abs(n.y-(pl.y-5))<35){
+        n.deflected=true;
+        n.vx=(mh.x-n.x>0?3.5:-3.5)+(Math.random()-.5);
+        n.vy=-3;
+        Audio.sfx('collect');
+        spawnParticle(n.x,n.y,'#ffd700',8,4);
       }
-    } else if(Math.abs(pl.x-en.x)<28&&Math.abs(pl.y-en.y)<34&&!hitByFlip){
-      lives=Math.max(0,lives-1);screenFlash=12;screenFlashColor='#ff0000';pl.x=40;pl.vy=-5;
-      Audio.sfx('damage');
     }
-  });
 
-  // Guard projectiles
-  d.guardProjectiles=d.guardProjectiles.filter(b=>b.alive&&b.y<H+20&&b.x>-20&&b.x<W+20);
-  d.guardProjectiles.forEach(b=>{
-    b.x+=b.vx;b.y+=b.vy;b.vy+=0.12;b.rot=(b.rot||0)+.15;
-    // Dragan throws sandwiches (brown oval), Emir shoots bullets (orange circle)
-    if(b.type==='dragan'){
-      ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.rot);
-      ctx.fillStyle='#c8860a';ctx.strokeStyle='#8a5a00';ctx.lineWidth=1;
-      ctx.beginPath();ctx.ellipse(0,0,9,6,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-      ctx.fillStyle='rgba(255,200,100,0.5)';ctx.beginPath();ctx.ellipse(-2,-1,4,2,0,0,Math.PI*2);ctx.fill();
-      ctx.restore();
-    } else {
-      ctx.fillStyle='#ff6600';ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#ffee00';ctx.beginPath();ctx.arc(b.x,b.y,2,0,Math.PI*2);ctx.fill();
+    // Deflected note hits Mihaela
+    if(n.deflected&&mh.hp>0&&mh.invincTimer===0){
+      if(Math.abs(n.x-mh.x)<28&&Math.abs(n.y-mh.y)<36){
+        n.alive=false;
+        hitMihaela(mh,d,phase);
+        Audio.sfx('stomp');
+      }
     }
-    if(Math.abs(b.x-pl.x)<13&&Math.abs(b.y-pl.y)<16){
-      b.alive=false;lives=Math.max(0,lives-1);screenFlash=13;screenFlashColor='#ff4444';
+
+    // Note hits player
+    if(!n.deflected&&Math.abs(n.x-pl.x)<12&&Math.abs(n.y-pl.y)<16){
+      n.alive=false;
+      lives=Math.max(0,lives-1);screenFlash=14;screenFlashColor='#ff4444';
       Audio.sfx('damage');if(lives<=0)gameState='gameover';
     }
   });
 
-  // ── MIHAELA BOSS ─────────────────────────────────────────────────
+  // ── MIHAELA AI ────────────────────────────────────────────────
   if(mh.hp>0){
     mh.stateTimer++;
-    mh.jumpCool=Math.max(0,mh.jumpCool-1);
     mh.shootTimer++;
     if(mh.invincTimer>0) mh.invincTimer--;
 
-    const dx=pl.x-mh.x,dy=pl.y-mh.y,dist=Math.sqrt(dx*dx+dy*dy)||1;
+    const dx=pl.x-mh.x;
     const playerAbove=pl.y<mh.y-20&&Math.abs(dx)<90;
 
-    if(mh.state==='patrol'){
-      if(playerAbove&&mh.grounded){
-        mh.vx=dx>0?-5.5:5.5;mh.state='dodge';mh.stateTimer=0;
-        if(phase>=2){screenFlash=3;screenFlashColor='#ff69b4';}
-      } else {
-        if(phase===1){if(dist>180)mh.vx+=(dx>0?.25:-.25);else if(dist<100)mh.vx+=(dx>0?-.25:.25);else mh.vx*=0.9;}
-        else mh.vx+=(dx>0?.35:-.35);
-        const sRate=phase===1?100:phase===2?65:38;
-        if(mh.shootTimer>sRate){fireSpreadsheet(mh,pl,phase,d);mh.shootTimer=0;if(phase===3){mh.state='burst';mh.stateTimer=0;}}
-        if(mh.grounded&&mh.jumpCool===0&&Math.random()<.01){mh.vy=-(10+phase*.8);mh.grounded=false;mh.jumpCool=80;}
-      }
-    } else if(mh.state==='dodge'){mh.vx*=.85;if(mh.stateTimer>28){mh.state='patrol';mh.stateTimer=0;}}
-    else if(mh.state==='burst'){if(mh.stateTimer%10===0&&mh.stateTimer<50)fireSpreadsheet(mh,pl,phase,d);if(mh.stateTimer>65){mh.state='patrol';mh.stateTimer=0;}}
-
-    if(phase>=2&&mh.grounded&&Math.random()<.004&&dist<250){
-      mh.vy=-(12+phase);mh.vx=dx>0?4:-4;mh.grounded=false;mh.jumpCool=100;
-      if(phase===3)queueDialogue('MIHAELA','YOU CANNOT DODGE THE SPREADSHEET!!',120,'#ff69b4');
+    // Dodge when Martela above
+    if(playerAbove&&mh.grounded&&mh.stateTimer%40===0){
+      mh.vx=dx>0?-5:5;
     }
 
-    mh.vx=Math.max(-7,Math.min(7,mh.vx));mh.vx*=.84;
+    // Phase-based movement
+    if(phase===1){mh.vx+=(dx>0?.12:-.12);mh.vx*=.88;}
+    else if(phase===2){
+      mh.vx+=(dx>0?.2:-.2);mh.vx*=.85;
+      if(mh.grounded&&Math.random()<.005){mh.vy=-(10+phase*.8);mh.grounded=false;}
+    } else {
+      // Phase 3: stay back, play power ballad
+      const targetX=dx>0?100:W-100;
+      mh.vx+=(targetX-mh.x>0?.15:-.15);mh.vx*=.85;
+    }
+
+    // Fire notes
+    const rates=[0,120,80,50];
+    if(mh.shootTimer>rates[phase]){
+      mh.shootTimer=0;
+      fireNotes(mh,pl,phase,d);
+      // Phase 3 dialog
+      if(phase===3&&Math.random()<.3) queueDialogue('MIHAELA',['YOU CANNOT DODGE THE MUSIC!!','FEEL THE POWER BALLAD!','THE SPREADSHEET HAS A PLAYLIST!'][Math.floor(Math.random()*3)],100,'#ff4444');
+    }
+
+    mh.vx=Math.max(-6,Math.min(6,mh.vx));
     mh.vy+=.5;mh.x+=mh.vx;mh.y+=mh.vy;
     mh.x=Math.max(10,Math.min(W-10,mh.x));
     mh.facing=mh.vx<-.1?-1:mh.vx>.1?1:mh.facing;
     mh.grounded=false;
     d.platforms.forEach(p=>{if(mh.x>p.x&&mh.x<p.x+p.w&&mh.y+18>p.y&&mh.y+18<p.y+p.h+Math.abs(mh.vy)+2&&mh.vy>=0){mh.y=p.y-18;mh.vy=0;mh.grounded=true;}});
-    if(mh.y>H+40){mh.x=300;mh.y=200;mh.vy=0;}
+    if(mh.y>H+40){mh.x=300;mh.y=180;mh.vy=0;}
 
     const showMh=mh.invincTimer===0||Math.floor(frameCount/6)%2===0;
     if(showMh) drawMihaela(mh.x,mh.y,frameCount);
+
+    // HP pips
     for(let i=0;i<mh.hp;i++){
       ctx.fillStyle=phase===3?'#ff1493':phase===2?'#ff69b4':'#ff88cc';
-      ctx.fillRect(mh.x-26+i*12,mh.y-54,10,7);ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(mh.x-26+i*12,mh.y-54,10,7);
+      ctx.fillRect(mh.x-26+i*12,mh.y-58,10,7);ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(mh.x-26+i*12,mh.y-58,10,7);
     }
-    if(phase>1)drawText(phase===3?'FURIOUS!':'ANGRY!',mh.x-20,mh.y-62,5,phase===3?'#ff1493':'#ff88cc');
+    if(phase>1)drawText(phase===3?'POWER BALLAD!':'CRESCENDO!',mh.x-28,mh.y-66,5,phase===3?'#ff1493':'#ff88cc');
 
-    // Stomp OR hair flip hits Mihaela
-    const flipHitsMh=pl.flipTimer>0&&mh.invincTimer===0&&Math.abs(pl.x+pl.facing*35-mh.x)<50&&Math.abs(pl.y-5-mh.y)<35;
-    const stompsMh=mh.invincTimer===0&&Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&pl.vy<-2;
-    if(flipHitsMh||stompsMh){
-      if(stompsMh) pl.vy=-10;
-      mh.hp--;mh.invincTimer=80;
-      spawnParticle(mh.x,mh.y,'#ff1493',14,7);screenFlash=12;screenFlashColor='#fff';
-      Audio.sfx('stomp');
-      if(mh.hp===3)queueDialogue('MIHAELA','The spreadsheet did NOT predict this.',140,'#ff69b4');
-      if(mh.hp===1)queueDialogue('MIHAELA','Column H was supposed to prevent this!!',140,'#ff1493');
-      if(mh.hp<=0){
-        spawnParticle(mh.x,mh.y,'#ffd700',30,10);spawnParticle(mh.x,mh.y,'#ff1493',20,7);
-        score+=1200;Audio.sfx('enemydie');
-        queueDialogue('MIHAELA','Fine. The spreadsheet allowed for this outcome.',240,'#ff4444');
-      }
-    } else if(mh.invincTimer===0&&Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&mh.hp>0){
-      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');pl.x=40;pl.vy=-5;
+    // Stomp Mihaela
+    if(mh.invincTimer===0&&Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&pl.vy<-2){
+      pl.vy=-10;
+      hitMihaela(mh,d,phase);
+    } else if(mh.invincTimer===0&&Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&mh.hp>0&&pl.vy>=0){
+      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');pl.x=60;pl.vy=-5;
     }
   }
 
-  // ── SPREADSHEET PROJECTILES ──────────────────────────────────────
-  d.projectiles=d.projectiles.filter(b=>b.alive&&b.y<H+20&&b.x>-20&&b.x<W+20);
-  d.projectiles.forEach(b=>{
-    b.x+=b.vx;b.y+=b.vy;b.rot=(b.rot||0)+.12;
-    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.rot);
-    ctx.fillStyle='#eef';ctx.fillRect(-8,-6,16,12);
-    ctx.strokeStyle='#aac';ctx.lineWidth=1;ctx.strokeRect(-8,-6,16,12);
-    ctx.strokeStyle='rgba(0,0,180,0.4)';ctx.lineWidth=0.8;
-    [-2,1,4].forEach(ly=>{ctx.beginPath();ctx.moveTo(-6,ly);ctx.lineTo(6,ly);ctx.stroke();});
-    ctx.restore();
-    if(Math.abs(b.x-pl.x)<14&&Math.abs(b.y-pl.y)<16){
-      b.alive=false;lives=Math.max(0,lives-1);screenFlash=13;screenFlashColor='#ff4444';
-      Audio.sfx('damage');if(lives<=0)gameState='gameover';
-    }
-  });
-
-  // ── DASH ──────────────────────────────────────────────────────────
+  // ── DASH ──────────────────────────────────────────────────────
   d.dashCool=Math.max(0,d.dashCool-1);
   if(!d.lastLeft)d.lastLeft=0;if(!d.lastRight)d.lastRight=0;
-  if(keys['ArrowLeft']){if(frameCount-d.lastLeft<12&&d.dashCool===0){pl.vx=-14;d.dashCool=50;spawnParticle(pl.x,pl.y,'#ff1493',6,4);}d.lastLeft=frameCount;}
-  if(keys['ArrowRight']){if(frameCount-d.lastRight<12&&d.dashCool===0){pl.vx=14;d.dashCool=50;spawnParticle(pl.x,pl.y,'#ff1493',6,4);}d.lastRight=frameCount;}
+  if(keys['ArrowLeft']||keys['a']||keys['A']){if(frameCount-(d.lastLeft||0)<12&&d.dashCool===0){pl.vx=-14;d.dashCool=50;spawnParticle(pl.x,pl.y,'#ff1493',6,4);}d.lastLeft=frameCount;}
+  if(keys['ArrowRight']||keys['d']||keys['D']){if(frameCount-(d.lastRight||0)<12&&d.dashCool===0){pl.vx=14;d.dashCool=50;spawnParticle(pl.x,pl.y,'#ff1493',6,4);}d.lastRight=frameCount;}
 
-  // ── PLAYER PHYSICS ────────────────────────────────────────────────
+  // ── PLAYER PHYSICS ─────────────────────────────────────────────
   const curSpeed=boosted?6.5:pl.speed;
   if(keys['ArrowLeft']||keys['a']||keys['A']){pl.vx=Math.min(pl.vx,-curSpeed);pl.facing=-1;pl.frame++;}
   else if(keys['ArrowRight']||keys['d']||keys['D']){pl.vx=Math.max(pl.vx,curSpeed);pl.facing=1;pl.frame++;}
@@ -3731,11 +3696,10 @@ function runBonusLevel(){
   pl.x=Math.max(10,Math.min(W-10,pl.x));
   pl.grounded=false;
   d.platforms.forEach(p=>{if(pl.x>p.x&&pl.x<p.x+p.w&&pl.y+18>p.y&&pl.y+18<p.y+p.h+Math.abs(pl.vy)+2&&pl.vy>=0){pl.y=p.y-18;pl.vy=0;pl.grounded=true;}});
-  if(pl.y>H+50){pl.x=40;pl.y=200;pl.vy=0;lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');if(lives<=0)gameState='gameover';}
-
+  if(pl.y>H+50){pl.x=60;pl.y=200;pl.vy=0;lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');if(lives<=0)gameState='gameover';}
   drawMartela(pl.x,pl.y,pl.facing,pl.frame);
 
-  // ── ATTITUDE LINES ────────────────────────────────────────────────
+  // ── ATTITUDE LINES ────────────────────────────────────────────
   d.attTimer++;
   const attLines=[
     {s:'MARTELA',t:'Purple hair. Bad attitude. Your problem now.',c:'#ff1493'},
@@ -3744,27 +3708,26 @@ function runBonusLevel(){
   ];
   if(d.attTimer%380===0&&d.attIdx<attLines.length){const al=attLines[d.attIdx++];queueDialogue(al.s,al.t,160,al.c);}
 
-  // ── WIN ───────────────────────────────────────────────────────────
-  const allDead=mh.hp<=0&&d.guards.every(g=>!g.alive);
-  if(allDead&&!d.rescued){
+  // ── WIN ────────────────────────────────────────────────────────
+  if(mh.hp<=0&&!d.rescued){
     d.rescued=true;d.victoryTimer=0;
-    spawnParticle(W/2,H/2,'#ff1493',30,9);spawnParticle(W/2,H/2,'#ffd700',20,6);score+=1500;
+    spawnParticle(W/2,H/2,'#ff1493',30,9);spawnParticle(W/2,H/2,'#ffd700',20,6);score+=2500;
   }
   if(d.rescued){
     d.victoryTimer++;
     drawGorjan(W/2+30,H-100,-1,frameCount);
     ctx.fillStyle='rgba(0,0,0,0.9)';ctx.fillRect(40,70,W-80,100);
     ctx.strokeStyle='#ff1493';ctx.lineWidth=2;ctx.strokeRect(40,70,W-80,100);
-    if(d.victoryTimer===1)queueDialogue('GORJAN','You came for me!',130,'#00ff88');
-    if(d.victoryTimer===55)queueDialogue('MARTELA','Obviously. Now let us go get married.',150,'#ff1493');
-    if(d.victoryTimer===115)queueDialogue('GORJAN','31 May 2026. No more side quests.',180,'#ffd700');
+    if(d.victoryTimer===1) queueDialogue('GORJAN','You came for me!',130,'#00ff88');
+    if(d.victoryTimer===55) queueDialogue('MARTELA','Obviously. Now let us go get married.',150,'#ff1493');
+    if(d.victoryTimer===115) queueDialogue('GORJAN','31 May 2026. No more side quests.',180,'#ffd700');
     drawTextC('MARTELA SAVES GORJAN!',110,10,'#ff1493');
     drawTextC('FASTER. STRONGER. SASSIER.',132,6,'#ffd700');
     drawTextC('TRUE PARTNERSHIP ♥',152,6,'#fff');
     if(d.victoryTimer>180&&!d.endingStarted){d.endingStarted=true;setTimeout(startEnding,600);}
   }
 
-  // ── HUD ───────────────────────────────────────────────────────────
+  // ── HUD ───────────────────────────────────────────────────────
   ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,28);
   drawText("MARTELA'S REVENGE!",10,20,7,'#ff1493');
   drawText('LIVES: '+'♥'.repeat(lives),W-130,20,7,'#ff4444');
@@ -3775,7 +3738,69 @@ function runBonusLevel(){
   if(lives<=0)gameState='gameover';
 }
 
-// Helper: Mihaela fires a spreadsheet projectile
+function hitMihaela(mh,d,phase){
+  mh.hp--;mh.invincTimer=80;
+  spawnParticle(mh.x,mh.y,'#ff1493',14,7);screenFlash=12;screenFlashColor='#fff';
+  if(mh.hp===3){
+    queueDialogue('MIHAELA','The spreadsheet did NOT predict this.',140,'#ff69b4');
+    Audio.sfx('damage');
+  }
+  if(mh.hp===1) queueDialogue('MIHAELA','Column H was supposed to prevent this!!',140,'#ff1493');
+  if(mh.hp<=0){
+    Audio.sfx('enemydie');
+    spawnParticle(mh.x,mh.y,'#ffd700',30,10);
+    queueDialogue('MIHAELA','Fine. The spreadsheet allowed for this outcome.',240,'#ff4444');
+  }
+}
+
+function fireNotes(mh,pl,phase,d){
+  const dx=pl.x-mh.x,dy=pl.y-mh.y;
+  const dist=Math.sqrt(dx*dx+dy*dy)||1;
+  const noteTypes=['quarter','eighth'];
+  const colors=['#ffd700','#ff88cc','#88ffcc','#ffaa44'];
+
+  if(phase===1){
+    // 2 notes in a gentle arc
+    for(let i=0;i<2;i++){
+      const spread=(i-0.5)*0.5;
+      d.notes.push({x:mh.x,y:mh.y-10,
+        vx:dx/dist*2.8+spread, vy:dy/dist*2+(i===0?-1.5:-0.5),
+        alive:true,deflected:false,
+        type:noteTypes[i%2],color:colors[i%colors.length]});
+    }
+  } else if(phase===2){
+    // 4-note chord burst
+    for(let i=0;i<4;i++){
+      const spread=(i-1.5)*0.6;
+      d.notes.push({x:mh.x,y:mh.y-10,
+        vx:dx/dist*3.5+spread, vy:dy/dist*2.5+(i%2===0?-2:-0.8),
+        alive:true,deflected:false,
+        type:noteTypes[i%2],color:colors[i%colors.length]});
+    }
+  } else {
+    // Phase 3: power ballad — sweeping wave from both sides
+    const wavePhase=Math.sin(frameCount*.04);
+    for(let i=0;i<5;i++){
+      const side=i%2===0?1:-1;
+      d.notes.push({x:mh.x+(side*i*12),y:mh.y-10,
+        vx:dx/dist*4.5+(i-2)*0.4, vy:dy/dist*3+wavePhase*1.5-2,
+        alive:true,deflected:false,
+        type:i%2===0?'quarter':'eighth',color:colors[i%colors.length]});
+    }
+    // Extra notes from screen edges in phase 3
+    if(frameCount%60===0){
+      for(let j=0;j<2;j++){
+        d.notes.push({x:j===0?-10:W+10,y:pl.y-20+Math.random()*80,
+          vx:j===0?4:-4, vy:-1+Math.random()*2,
+          alive:true,deflected:false,type:'eighth',color:'#ff88cc'});
+      }
+    }
+  }
+  screenFlash=3;screenFlashColor='#ff69b4';
+  Audio.sfx('button');
+}
+
+
 function fireSpreadsheet(mh,pl,phase,d){
   const dx=pl.x-mh.x,dy=pl.y-mh.y;
   const dist=Math.sqrt(dx*dx+dy*dy)||1;
@@ -3864,7 +3889,7 @@ function runTitle(){
 
 function startEnding(){
   gameState='ending'; endingTimer=0; particles=[];
-  Audio.playLevelTheme(0); // Floating Also bookends the game
+  Audio.playLevelTheme(9); // Dreams of Childhood — emotional bookend for the ending
 }
 
 function drawEnding(){
