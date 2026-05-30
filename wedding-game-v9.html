@@ -44,9 +44,9 @@ canvas { display:block; image-rendering:auto; width:640px; height:480px; }
 #narrator-name { color:#ffd700; margin-bottom:2px; font-size:5.5px; letter-spacing:0.5px; }
 #scanline-overlay { position:absolute; top:0;left:0;right:0;bottom:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px); pointer-events:none; z-index:20; }
 #hint-bar {
-  width:640px; min-height:20px; margin-top:5px;
+  width:640px; min-height:16px; margin-top:2px;
   font-family:'Press Start 2P',monospace; font-size:7px;
-  color:#ccc; text-align:center; line-height:1.8;
+  color:#ccc; text-align:center; line-height:1.6;
   opacity:1; transition:opacity 0.6s;
   pointer-events:none;
 }
@@ -404,15 +404,15 @@ document.addEventListener('keydown',e=>{
     const fullText = introLines[introIndex]?.text||'';
     const shown = Math.min(fullText.length, Math.floor(introTimer*2));
     const textDone = shown >= fullText.length;
-    if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'){
-      if(!textDone){ introTimer=9999; } // complete typewriter first
+    if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='d'||e.key==='D'){
+      if(!textDone){ introTimer=9999; }
       else advanceIntro();
     }
-    if((e.key==='ArrowLeft'||e.key==='Backspace') && introIndex>0){ introIndex--; introTimer=9999; }
+    if((e.key==='ArrowLeft'||e.key==='Backspace'||e.key==='a'||e.key==='A') && introIndex>0){ introIndex--; introTimer=9999; }
   }
   if(gameState==='cutscene'){
-    if(e.key==='Enter'||e.key===' ') advanceCutscene();
-    if((e.key==='ArrowLeft'||e.key==='Backspace') && cutsceneIndex>0) cutsceneIndex--;
+    if(e.key==='Enter'||e.key===' '||e.key==='ArrowRight'||e.key==='d'||e.key==='D') advanceCutscene();
+    if((e.key==='ArrowLeft'||e.key==='Backspace'||e.key==='a'||e.key==='A') && cutsceneIndex>0) cutsceneIndex--;
   }
   if(gameState==='levelclear'&&(e.key==='Enter'||e.key===' ')) nextLevel();
   if(gameState==='gameover'&&(e.key==='Enter'||e.key===' ')) retryLevel();
@@ -570,7 +570,8 @@ function drawGorjan(x,y,facing,anim){
 function drawMartela(x,y,facing=1,anim=0,captured=false){
   const bx=Math.round(x), by=Math.round(y);
   const bob=captured?0:Math.sin(anim*.18+1)*1.5;
-  // body - red kimono
+
+  // body - red kimono (matches her photo perfectly)
   spRect(bx-8,by+4,16,18,'#e74c3c');
   spRect(bx-2,by+4,4,12,'#fff');
   spRect(bx-7,by+18,14,8,'#c0392b');
@@ -580,78 +581,88 @@ function drawMartela(x,y,facing=1,anim=0,captured=false){
 
   const hx=bx, hy=by-22+Math.round(bob);
 
-  // ── FLOWING DARK HAIR (behind head first) ──────────────────
-  const hairColor='#2a1508', hairHi='#5a3018';
-  ctx.fillStyle=hairColor; ctx.strokeStyle='#000'; ctx.lineWidth=2;
-  // Long hair flowing down the back
+  // ── HAIR (behind head first — natural mauve-purple, shoulder length) ──
+  const hc='#7a3868', hhi='#9a5888';
+  ctx.fillStyle=hc; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+
+  // hair behind/sides — flows to shoulder level only
   ctx.beginPath();
-  ctx.moveTo(hx-10,hy-28);
-  ctx.quadraticCurveTo(hx-22,hy-10,hx-20,hy+10);
-  ctx.quadraticCurveTo(hx-18,hy+30,hx-12,hy+38);
-  ctx.quadraticCurveTo(hx-4,hy+42,hx+2,hy+36);
-  ctx.quadraticCurveTo(hx+16,hy+20,hx+18,hy+4);
-  ctx.quadraticCurveTo(hx+20,hy-8,hx+10,hy-28);
+  ctx.moveTo(hx-10,hy-26);
+  ctx.quadraticCurveTo(hx-22,hy-10,hx-20,hy+8);
+  ctx.quadraticCurveTo(hx-18,hy+20,hx-12,hy+26);
+  ctx.quadraticCurveTo(hx-4,hy+28,hx+2,hy+24);
+  ctx.quadraticCurveTo(hx+16,hy+14,hx+18,hy+4);
+  ctx.quadraticCurveTo(hx+20,hy-8,hx+10,hy-26);
   ctx.closePath(); ctx.fill(); ctx.stroke();
 
-  // face
-  spOval(hx,hy,18,21,'#f0c8a8');
+  // ── WARM OLIVE/TAN FACE ──────────────────────────────────────
+  spOval(hx,hy,20,22,'#d4956a');
 
-  // ── HAIR ON TOP / FRONT ─────────────────────────────────────
-  ctx.fillStyle=hairColor; ctx.strokeStyle='#000'; ctx.lineWidth=2;
-  // Top of head - natural volume with gentle wave
+  // ── HAIR ON TOP — natural side part, slight wave ──────────────
+  ctx.fillStyle=hc; ctx.strokeStyle='#000'; ctx.lineWidth=2;
   ctx.beginPath();
-  ctx.moveTo(hx-9,hy-9);
-  ctx.quadraticCurveTo(hx-14,hy-32,hx-4,hy-38);
-  ctx.quadraticCurveTo(hx+4,hy-42,hx+10,hy-36);
-  ctx.quadraticCurveTo(hx+16,hy-28,hx+9,hy-9);
+  // mostly to one side (her right = facing left of portrait)
+  ctx.moveTo(hx-10,hy-10);
+  ctx.quadraticCurveTo(hx-8,hy-36,hx+2,hy-40);  // top crown
+  ctx.quadraticCurveTo(hx+10,hy-38,hx+10,hy-26);
+  ctx.quadraticCurveTo(hx+12,hy-18,hx+10,hy-10);
   ctx.closePath(); ctx.fill(); ctx.stroke();
 
-  // Hair highlight / shine streak
-  ctx.strokeStyle=hairHi; ctx.lineWidth=2.5;
+  // Side sweep — hair falling across forehead from part
   ctx.beginPath();
-  ctx.moveTo(hx-4,hy-38);
-  ctx.quadraticCurveTo(hx-8,hy-30,hx-10,hy-18);
+  ctx.moveTo(hx-10,hy-10);
+  ctx.quadraticCurveTo(hx-4,hy-32,hx+2,hy-40);
+  ctx.quadraticCurveTo(hx-6,hy-36,hx-10,hy-26);
+  ctx.quadraticCurveTo(hx-14,hy-18,hx-10,hy-10);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // Hair highlight/sheen
+  ctx.strokeStyle=hhi; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(hx+2,hy-40);
+  ctx.quadraticCurveTo(hx+6,hy-30,hx+8,hy-18);
   ctx.stroke();
 
-  // Side hair strands framing face
-  ctx.fillStyle=hairColor; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
-  ctx.beginPath();
-  ctx.moveTo(hx-9,hy-9);
-  ctx.quadraticCurveTo(hx-22,hy+2,hx-20,hy+14);
-  ctx.quadraticCurveTo(hx-18,hy+20,hx-14,hy+18);
-  ctx.quadraticCurveTo(hx-12,hy+10,hx-10,hy+2);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-
-  // Small decorative hair clip
-  ctx.fillStyle='#ffd700'; ctx.strokeStyle='#aa8800'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.ellipse(hx+6,hy-30,4,2.5,0.4,0,Math.PI*2); ctx.fill(); ctx.stroke();
-
   // ears
-  spOval(hx-9,hy,4,6,'#ddb898');
-  spOval(hx+9,hy,4,6,'#ddb898');
-  // small earring
+  spOval(hx-10,hy+1,4,5,'#c47858');
+  spOval(hx+10,hy+1,4,5,'#c47858');
+  // small earring drop
   ctx.fillStyle='#ffd700';
-  ctx.beginPath(); ctx.arc(hx+9,hy+5,2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx+10,hy+6,1.8,0,Math.PI*2); ctx.fill();
 
-  // BIG eyes with lashes
-  spOval(hx-7,hy-5,6,6,'#fff');
-  spOval(hx+7,hy-5,6,6,'#fff');
-  ctx.fillStyle='#3d1a5a'; ctx.beginPath(); ctx.arc(hx-6,hy-5,4,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#3d1a5a'; ctx.beginPath(); ctx.arc(hx+8,hy-5,4,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#fff'; ctx.fillRect(hx-8,hy-7,2,2); ctx.fillRect(hx+7,hy-7,2,2);
-  // lashes
-  ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
-  [-3,-1,1].forEach(ox=>{ ctx.beginPath(); ctx.moveTo(hx-6+ox,hy-9); ctx.lineTo(hx-6+ox-1,hy-12); ctx.stroke(); });
-  [-3,-1,1].forEach(ox=>{ ctx.beginPath(); ctx.moveTo(hx+8+ox,hy-9); ctx.lineTo(hx+8+ox-1,hy-12); ctx.stroke(); });
+  // ── EYES — warm brown, expressive ───────────────────────────
+  spOval(hx-7,hy-5,7,6,'#fff');
+  spOval(hx+7,hy-5,7,6,'#fff');
+  // warm brown irises
+  ctx.fillStyle='#5a2e10';
+  ctx.beginPath(); ctx.arc(hx-6,hy-5,4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx+8,hy-5,4,0,Math.PI*2); ctx.fill();
+  // dark pupil
+  ctx.fillStyle='#1a0a00';
+  ctx.beginPath(); ctx.arc(hx-6,hy-5,2.2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx+8,hy-5,2.2,0,Math.PI*2); ctx.fill();
+  // eye shine
+  ctx.fillStyle='#fff';
+  ctx.fillRect(hx-8,hy-7,2,2); ctx.fillRect(hx+7,hy-7,2,2);
+  // lashes (subtle)
+  ctx.strokeStyle='#1a0a00'; ctx.lineWidth=1.5;
+  [-3,-1,1].forEach(ox=>{ ctx.beginPath(); ctx.moveTo(hx-6+ox,hy-9); ctx.lineTo(hx-6+ox,hy-12); ctx.stroke(); });
+  [-3,-1,1].forEach(ox=>{ ctx.beginPath(); ctx.moveTo(hx+8+ox,hy-9); ctx.lineTo(hx+8+ox,hy-12); ctx.stroke(); });
 
-  // smile + pink lips
-  ctx.fillStyle='#e0748a'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.ellipse(hx,hy+10,8,5,0,0,Math.PI); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(hx,hy+12,5,3,0,0,Math.PI); ctx.fill();
-  // blush
-  ctx.fillStyle='rgba(255,150,150,0.4)';
-  ctx.beginPath(); ctx.ellipse(hx-13,hy+2,5,3,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(hx+13,hy+2,5,3,0,0,Math.PI*2); ctx.fill();
+  // ── BIG WARM SMILE — her most distinctive feature ────────────
+  ctx.fillStyle='#c86858'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.ellipse(hx,hy+10,9,6,0,0,Math.PI); ctx.fill(); ctx.stroke();
+  // teeth showing
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.ellipse(hx,hy+12,6.5,4,0,0,Math.PI); ctx.fill();
+  // tooth line
+  ctx.strokeStyle='rgba(200,200,200,0.6)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(hx,hy+9); ctx.lineTo(hx,hy+14); ctx.stroke();
+
+  // blush — warm rosy
+  ctx.fillStyle='rgba(220,120,100,0.35)';
+  ctx.beginPath(); ctx.ellipse(hx-14,hy+3,5,3.5,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx+14,hy+3,5,3.5,0,0,Math.PI*2); ctx.fill();
 
   if(captured){
     ctx.strokeStyle='#888'; ctx.lineWidth=2;
@@ -1132,35 +1143,101 @@ function drawMalina(x,y,anim){
 function drawMalinaIT(x,y,anim){
   const bx=Math.round(x), by=Math.round(y);
   const bob=Math.sin(anim*.07)*3;
-  // hoodie body — dark grey
-  spOval(bx,by+20,28,36,'#444');
-  spOval(bx,by+20,24,32,'#555');
-  // hoodie pocket
-  ctx.fillStyle='#333';ctx.fillRect(bx-8,by+28,16,12);ctx.strokeStyle='#666';ctx.lineWidth=1;ctx.strokeRect(bx-8,by+28,16,12);
-  // USB stick in hand — yellow
-  ctx.fillStyle='#ffd700';ctx.fillRect(bx+22,by+16,14,7);ctx.strokeStyle='#cc8800';ctx.lineWidth=1.5;ctx.strokeRect(bx+22,by+16,14,7);
+
+  // hoodie body — dark grey/charcoal
+  spOval(bx,by+20,28,36,'#3a3a3a');
+  spOval(bx,by+20,24,32,'#484848');
+  // hoodie front pocket
+  ctx.fillStyle='#2a2a2a';ctx.fillRect(bx-8,by+28,16,12);
+  ctx.strokeStyle='#555';ctx.lineWidth=1;ctx.strokeRect(bx-8,by+28,16,12);
+  // USB stick in hand
+  ctx.fillStyle='#ffd700';ctx.fillRect(bx+22,by+16,14,7);
+  ctx.strokeStyle='#cc8800';ctx.lineWidth=1.5;ctx.strokeRect(bx+22,by+16,14,7);
   ctx.fillStyle='#aaa';ctx.fillRect(bx+22,by+19,5,4);
-  // head
-  spOval(bx,by+bob-12,20,22,'#c4855a');
-  // messy hair — dark, sticking up
-  ctx.fillStyle='#222';
-  ctx.fillRect(bx-14,by+bob-22,28,14);
-  // hair spikes
-  [[0,-8],[-8,-5],[8,-5],[-14,-2],[14,-2]].forEach(([hx,hhh])=>{ctx.fillRect(bx+hx-4,by+bob+hhh-22,8,10);});
-  // glasses — nerdy square frames
-  ctx.strokeStyle='#333';ctx.lineWidth=2.5;
-  ctx.strokeRect(bx-14,by+bob-17,12,9);
-  ctx.strokeRect(bx+2,by+bob-17,12,9);
-  ctx.beginPath();ctx.moveTo(bx-2,by+bob-13);ctx.lineTo(bx+2,by+bob-13);ctx.stroke();
-  // lens glint
-  ctx.fillStyle='rgba(200,220,255,0.4)';ctx.fillRect(bx-12,by+bob-16,4,3);ctx.fillRect(bx+4,by+bob-16,4,3);
-  // eyes behind glasses
-  ctx.fillStyle='#222';ctx.fillRect(bx-10,by+bob-14,4,4);ctx.fillRect(bx+6,by+bob-14,4,4);
-  // mouth — nervous thin line
-  ctx.strokeStyle='#7a4530';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.moveTo(bx-6,by+bob-5);ctx.lineTo(bx+6,by+bob-5);ctx.stroke();
   // legs
-  spOval(bx-8,by+50,8,14,'#333');spOval(bx+8,by+50,8,14,'#333');
+  spOval(bx-8,by+50,8,14,'#2a2a2a');spOval(bx+8,by+50,8,14,'#2a2a2a');
+
+  const hx=bx, hy=by+bob-12;
+
+  // ── FACE — fair/light skin ───────────────────────────────────
+  spOval(hx,hy,22,24,'#e8c8a8');
+
+  // ── HAIR — dark brown, tousled/swept, longer on top ──────────
+  const hc='#2a1a0e', hhi='#5a3a20';
+  ctx.fillStyle=hc; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+
+  // hair behind (sides/back)
+  ctx.beginPath();
+  ctx.moveTo(hx-11,hy-10);
+  ctx.quadraticCurveTo(hx-20,hy-6,hx-18,hy+4);
+  ctx.quadraticCurveTo(hx-16,hy+10,hx-10,hy+8);
+  ctx.lineTo(hx-8,hy-4); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(hx+11,hy-10);
+  ctx.quadraticCurveTo(hx+20,hy-6,hx+18,hy+4);
+  ctx.quadraticCurveTo(hx+16,hy+10,hx+10,hy+8);
+  ctx.lineTo(hx+8,hy-4); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // main hair top — tousled, swept slightly right
+  ctx.beginPath();
+  ctx.moveTo(hx-11,hy-10);
+  ctx.quadraticCurveTo(hx-10,hy-30,hx+2,hy-34);  // crown
+  ctx.quadraticCurveTo(hx+12,hy-30,hx+16,hy-18);
+  ctx.quadraticCurveTo(hx+14,hy-10,hx+11,hy-10);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // tousled bits sticking up slightly — his signature messy look
+  ctx.beginPath(); ctx.moveTo(hx+2,hy-34);
+  ctx.quadraticCurveTo(hx+8,hy-40,hx+10,hy-34); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(hx-2,hy-32);
+  ctx.quadraticCurveTo(hx-6,hy-38,hx-4,hy-32); ctx.fill(); ctx.stroke();
+
+  // hair highlight
+  ctx.strokeStyle=hhi; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(hx,hy-34);
+  ctx.quadraticCurveTo(hx+4,hy-26,hx+6,hy-16);
+  ctx.stroke();
+
+  // ears
+  spOval(hx-11,hy+1,4,5,'#d4a880');
+  spOval(hx+11,hy+1,4,5,'#d4a880');
+
+  // ── GLASSES — round/oval frames (matches his friendly look) ──
+  ctx.strokeStyle='#2a1a0e'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.ellipse(hx-7,hy-7,6,5,0,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(hx+7,hy-7,6,5,0,0,Math.PI*2); ctx.stroke();
+  // bridge
+  ctx.beginPath(); ctx.moveTo(hx-1,hy-7); ctx.lineTo(hx+1,hy-7); ctx.stroke();
+  // temple arms
+  ctx.beginPath(); ctx.moveTo(hx-13,hy-7); ctx.lineTo(hx-17,hy-5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(hx+13,hy-7); ctx.lineTo(hx+17,hy-5); ctx.stroke();
+  // lens tint
+  ctx.fillStyle='rgba(200,220,255,0.18)';
+  ctx.beginPath(); ctx.ellipse(hx-7,hy-7,6,5,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx+7,hy-7,6,5,0,0,Math.PI*2); ctx.fill();
+
+  // ── EYES — warm hazel/brown ───────────────────────────────────
+  ctx.fillStyle='#5a3a18';
+  ctx.beginPath(); ctx.arc(hx-7,hy-7,3.2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx+7,hy-7,3.2,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.fillRect(hx-9,hy-9,2,2); ctx.fillRect(hx+6,hy-9,2,2);
+
+  // ── LIGHT STUBBLE on jaw ─────────────────────────────────────
+  ctx.fillStyle='rgba(80,50,20,0.22)';
+  ctx.beginPath(); ctx.ellipse(hx,hy+8,10,6,0,0,Math.PI); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx-7,hy+3,4,3,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx+7,hy+3,4,3,0,0,Math.PI*2); ctx.fill();
+
+  // ── BIG WARM SMILE with teeth ─────────────────────────────────
+  ctx.fillStyle='#b86848'; ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.ellipse(hx,hy+9,9,6,0,0,Math.PI); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.ellipse(hx,hy+11,6.5,4,0,0,Math.PI); ctx.fill();
+  ctx.strokeStyle='rgba(200,200,200,0.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(hx,hy+8); ctx.lineTo(hx,hy+13); ctx.stroke();
+
+  spNameTag('MALINA',hx,by-28,'#ff8888');
 }
 // Wrapper for use in INTROS — ensures virus mode is never triggered
 function drawVladimirNormal(x,y,anim){ drawVladimir(x,y,anim,false); }
@@ -1693,6 +1770,7 @@ function startGame(){
 
 function nextLevel(){
   stopThunderSfx();
+  Audio.stop(); // keep silence during cutscene/intro — music restarts in initLevel
   currentLevel++;
   if(currentLevel>=LEVELS.length){ gameState='credits'; cutsceneTimer=frameCount; setNarrator(''); return; }
   const intros={
@@ -1748,6 +1826,7 @@ function nextLevel(){
 function triggerLevelClear(msg){
   if(gameState!=='playing') return;
   stopThunderSfx();
+  Audio.stop(); // silence level music on win screen
   Audio.sfx('levelclear');
   gameState='levelclear'; levelClearMsg=msg; levelClearTimer=0;
   screenFlash=30; screenFlashColor='#ffd700';
@@ -3762,7 +3841,6 @@ function runTitle(){
   tblink++;
   var bl=Math.floor(tblink/22)%2===0;
   drawTextC(bl?'ENTER  to  START':'UP / DOWN  to  choose',452,8,bl?colors[sel]:'#888');
-  drawTextC('31 MAY 2026',472,5,'#333');
 }
 
 function startEnding(){
@@ -4055,13 +4133,13 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
     var container = document.getElementById('game-container');
     if(!container) return;
     // Total height needed: canvas(480) + border(8) + hint bars below(~50)
-    var totalH = 538;
+    var totalH = 520;
     var totalW = 648; // 640 + 8px border
     var scaleX = (window.innerWidth  - 16) / totalW;
     var scaleY = (window.innerHeight - 40) / totalH;
     var scale  = Math.min(scaleX, scaleY, 1.8); // cap at 1.8x to avoid blurriness
     container.style.transform = 'scale('+scale+')';
-    container.style.marginBottom = (scale * 50) + 'px'; // space for hint bars
+    container.style.marginBottom = (scale * 28) + 'px'; // space for hint bar
   }
   window.addEventListener('resize', scaleGame);
   // Small delay to let browser settle after load

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
 <meta name="mobile-web-app-capable" content="yes">
@@ -12,12 +12,22 @@
     --sat: env(safe-area-inset-top, 0px);
     --sab: env(safe-area-inset-bottom, 0px);
   }
-  html { height: 100%; background: #000; }
+  html {
+    height: 100%;
+    background: #000;
+    touch-action: none;          /* kill all browser touch gestures */
+    -ms-touch-action: none;
+    overflow: hidden;
+  }
   body {
-    height: 100dvh; /* dynamic viewport height — excludes browser chrome */
+    height: 100dvh;
     padding-top: max(var(--sat), 0px);
     padding-bottom: max(var(--sab), 0px);
+    touch-action: none;
+    overflow: hidden;
   }
+  /* Prevent double-tap zoom on every element */
+  * { touch-action: none; }
 </style>
 <title>🎮 Wedding Game Controller</title>
 <style>
@@ -493,6 +503,17 @@ function vibrate(ms){
 
 document.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
 document.addEventListener('contextmenu', e=>e.preventDefault());
+// Block pinch-zoom (multi-touch scale gesture)
+document.addEventListener('gesturestart',  e=>e.preventDefault(), {passive:false});
+document.addEventListener('gesturechange', e=>e.preventDefault(), {passive:false});
+document.addEventListener('gestureend',    e=>e.preventDefault(), {passive:false});
+// Block double-tap zoom
+let _dtapLast = 0;
+document.addEventListener('touchend', e=>{
+  const now = Date.now();
+  if(now - _dtapLast < 300) e.preventDefault();
+  _dtapLast = now;
+}, {passive:false});
 
 // Show rotate overlay in portrait mode
 function checkOrientation(){
