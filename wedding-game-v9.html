@@ -44,11 +44,21 @@ canvas { display:block; image-rendering:auto; width:640px; height:480px; }
 #narrator-name { color:#ffd700; margin-bottom:2px; font-size:5.5px; letter-spacing:0.5px; }
 #scanline-overlay { position:absolute; top:0;left:0;right:0;bottom:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px); pointer-events:none; z-index:20; }
 #hint-bar {
-  width:640px; min-height:16px; margin-top:2px;
+  position: fixed;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  max-width: 98vw;
   font-family:'Press Start 2P',monospace; font-size:7px;
-  color:#ccc; text-align:center; line-height:1.6;
+  color:#ccc; text-align:center; line-height:2.2;
   opacity:1; transition:opacity 0.6s;
   pointer-events:none;
+  background: rgba(0,0,0,0.72);
+  padding: 5px 12px 6px;
+  border-radius: 6px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  z-index: 50;
 }
 #hint-bar span.hl { color:#ffd700; }
 #god-bar {
@@ -1997,22 +2007,29 @@ function runLevel1(){
 // ==================================================================
 // == LEVEL 2: SQUID GAMES -- RED LIGHT/GREEN LIGHT + BRIDGE =========
 // ==================================================================
+let level2BridgeReached = false; // persists so restart skips red light
+
 function initLevel2(){
   Audio.playLevelTheme(2);
-    levelData={
-    minigame:'redlight',
+  levelData={
+    minigame: level2BridgeReached ? 'bridge' : 'redlight',
     greenLight:true, lightTimer:0, lightDuration:80,
     p1x:60,p2x:120,p1safeX:60,p2safeX:120,
     p1moved:false,p2moved:false,
     bridge:[],
-    step1:0,step2:0,
+    step1: level2BridgeReached ? -1 : undefined,
+    step2: level2BridgeReached ? -1 : undefined,
     platforms:[{x:0,y:420,w:W,h:60}],
     phase2done:false,
   };
   for(let i=0;i<9;i++) levelData.bridge.push({safe:Math.random()>0.5,revealed:false,stepped1:false,stepped2:false});
   levelData.startFrame=frameCount;
   setNarrator('');
-  showHint('RED LIGHT = FREEZE!  GREEN LIGHT = RUN!','P1: D to run   |   P2: ARROW RIGHT to run');
+  if(level2BridgeReached){
+    showHint('GLASS BRIDGE — GUESS WHICH PANEL IS SAFE!','P1: W=top  S=bottom  D=finish   |   P2: UP=top  DOWN=bottom  RIGHT=finish');
+  } else {
+    showHint('RED LIGHT = FREEZE!  GREEN LIGHT = RUN!','P1: D to run   |   P2: ARROW RIGHT to run');
+  }
 }
 
 function runLevel2(){
@@ -2080,6 +2097,7 @@ function runLevel2(){
       d.minigame='bridge';
       d.step1=undefined; d.step2=undefined;
       d.bridgeStartFrame=frameCount;
+      level2BridgeReached = true; // remember bridge was reached
       showHint('GLASS BRIDGE — GUESS WHICH PANEL IS SAFE!','P1: W=top  S=bottom  D=finish   |   P2: UP=top  DOWN=bottom  RIGHT=finish');
     }
     if(lives<=0) gameState='gameover';
@@ -2177,6 +2195,7 @@ function runLevel2(){
     if((!p1Active()||d.step1>=9)&&(!p2Active()||d.step2>=9)){
       drawGorjan(W-20,270,1,frameCount);
       drawMartela(W-40,270,-1,frameCount);
+      level2BridgeReached = false; // reset so next playthrough starts fresh
       triggerLevelClear('BRIDGE CROSSED!\nYOU SURVIVED!\nRELATIONSHIP STATUS: STRONGER!');
     }
     if(lives<=0) gameState='gameover';
@@ -4132,14 +4151,13 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
   function scaleGame(){
     var container = document.getElementById('game-container');
     if(!container) return;
-    // Total height needed: canvas(480) + border(8) + hint bars below(~50)
-    var totalH = 520;
-    var totalW = 648; // 640 + 8px border
+    var totalH = 488; // canvas(480) + border(8) — hint bar is now fixed position
+    var totalW = 648;
     var scaleX = (window.innerWidth  - 16) / totalW;
-    var scaleY = (window.innerHeight - 40) / totalH;
-    var scale  = Math.min(scaleX, scaleY, 1.8); // cap at 1.8x to avoid blurriness
+    var scaleY = (window.innerHeight - 16) / totalH;
+    var scale  = Math.min(scaleX, scaleY, 1.8);
     container.style.transform = 'scale('+scale+')';
-    container.style.marginBottom = (scale * 28) + 'px'; // space for hint bar
+    container.style.marginBottom = '0';
   }
   window.addEventListener('resize', scaleGame);
   // Small delay to let browser settle after load
