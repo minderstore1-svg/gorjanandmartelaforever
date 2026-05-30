@@ -196,6 +196,8 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
 .util-btn.mute-btn.pressed{background:rgba(255,200,0,0.15);}
 .util-btn.sfx-btn{border-color:rgba(100,200,255,0.4);color:#88ccff;}
 .util-btn.sfx-btn.pressed{background:rgba(100,200,255,0.15);}
+.util-btn.fs-btn{border-color:rgba(180,140,255,0.45);color:#c8a8ff;}
+.util-btn.fs-btn.pressed{background:rgba(180,140,255,0.16);}
 
 @media (max-height:420px){
   #status-bar{height:36px;font-size:6px;padding:0 12px;}
@@ -275,6 +277,7 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
     <button class="util-btn"          id="btn-next">NEXT ►</button>
     <button class="util-btn mute-btn" id="btn-mute">🔊 MUSIC</button>
     <button class="util-btn sfx-btn"  id="btn-sfx">🔔 SFX</button>
+    <button class="util-btn fs-btn"   id="btn-fullscreen">⛶ FULL</button>
   </div>
 
 </div>
@@ -365,6 +368,26 @@ function requestFullscreen(){
   }catch(e){}
   try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape'); }catch(e){}
   setTimeout(()=>window.scrollTo(0,0), 60);
+}
+
+function toggleFullscreenMode(){
+  const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  try{
+    if(isFull){
+      if(document.exitFullscreen) document.exitFullscreen();
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    } else {
+      requestFullscreen();
+    }
+  }catch(e){}
+  setTimeout(updateFullscreenButton, 120);
+}
+
+function updateFullscreenButton(){
+  const btn = document.getElementById('btn-fullscreen');
+  if(!btn) return;
+  const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  btn.textContent = isFull ? '⛶ EXIT' : '⛶ FULL';
 }
 
 function showController(){
@@ -553,7 +576,26 @@ function attachUtilButtons(){
     },{passive:false});
     sfxBtn.addEventListener('touchend', e=>{ e.preventDefault(); sfxBtn.classList.remove('pressed'); },{passive:false});
   }
+
+  // Fullscreen toggle
+  const fsBtn = document.getElementById('btn-fullscreen');
+  if(fsBtn && !fsBtn.dataset.bound){
+    fsBtn.dataset.bound = '1';
+    const toggleFs = e=>{
+      e.preventDefault();
+      fsBtn.classList.add('pressed');
+      toggleFullscreenMode();
+      vibrate(20);
+      setTimeout(()=>fsBtn.classList.remove('pressed'),120);
+    };
+    fsBtn.addEventListener('touchstart', toggleFs, {passive:false});
+    fsBtn.addEventListener('click', toggleFs);
+  }
+  updateFullscreenButton();
 }
+
+document.addEventListener('fullscreenchange', updateFullscreenButton);
+document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
 
 // ── Orientation / zoom prevention ────────────────────────────────
 function checkOrientation(){
