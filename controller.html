@@ -6,199 +6,173 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
 <meta name="mobile-web-app-capable" content="yes">
-<style>
-  /* Fill the entire screen including notch/safe areas */
-  :root {
-    --sat: env(safe-area-inset-top, 0px);
-    --sab: env(safe-area-inset-bottom, 0px);
-  }
-  html {
-    height: 100%;
-    background: #000;
-    touch-action: none;          /* kill all browser touch gestures */
-    -ms-touch-action: none;
-    overflow: hidden;
-  }
-  body {
-    height: 100dvh;
-    padding-top: max(var(--sat), 0px);
-    padding-bottom: max(var(--sab), 0px);
-    touch-action: none;
-    overflow: hidden;
-  }
-  /* Prevent double-tap zoom on every element */
-  * { touch-action: none; }
-</style>
 <title>🎮 Wedding Game Controller</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
-  html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Press Start 2P',monospace,sans-serif;touch-action:none;}
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;}
+:root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Press Start 2P',monospace;touch-action:none;}
 
-  /* Loading Google Font */
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+/* ── ROTATE OVERLAY ── */
+#rotate-overlay{display:none;position:fixed;inset:0;z-index:999;background:#000;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:32px;}
+@keyframes spin{0%{transform:rotate(0deg)}40%,60%{transform:rotate(90deg)}100%{transform:rotate(90deg)}}
 
-  /* ── SCREENS ─────────────────────────────── */
-  .screen{display:none;width:100%;height:100%;position:absolute;top:0;left:0;}
-  .screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
+/* ── SCREENS ── */
+.screen{display:none;width:100%;height:100%;position:absolute;top:0;left:0;}
+.screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
 
-  /* ── CONNECT SCREEN ──────────────────────── */
-  #screen-connect{background:linear-gradient(135deg,#000010,#1a0030);}
-  #screen-connect h1{color:#ffd700;font-size:10px;text-align:center;line-height:2;margin-bottom:24px;}
-  #screen-connect p{color:#888;font-size:6px;text-align:center;margin-bottom:32px;line-height:2;}
-  .player-btns{display:flex;gap:20px;}
-  .player-btn{
-    width:130px;height:130px;border-radius:16px;border:3px solid;
-    font-family:inherit;font-size:8px;font-weight:bold;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:10px;cursor:pointer;transition:transform .1s,opacity .1s;
-    line-height:1.6;
-  }
-  .player-btn:active{transform:scale(.94);}
-  .player-btn.p1{background:#001a00;border-color:#00ff88;color:#00ff88;}
-  .player-btn.p2{background:#1a0010;border-color:#ff1493;color:#ff1493;}
-  .player-btn .emoji{font-size:32px;}
-  .connecting-msg{color:#aaa;font-size:6px;margin-top:20px;display:none;}
+/* ── CONNECT SCREEN ── */
+#screen-connect{background:linear-gradient(135deg,#000010,#1a0030);}
+#screen-connect h1{color:#ffd700;font-size:10px;text-align:center;line-height:2;margin-bottom:24px;}
+#screen-connect p{color:#888;font-size:6px;text-align:center;margin-bottom:32px;line-height:2;}
+.player-btns{display:flex;gap:20px;}
+.player-btn{width:130px;height:130px;border-radius:16px;border:3px solid;font-family:inherit;font-size:8px;font-weight:bold;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:transform .1s;line-height:1.6;}
+.player-btn:active{transform:scale(.94);}
+.player-btn.p1{background:#001a00;border-color:#00ff88;color:#00ff88;}
+.player-btn.p2{background:#1a0010;border-color:#ff1493;color:#ff1493;}
+.player-btn .emoji{font-size:32px;}
+.connecting-msg{color:#aaa;font-size:6px;margin-top:20px;display:none;}
 
-  /* ── STATUS BAR ──────────────────────────── */
-  #status-bar{
-    position:fixed;top:0;left:0;right:0;height:44px;z-index:99;
-    display:flex;align-items:center;justify-content:space-between;
-    padding:0 16px;font-size:7px;
-  }
-  #status-bar.p1{background:#001a00;border-bottom:2px solid #00ff88;}
-  #status-bar.p2{background:#1a0010;border-bottom:2px solid #ff1493;}
-  #status-name{font-size:9px;}
-  #status-dot{width:12px;height:12px;border-radius:50%;background:#555;}
-  #status-dot.on{background:#00ff88;box-shadow:0 0 8px #00ff88;}
+/* ── STATUS BAR ── */
+#status-bar{position:fixed;top:0;left:0;right:0;height:44px;z-index:99;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:7px;}
+#status-bar.p1{background:#001a00;border-bottom:2px solid #00ff88;}
+#status-bar.p2{background:#1a0010;border-bottom:2px solid #ff1493;}
+#status-name{font-size:9px;}
+#status-dot{width:12px;height:12px;border-radius:50%;background:#555;}
+#status-dot.on{background:#00ff88;box-shadow:0 0 8px #00ff88;}
 
-  /* ── UTILITY BUTTONS — horizontal row above action button ── */
-  #utility-bar{
-    display:none;
-    flex-direction:row;
-    flex-wrap:wrap;
-    justify-content:center;
-    gap:6px;
-    max-width:180px;
-  }
-  #utility-bar.visible{ display:flex; }
-  .util-btn{
-    height:28px;padding:0 8px;border-radius:7px;
-    border:1.5px solid rgba(255,255,255,0.18);
-    background:rgba(255,255,255,0.05);
-    font-family:inherit;font-size:6px;color:#888;
-    display:flex;align-items:center;justify-content:center;gap:3px;
-    touch-action:none;-webkit-user-select:none;user-select:none;
-    -webkit-tap-highlight-color:transparent;white-space:nowrap;
-  }
-  .util-btn.pressed{background:rgba(255,255,255,0.22);color:#fff;}
-  .util-btn.esc-btn{border-color:rgba(255,80,80,0.5);color:#ff8888;}
-  .util-btn.esc-btn.pressed{background:rgba(255,0,0,0.18);}
-  .util-btn.mute-btn{border-color:rgba(255,200,0,0.4);color:#ffcc44;}
-  .util-btn.mute-btn.pressed{background:rgba(255,200,0,0.15);}
-  .util-btn.sfx-btn{border-color:rgba(100,200,255,0.4);color:#88ccff;}
-  .util-btn.sfx-btn.pressed{background:rgba(100,200,255,0.15);}
+/* ── CONTROLLER SCREEN ── */
+#screen-ctrl{
+  padding-top:44px;
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  padding-left:12px;
+  padding-right:12px;
+  gap:0;
+}
+#screen-ctrl.p1{background:linear-gradient(135deg,#000d00,#001a00);}
+#screen-ctrl.p2{background:linear-gradient(135deg,#0d0010,#1a0018);}
 
-  /* Right side: util row on top, action button centered below */
-  #right-col{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:20px;
-    flex-shrink:0;
-  }
+/* ── JOYSTICK ── */
+#joystick-wrap{
+  position:relative;
+  flex-shrink:0;
+  /* Size fills available height minus status bar and padding */
+  width:min(46vw, calc(100dvh - 44px - 24px));
+  height:min(46vw, calc(100dvh - 44px - 24px));
+  max-width:280px;
+  max-height:280px;
+}
+#joystick-base{
+  position:absolute;inset:0;
+  border-radius:50%;
+  background:rgba(255,255,255,0.06);
+  border:3px solid rgba(255,255,255,0.14);
+}
+/* Cardinal direction indicators */
+#joystick-base::before,#joystick-base::after{content:'';position:absolute;background:rgba(255,255,255,0.1);border-radius:3px;}
+#joystick-base::before{left:50%;top:8%;transform:translateX(-50%);width:12%;height:18%;}
+#joystick-base::after{left:50%;bottom:8%;transform:translateX(-50%);width:12%;height:18%;}
+.joy-lr{position:absolute;top:50%;background:rgba(255,255,255,0.1);border-radius:3px;width:18%;height:12%;transform:translateY(-50%);}
+.joy-lr.left{left:8%;}
+.joy-lr.right{right:8%;}
+/* Inner ring */
+#joystick-ring{
+  position:absolute;
+  inset:15%;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,0.08);
+}
+/* The knob / thumb */
+#joystick-knob{
+  position:absolute;
+  width:38%;height:38%;
+  border-radius:50%;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 35% 35%, rgba(255,255,255,0.35), rgba(255,255,255,0.1));
+  border:3px solid rgba(255,255,255,0.4);
+  box-shadow:0 4px 16px rgba(0,0,0,0.5);
+  transition:transform 0.06s ease-out;
+  pointer-events:none;
+}
+#joystick-knob.active{
+  background:radial-gradient(circle at 35% 35%, rgba(255,220,0,0.6), rgba(255,180,0,0.25));
+  border-color:rgba(255,220,0,0.7);
+  box-shadow:0 4px 20px rgba(255,200,0,0.4);
+}
+/* Arrow labels on the base */
+.joy-arrow{position:absolute;font-size:14px;color:rgba(255,255,255,0.2);pointer-events:none;line-height:1;}
+.joy-arrow.up{top:6%;left:50%;transform:translateX(-50%);}
+.joy-arrow.dn{bottom:6%;left:50%;transform:translateX(-50%);}
+.joy-arrow.lt{left:6%;top:50%;transform:translateY(-50%);}
+.joy-arrow.rt{right:6%;top:50%;transform:translateY(-50%);}
 
-  /* ── CONTROLLER SCREEN ── */
-  #screen-ctrl{
-    padding-top:44px;
-    flex-direction:row;
-    align-items:center;
-    justify-content:space-around;
-    padding-left:16px;
-    padding-right:16px;
-  }
-  #screen-ctrl.p1{background:linear-gradient(135deg,#000d00,#001a00);}
-  #screen-ctrl.p2{background:linear-gradient(135deg,#0d0010,#1a0018);}
+/* ── ACTION COLUMN (centre) ── */
+#action-col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  padding:0 8px;
+}
+#btn-action{
+  width:min(22vw, 120px);
+  height:min(22vw, 120px);
+  border-radius:50%;
+  border:4px solid;
+  font-family:inherit;font-size:10px;font-weight:bold;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  touch-action:none;
+  transition:transform .05s;
+}
+#btn-action:active,#btn-action.pressed{transform:scale(.88);}
+#btn-action.p1-style{background:#1a1000;border-color:#ffd700;color:#ffd700;}
+#btn-action.p2-style{background:#1a0010;border-color:#ff1493;color:#ff1493;}
 
-  /* ── D-PAD ───────────────────────────────── */
-  .dpad{
-    position:relative;
-    width:300px;height:300px;
-    flex-shrink:0;
-    touch-action:none;
-  }
-  /* Cross shape: hide corners via clip */
-  .dpad-cross{
-    position:absolute;inset:0;
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    grid-template-rows:1fr 1fr 1fr;
-  }
-  .dpad-cell{
-    display:flex;align-items:center;justify-content:center;
-    font-size:30px;color:rgba(255,255,255,0.5);
-    background:rgba(255,255,255,0.07);
-    border:1px solid rgba(255,255,255,0.1);
-    transition:background .05s, color .05s;
-  }
-  .dpad-cell.corner{ background:transparent; border:none; pointer-events:none; }
-  .dpad-cell.active{ background:rgba(255,255,255,0.28); color:#fff; }
-  #dpad-up    { border-radius:14px 14px 0 0; }
-  #dpad-down  { border-radius:0 0 14px 14px; }
-  #dpad-left  { border-radius:14px 0 0 14px; }
-  #dpad-right { border-radius:0 14px 14px 0; }
-  #dpad-center{ background:rgba(0,0,0,0.2); }
-
-  /* ── ACTION BUTTONS ─────────────────────── */
-  .action-area{
-    display:flex;flex-direction:column;align-items:center;gap:24px;
-  }
-  .action-btn{
-    width:130px;height:130px;border-radius:50%;border:4px solid;
-    font-family:inherit;font-size:11px;font-weight:bold;
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;transition:transform .05s;
-    flex-shrink:0;
-    touch-action:none;
-  }
-  .action-btn:active,.action-btn.pressed{transform:scale(.88);}
-  .action-btn.jump{background:#001a00;border-color:#00ff88;color:#00ff88;}
-  .action-btn.shoot{background:#1a1000;border-color:#ffd700;color:#ffd700;}
-  .action-btn.p2{background:#1a0010;border-color:#ff1493;color:#ff1493;}
-
-  .dpad-btn, .action-btn, .player-btn{
-    -webkit-tap-highlight-color:transparent;
-    -webkit-touch-callout:none;
-    -webkit-user-select:none;
-    user-select:none;
-    touch-action:none;
-    outline:none;
-    -webkit-appearance:none;
-  }
-
+/* ── UTILITY COLUMN (right) ── */
+#util-col{
+  display:none;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:center;
+  gap:7px;
+  flex-shrink:0;
+  width:min(18vw,88px);
+}
+#util-col.visible{display:flex;}
+.util-btn{
+  height:32px;
+  border-radius:8px;
+  border:1.5px solid rgba(255,255,255,0.18);
+  background:rgba(255,255,255,0.05);
+  font-family:inherit;font-size:5.5px;color:#777;
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  touch-action:none;white-space:nowrap;
+  transition:background .08s;
+}
+.util-btn.pressed{background:rgba(255,255,255,0.22);color:#fff;}
+.util-btn.esc-btn{border-color:rgba(255,80,80,0.5);color:#ff8888;}
+.util-btn.esc-btn.pressed{background:rgba(255,0,0,0.18);}
+.util-btn.mute-btn{border-color:rgba(255,200,0,0.4);color:#ffcc44;}
+.util-btn.mute-btn.pressed{background:rgba(255,200,0,0.15);}
+.util-btn.sfx-btn{border-color:rgba(100,200,255,0.4);color:#88ccff;}
+.util-btn.sfx-btn.pressed{background:rgba(100,200,255,0.15);}
 </style>
 </head>
 <body>
 
-<!-- Rotate overlay — shown in portrait mode -->
-<div id="rotate-overlay" style="
-  display:none; position:fixed; inset:0; z-index:999;
-  background:#000; flex-direction:column;
-  align-items:center; justify-content:center; gap:24px;
-  font-family:'Press Start 2P',monospace; text-align:center; padding:32px;">
+<!-- Rotate overlay -->
+<div id="rotate-overlay">
   <div style="font-size:72px;animation:spin 2s ease-in-out infinite;">📱</div>
   <div style="font-size:11px;color:#ffd700;line-height:2;">ROTATE YOUR<br>PHONE</div>
   <div style="font-size:8px;color:#888;line-height:2;">LANDSCAPE MODE<br>REQUIRED TO PLAY</div>
 </div>
 
-<style>
-@keyframes spin {
-  0%   { transform: rotate(0deg);   }
-  40%  { transform: rotate(90deg);  }
-  60%  { transform: rotate(90deg);  }
-  100% { transform: rotate(90deg);  }
-}
-</style>
+<!-- CONNECT SCREEN -->
 <div id="screen-connect" class="screen active">
   <h1>GORJAN &amp; MARTELA<br>FOREVER ♥</h1>
   <p>Choose your player</p>
@@ -212,11 +186,11 @@
       <span>MARTELA<br>Player 2</span>
     </button>
   </div>
-  <p style="font-size:5px;color:#444;margin-top:20px;font-family:'Press Start 2P',monospace;">TAP A BUTTON TO GO FULLSCREEN</p>
+  <p style="font-size:5px;color:#444;margin-top:20px;">TAP A BUTTON TO GO FULLSCREEN</p>
   <p class="connecting-msg" id="connecting-msg">Connecting...</p>
 </div>
 
-<!-- STATUS BAR (shown on controller screen) -->
+<!-- STATUS BAR -->
 <div id="status-bar" style="display:none">
   <span id="status-name">P1 — GORJAN</span>
   <span id="status-dot"></span>
@@ -224,307 +198,308 @@
 
 <!-- CONTROLLER SCREEN -->
 <div id="screen-ctrl" class="screen">
-  <!-- D-PAD: continuous cross -->
-  <div class="dpad" id="dpad">
-    <div class="dpad-cross">
-      <div class="dpad-cell corner"></div>
-      <div class="dpad-cell" id="dpad-up">▲</div>
-      <div class="dpad-cell corner"></div>
-      <div class="dpad-cell" id="dpad-left">◀</div>
-      <div class="dpad-cell" id="dpad-center"></div>
-      <div class="dpad-cell" id="dpad-right">▶</div>
-      <div class="dpad-cell corner"></div>
-      <div class="dpad-cell" id="dpad-down">▼</div>
-      <div class="dpad-cell corner"></div>
+
+  <!-- LEFT: Joystick -->
+  <div id="joystick-wrap">
+    <div id="joystick-base">
+      <div class="joy-lr left"></div>
+      <div class="joy-lr right"></div>
+      <span class="joy-arrow up">▲</span>
+      <span class="joy-arrow dn">▼</span>
+      <span class="joy-arrow lt">◀</span>
+      <span class="joy-arrow rt">▶</span>
     </div>
+    <div id="joystick-ring"></div>
+    <div id="joystick-knob"></div>
   </div>
 
-  <!-- RIGHT COLUMN: utility buttons above action buttons -->
-  <div id="right-col">
-    <div id="utility-bar">
-      <button class="util-btn esc-btn"  id="btn-esc">⏸ ESC</button>
-      <button class="util-btn"          id="btn-prev">◄ PREV</button>
-      <button class="util-btn"          id="btn-next">NEXT ►</button>
-      <button class="util-btn mute-btn" id="btn-mute">🔊 MUSIC</button>
-      <button class="util-btn sfx-btn"  id="btn-sfx">🔔 SFX</button>
-    </div>
-
-    <!-- Single ACTION button, centered -->
-    <div class="action-area" id="action-area">
-      <button class="action-btn shoot" id="btn-action"
-        data-key-p1=" " data-key-p2="Enter">ACTION</button>
-    </div>
+  <!-- CENTRE: Action button -->
+  <div id="action-col">
+    <button id="btn-action" class="p1-style"
+      data-key-p1=" " data-key-p2="Enter">ACTION</button>
   </div>
+
+  <!-- RIGHT: Utility buttons stacked vertically -->
+  <div id="util-col">
+    <button class="util-btn esc-btn"  id="btn-esc">⏸ ESC</button>
+    <button class="util-btn"          id="btn-prev">◄ PREV</button>
+    <button class="util-btn"          id="btn-next">NEXT ►</button>
+    <button class="util-btn mute-btn" id="btn-mute">🔊 MUSIC</button>
+    <button class="util-btn sfx-btn"  id="btn-sfx">🔔 SFX</button>
+  </div>
+
 </div>
 
-
-
 <script>
-const WS_URL  = (function(){
+const WS_URL = (function(){
   var injected = '__WS_URL__';
   if(injected.indexOf('__') === -1) return injected;
   var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   return proto + '//' + location.host;
 })();
 
-let player  = null;
-let sock    = null;
-let connected = false;
-const heldKeys = new Set();   // keys currently being held
+let player = null, sock = null, connected = false;
+const heldKeys = new Set();
 const lastTap  = {};
 
-// ── Send compact key message ─────────────────────────────────────────
 function sendKey(down, key){
   if(!sock || sock.readyState !== 1) return;
   sock.send((down?'d':'u') + ':' + key);
 }
 
-// God mode: tap ACTION button 5 times within 3 seconds
-let godTaps = 0, godTapTimer = null;
-function checkGodTap(){
-  godTaps++;
-  if(godTapTimer) clearTimeout(godTapTimer);
-  if(godTaps >= 5){
-    godTaps = 0;
+// God mode: UP UP DOWN DOWN ACTION
+const GOD_SEQ = ['up','up','down','down','action'];
+let godIdx = 0, godTimer = null;
+function checkGodSeq(step){
+  if(step !== GOD_SEQ[godIdx]){ godIdx = step===GOD_SEQ[0]?1:0; return; }
+  godIdx++;
+  if(godTimer) clearTimeout(godTimer);
+  godTimer = setTimeout(()=>{ godIdx=0; }, 4000);
+  if(godIdx >= GOD_SEQ.length){
+    godIdx=0;
     if(sock && sock.readyState===1) sock.send('GODMODE');
-    document.body.style.background = '#ffd700';
-    setTimeout(()=>{ document.body.style.background = ''; }, 600);
+    document.body.style.background='#ffd700';
+    setTimeout(()=>{ document.body.style.background=''; },600);
     vibrate([80,40,80,40,200]);
-    return;
   }
-  // Reset if 3 seconds pass between taps
-  godTapTimer = setTimeout(()=>{ godTaps = 0; }, 3000);
 }
-// Keep checkKonami as a no-op so existing calls don't error
-function checkKonami(){}
 
-// Heartbeat — re-send held keys every 100ms to prevent stuck keys
+// Heartbeat
 setInterval(()=>{
   if(!connected) return;
   heldKeys.forEach(key => sendKey(true, key));
 }, 100);
 
-// ── Player select ────────────────────────────────────────────────────
+function vibrate(pattern){
+  if(navigator.vibrate) navigator.vibrate(pattern);
+}
+
+// ── Player select ────────────────────────────────────────────────
 function choosePlayer(p){
   player = p;
   document.getElementById('connecting-msg').style.display='block';
   document.getElementById('connecting-msg').textContent='Connecting...';
 
   sock = new WebSocket(WS_URL);
-
   sock.onopen = function(){
-    // Register with compact format
     sock.send(JSON.stringify({type:'player_register', player}));
   };
-
   sock.onmessage = function(e){
     var msg; try{ msg=JSON.parse(e.data); }catch(x){ return; }
     if(msg.type==='registered'){ connected=true; showController(); }
   };
-
   sock.onclose = function(){
     connected=false;
-    // Release all held keys on disconnect
-    heldKeys.forEach(key => sendKey(false, key));
-    heldKeys.clear();
-    const dot=document.getElementById('status-dot');
-    if(dot) dot.className='';
-    setTimeout(()=>{ if(player) choosePlayer(player); }, 2000);
+    if(document.getElementById('status-dot'))
+      document.getElementById('status-dot').classList.remove('on');
+    setTimeout(()=>{
+      if(player){ sock=new WebSocket(WS_URL); sock.onopen=()=>sock.send(JSON.stringify({type:'player_register',player})); sock.onmessage=arguments.callee; }
+    },3000);
   };
+}
 
-  sock.onerror = function(){
-    document.getElementById('connecting-msg').textContent='Cannot connect. Is the server running?';
-  };
-
-  // Keepalive ping every 10s
-  setInterval(()=>{ if(sock&&sock.readyState===1) sock.send(JSON.stringify({type:'ping'})); }, 10000);
+function requestFullscreen(){
+  const el = document.documentElement;
+  try{
+    if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'});
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  }catch(e){}
+  try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape'); }catch(e){}
 }
 
 function showController(){
-  // Try to go fullscreen as soon as controller is shown
-  function requestFullscreen(){
-    const el = document.documentElement;
-    try{
-      if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'});
-      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
-    }catch(e){}
-    // Lock to portrait if supported
-    try{
-      if(screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait');
-    }catch(e){}
+  document.getElementById('screen-connect').classList.remove('active');
+  const ctrl = document.getElementById('screen-ctrl');
+  ctrl.classList.add('active');
+  ctrl.classList.add(player==='p1'?'p1':'p2');
+  document.getElementById('status-bar').style.display='flex';
+  document.getElementById('status-bar').className=player==='p1'?'p1':'p2';
+  document.getElementById('status-name').textContent=player==='p1'?'P1 — GORJAN':'P2 — MARTELA';
+  document.getElementById('status-dot').classList.add('on');
+  document.getElementById('util-col').classList.add('visible');
+  // Style action button
+  const ab = document.getElementById('btn-action');
+  ab.classList.add(player==='p1'?'p1-style':'p2-style');
+  requestFullscreen();
+  attachJoystick();
+  attachActionBtn();
+  attachUtilButtons();
+}
+
+// ── JOYSTICK ────────────────────────────────────────────────────
+function attachJoystick(){
+  const wrap  = document.getElementById('joystick-wrap');
+  const knob  = document.getElementById('joystick-knob');
+  const dirKeys = player==='p1'
+    ? {up:'w', down:'s', left:'a', right:'d'}
+    : {up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight'};
+
+  let activeDir = null;
+  let touchId   = null;
+
+  function getDir(touch){
+    const rect  = wrap.getBoundingClientRect();
+    const cx    = rect.left + rect.width  / 2;
+    const cy    = rect.top  + rect.height / 2;
+    const dx    = touch.clientX - cx;
+    const dy    = touch.clientY - cy;
+    const dist  = Math.sqrt(dx*dx + dy*dy);
+    const dead  = rect.width * 0.12; // dead zone ~12% of radius
+    if(dist < dead) return null;
+    // Angle-based 4-way: 45° sectors
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI; // -180 to 180
+    if(angle > -135 && angle <= -45)  return 'up';
+    if(angle >  -45 && angle <=  45)  return 'right';
+    if(angle >   45 && angle <= 135)  return 'down';
+    return 'left';
   }
 
-  document.getElementById('screen-connect').classList.remove('active');
-  document.getElementById('screen-ctrl').classList.add('active');
-  document.getElementById('status-bar').style.display='flex';
-  requestFullscreen();
-  const isP1=player==='p1';
-  document.getElementById('screen-ctrl').className='screen active '+(isP1?'p1':'p2');
-  document.getElementById('status-bar').className=isP1?'p1':'p2';
-  document.getElementById('status-name').textContent=isP1?'P1 — GORJAN':'P2 — MARTELA';
-  document.getElementById('status-dot').className='on';
-  if(!isP1) document.querySelectorAll('.action-btn').forEach(b=>b.classList.add('p2'));
+  function updateKnob(touch){
+    const rect  = wrap.getBoundingClientRect();
+    const cx    = rect.left + rect.width  / 2;
+    const cy    = rect.top  + rect.height / 2;
+    const dx    = touch.clientX - cx;
+    const dy    = touch.clientY - cy;
+    const dist  = Math.sqrt(dx*dx + dy*dy);
+    const maxR  = rect.width * 0.3;
+    const clamp = Math.min(dist, maxR) / dist || 0;
+    const nx    = 50 + (dx * clamp / rect.width  * 2) * 100;
+    const ny    = 50 + (dy * clamp / rect.height * 2) * 100;
+    knob.style.left = nx + '%';
+    knob.style.top  = ny + '%';
+    knob.style.transform = 'translate(-50%,-50%)';
+  }
 
-  // Show utility bar
-  const utilBar = document.getElementById('utility-bar');
-  if(utilBar) utilBar.classList.add('visible');
+  function resetKnob(){
+    knob.style.left = '50%';
+    knob.style.top  = '50%';
+    knob.style.transform = 'translate(-50%,-50%)';
+    knob.classList.remove('active');
+  }
 
-  // Wire utility buttons
+  function setDir(dir){
+    if(dir === activeDir) return;
+    // Release old
+    if(activeDir){ heldKeys.delete(dirKeys[activeDir]); sendKey(false, dirKeys[activeDir]); }
+    activeDir = dir;
+    if(dir){
+      heldKeys.add(dirKeys[dir]); sendKey(true, dirKeys[dir]);
+      checkGodSeq(dir);
+      knob.classList.add('active');
+      vibrate(8);
+    } else {
+      resetKnob();
+    }
+  }
+
+  wrap.addEventListener('touchstart', e=>{
+    e.preventDefault();
+    const t = e.changedTouches[0];
+    touchId = t.identifier;
+    updateKnob(t);
+    setDir(getDir(t));
+  },{passive:false});
+
+  wrap.addEventListener('touchmove', e=>{
+    e.preventDefault();
+    for(let t of e.changedTouches){
+      if(t.identifier === touchId){
+        updateKnob(t);
+        setDir(getDir(t));
+      }
+    }
+  },{passive:false});
+
+  function onEnd(e){
+    e.preventDefault();
+    for(let t of e.changedTouches){
+      if(t.identifier === touchId){
+        touchId = null;
+        setDir(null);
+        resetKnob();
+      }
+    }
+  }
+  wrap.addEventListener('touchend',    onEnd, {passive:false});
+  wrap.addEventListener('touchcancel', onEnd, {passive:false});
+}
+
+// ── ACTION BUTTON ────────────────────────────────────────────────
+function attachActionBtn(){
+  const btn = document.getElementById('btn-action');
+  const key = btn.getAttribute(player==='p1'?'data-key-p1':'data-key-p2');
+  if(!key) return;
+  btn.addEventListener('touchstart', e=>{
+    e.preventDefault();
+    checkGodSeq('action');
+    if(!heldKeys.has(key)){ heldKeys.add(key); sendKey(true,key); btn.classList.add('pressed'); vibrate(25); }
+  },{passive:false});
+  btn.addEventListener('touchend',    e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
+  btn.addEventListener('touchcancel', e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
+}
+
+// ── UTILITY BUTTONS ───────────────────────────────────────────────
+function attachUtilButtons(){
   function utilBtn(id, key){
     const btn = document.getElementById(id);
     if(!btn) return;
-    btn.addEventListener('touchstart', e=>{
-      e.preventDefault();
-      btn.classList.add('pressed');
-      sendKey(true, key);
-      vibrate(20);
-    },{passive:false});
-    btn.addEventListener('touchend', e=>{
-      e.preventDefault();
-      btn.classList.remove('pressed');
-      sendKey(false, key);
-    },{passive:false});
-    btn.addEventListener('touchcancel', e=>{
-      e.preventDefault();
-      btn.classList.remove('pressed');
-      sendKey(false, key);
-    },{passive:false});
+    btn.addEventListener('touchstart', e=>{ e.preventDefault(); btn.classList.add('pressed'); sendKey(true,key); vibrate(12); },{passive:false});
+    btn.addEventListener('touchend',   e=>{ e.preventDefault(); btn.classList.remove('pressed'); sendKey(false,key); },{passive:false});
+    btn.addEventListener('touchcancel',e=>{ e.preventDefault(); btn.classList.remove('pressed'); sendKey(false,key); },{passive:false});
   }
   utilBtn('btn-esc',  'Escape');
   utilBtn('btn-prev', '[');
   utilBtn('btn-next', ']');
 
-  // SFX mute button
+  // Music mute
+  const muteBtn = document.getElementById('btn-mute');
+  let musicMuted = false;
+  if(muteBtn){
+    muteBtn.addEventListener('touchstart', e=>{
+      e.preventDefault(); muteBtn.classList.add('pressed');
+      musicMuted=!musicMuted;
+      muteBtn.textContent = musicMuted ? '🔇 MUSIC' : '🔊 MUSIC';
+      sendKey(true,'m'); vibrate(20);
+    },{passive:false});
+    muteBtn.addEventListener('touchend', e=>{ e.preventDefault(); muteBtn.classList.remove('pressed'); sendKey(false,'m'); },{passive:false});
+  }
+
+  // SFX mute
   const sfxBtn = document.getElementById('btn-sfx');
   let sfxMuted = false;
   if(sfxBtn){
     sfxBtn.addEventListener('touchstart', e=>{
-      e.preventDefault();
-      sfxBtn.classList.add('pressed');
-      sfxMuted = !sfxMuted;
+      e.preventDefault(); sfxBtn.classList.add('pressed');
+      sfxMuted=!sfxMuted;
       sfxBtn.textContent = sfxMuted ? '🔕 SFX' : '🔔 SFX';
-      // Send special sfxmute message
-      if(sock && sock.readyState===1) sock.send('SFXMUTE');
-      vibrate(20);
+      if(sock&&sock.readyState===1) sock.send('SFXMUTE'); vibrate(20);
     },{passive:false});
     sfxBtn.addEventListener('touchend', e=>{ e.preventDefault(); sfxBtn.classList.remove('pressed'); },{passive:false});
   }
-
-  // Mute button — toggles audio, updates label
-  const muteBtn = document.getElementById('btn-mute');
-  let muted = false;
-  if(muteBtn){
-    muteBtn.addEventListener('touchstart', e=>{
-      e.preventDefault();
-      muteBtn.classList.add('pressed');
-      sendKey(true, 'm');
-      muted = !muted;
-      muteBtn.textContent = muted ? '🔇 UNMUTE' : '🔊 MUTE';
-      vibrate(20);
-    },{passive:false});
-    muteBtn.addEventListener('touchend', e=>{
-      e.preventDefault();
-      muteBtn.classList.remove('pressed');
-      sendKey(false, 'm');
-    },{passive:false});
-  }
-
-  attachControls();
 }
 
-// ── Attach touch controls ────────────────────────────────────────────
-function attachControls(){
-  const dirKeys = player==='p1'
-    ? {up:'w', down:'s', left:'a', right:'d'}
-    : {up:'ArrowUp', down:'ArrowDown', left:'ArrowLeft', right:'ArrowRight'};
-
-  // Continuous D-pad: coordinate-based detection
-  const dpad = document.getElementById('dpad');
-  let currentDpadKey = null;
-
-  function getDpadDir(touch){
-    const rect = dpad.getBoundingClientRect();
-    const cx = rect.left + rect.width/2;
-    const cy = rect.top  + rect.height/2;
-    const dx = touch.clientX - cx;
-    const dy = touch.clientY - cy;
-    const dist = Math.sqrt(dx*dx+dy*dy);
-    if(dist < 22) return null;
-    return Math.abs(dy) > Math.abs(dx)
-      ? (dy < 0 ? 'up' : 'down')
-      : (dx < 0 ? 'left' : 'right');
-  }
-
-  function setDpadDir(dir){
-    if(dir === currentDpadKey) return;
-    if(currentDpadKey){
-      const k = dirKeys[currentDpadKey];
-      heldKeys.delete(k); sendKey(false, k);
-      const el = document.getElementById('dpad-'+currentDpadKey);
-      if(el) el.classList.remove('active');
-    }
-    currentDpadKey = dir;
-    if(dir){
-      const k = dirKeys[dir];
-      heldKeys.add(k); sendKey(true, k);
-      vibrate(18);
-      const el = document.getElementById('dpad-'+dir);
-      if(el) el.classList.add('active');
-      checkKonami(dir);
-    }
-  }
-
-  dpad.addEventListener('touchstart', e=>{ e.preventDefault(); setDpadDir(getDpadDir(e.changedTouches[0])); },{passive:false});
-  dpad.addEventListener('touchmove',  e=>{ e.preventDefault(); setDpadDir(getDpadDir(e.changedTouches[0])); },{passive:false});
-  dpad.addEventListener('touchend',   e=>{ e.preventDefault(); setDpadDir(null); },{passive:false});
-  dpad.addEventListener('touchcancel',e=>{ e.preventDefault(); setDpadDir(null); },{passive:false});
-
-  // Action buttons
-  document.querySelectorAll('.action-btn').forEach(btn=>{
-    const key = btn.getAttribute(player==='p1'?'data-key-p1':'data-key-p2');
-    if(!key) return;
-    btn.addEventListener('touchstart', e=>{
-      e.preventDefault();
-      checkGodTap(); // 5 quick taps = god mode
-      if(!heldKeys.has(key)){
-        heldKeys.add(key); sendKey(true,key); btn.classList.add('pressed'); vibrate(25);
-      }
-    },{passive:false});
-    btn.addEventListener('touchend',   e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
-    btn.addEventListener('touchcancel',e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
-  });
-
+// ── Orientation / zoom prevention ────────────────────────────────
+function checkOrientation(){
+  const overlay = document.getElementById('rotate-overlay');
+  if(!overlay) return;
+  overlay.style.display = window.innerHeight > window.innerWidth ? 'flex' : 'none';
 }
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', ()=>{ setTimeout(checkOrientation,200); });
+checkOrientation();
 
-function vibrate(ms){
-  try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){}
-}
-
-document.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
-document.addEventListener('contextmenu', e=>e.preventDefault());
-// Block pinch-zoom (multi-touch scale gesture)
 document.addEventListener('gesturestart',  e=>e.preventDefault(), {passive:false});
 document.addEventListener('gesturechange', e=>e.preventDefault(), {passive:false});
 document.addEventListener('gestureend',    e=>e.preventDefault(), {passive:false});
-// Block double-tap zoom
 let _dtapLast = 0;
 document.addEventListener('touchend', e=>{
   const now = Date.now();
   if(now - _dtapLast < 300) e.preventDefault();
   _dtapLast = now;
-}, {passive:false});
-
-// Show rotate overlay in portrait mode
-function checkOrientation(){
-  const overlay = document.getElementById('rotate-overlay');
-  if(!overlay) return;
-  const isPortrait = window.innerHeight > window.innerWidth;
-  overlay.style.display = isPortrait ? 'flex' : 'none';
-}
-window.addEventListener('resize', checkOrientation);
-window.addEventListener('orientationchange', ()=>{ setTimeout(checkOrientation, 200); });
-checkOrientation();
+},{passive:false});
+document.addEventListener('touchmove', e=>e.preventDefault(),{passive:false});
+document.addEventListener('contextmenu', e=>e.preventDefault());
 </script>
+
 </body>
 </html>
