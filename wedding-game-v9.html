@@ -141,6 +141,7 @@ const Audio = (function(){
     const a = new window.Audio('/music/' + filename);
     a.loop = true;
     a.volume = MUSIC_VOL;
+    a.addEventListener('error', ()=>{}); // fail silently if file missing
     return a;
   }
 
@@ -154,10 +155,11 @@ const Audio = (function(){
 
   function stopMusic(){
     if(currentAudio){
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
+      try{ currentAudio.pause(); }catch(e){}
+      try{ currentAudio.currentTime = 0; }catch(e){}
     }
     currentTrack = null;
+    currentAudio = null;
   }
 
   function playTrackFile(filename){
