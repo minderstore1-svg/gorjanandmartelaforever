@@ -472,12 +472,7 @@ function drawTextC(txt,y,size=8,color='#fff',shadow=true){
 // Hint bar — shows below the game canvas, fades after ~5s
 const hintBar = document.getElementById('hint-bar');
 let hintFadeTimer = null;
-function showHint(titleLine, controlLine){
-  if(!hintBar) return;
-  hintBar.innerHTML = '<span class="hl">'+titleLine+'</span><br>'+controlLine;
-  hintBar.style.opacity='1';
-  if(hintFadeTimer) clearTimeout(hintFadeTimer);
-}
+function showHint(titleLine, controlLine){ /* removed */ }
 function clearHint(){
   if(!hintBar) return;
   if(hintFadeTimer) clearTimeout(hintFadeTimer);
