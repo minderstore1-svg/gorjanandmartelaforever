@@ -269,22 +269,24 @@ function sendKey(down, key){
   sock.send((down?'d':'u') + ':' + key);
 }
 
-// Secret Konami code: UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT ACTION
-const KONAMI = ['up','up','down','down','left','right','left','right','action'];
-let konamiIdx = 0, konamiTimer = null;
-function checkKonami(step){
-  if(step !== KONAMI[konamiIdx]){ konamiIdx = step===KONAMI[0]?1:0; return; }
-  konamiIdx++;
-  if(konamiTimer) clearTimeout(konamiTimer);
-  konamiTimer = setTimeout(()=>{ konamiIdx=0; }, 3000);
-  if(konamiIdx >= KONAMI.length){
-    konamiIdx=0;
+// God mode: tap ACTION button 5 times within 3 seconds
+let godTaps = 0, godTapTimer = null;
+function checkGodTap(){
+  godTaps++;
+  if(godTapTimer) clearTimeout(godTapTimer);
+  if(godTaps >= 5){
+    godTaps = 0;
     if(sock && sock.readyState===1) sock.send('GODMODE');
-    document.body.style.background='#ffd700';
-    setTimeout(()=>{ document.body.style.background=''; },500);
+    document.body.style.background = '#ffd700';
+    setTimeout(()=>{ document.body.style.background = ''; }, 600);
     vibrate([80,40,80,40,200]);
+    return;
   }
+  // Reset if 3 seconds pass between taps
+  godTapTimer = setTimeout(()=>{ godTaps = 0; }, 3000);
 }
+// Keep checkKonami as a no-op so existing calls don't error
+function checkKonami(){}
 
 // Heartbeat — re-send held keys every 100ms to prevent stuck keys
 setInterval(()=>{
@@ -472,24 +474,15 @@ function attachControls(){
   document.querySelectorAll('.action-btn').forEach(btn=>{
     const key = btn.getAttribute(player==='p1'?'data-key-p1':'data-key-p2');
     if(!key) return;
-    let longPressTimer = null;
     btn.addEventListener('touchstart', e=>{
       e.preventDefault();
-      // Always call checkKonami regardless of heldKeys (fixes stuck-key issue)
-      checkKonami('action');
-      // Long press 3s → god mode
-      longPressTimer = setTimeout(()=>{
-        if(sock && sock.readyState===1) sock.send('GODMODE');
-        document.body.style.background='#ffd700';
-        setTimeout(()=>{ document.body.style.background=''; },500);
-        vibrate([80,40,80,40,200]);
-      }, 3000);
+      checkGodTap(); // 5 quick taps = god mode
       if(!heldKeys.has(key)){
         heldKeys.add(key); sendKey(true,key); btn.classList.add('pressed'); vibrate(25);
       }
     },{passive:false});
-    btn.addEventListener('touchend',   e=>{ e.preventDefault(); clearTimeout(longPressTimer); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
-    btn.addEventListener('touchcancel',e=>{ e.preventDefault(); clearTimeout(longPressTimer); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
+    btn.addEventListener('touchend',   e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
+    btn.addEventListener('touchcancel',e=>{ e.preventDefault(); heldKeys.delete(key); sendKey(false,key); btn.classList.remove('pressed'); },{passive:false});
   });
 
 }
