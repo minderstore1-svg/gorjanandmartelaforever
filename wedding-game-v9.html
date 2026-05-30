@@ -1154,7 +1154,7 @@ function drawPhone(airPct){
   // App header bar
   ctx.fillStyle='#003810'; ctx.fillRect(px+5,py+15,PW-10,18);
   ctx.font="bold 6px 'Press Start 2P'"; ctx.fillStyle='#00cc44';
-  ctx.fillText('AirWatch', px+10, py+27);
+  ctx.fillText('AirCare', px+10, py+27);
   ctx.font="5px 'Press Start 2P'"; ctx.fillStyle='#555';
   ctx.fillText('LIVE', px+PW-26, py+27);
 
@@ -1199,6 +1199,39 @@ function drawPhone(airPct){
 // ======== PRE-LEVEL INTRO SYSTEM ========
 let introLines = [], introIndex = 0, introTimer = 0, introLevelName = '';
 
+// Shared SpongeBob time card renderer — used in both cutscene and intro
+function drawSpongebobCard(lines){
+  ctx.save();
+  ctx.fillStyle='#c0100a'; ctx.fillRect(0,0,W,H);
+  const T=40;
+  ctx.strokeStyle='rgba(180,20,10,0.7)'; ctx.lineWidth=1.2;
+  for(let tx=0;tx<W;tx+=T){
+    for(let ty=0;ty<H;ty+=T){
+      const cx2=tx+T/2, cy2=ty+T/2, r=T*0.38;
+      ctx.beginPath();ctx.moveTo(cx2,ty+3);ctx.lineTo(tx+T-3,cy2);ctx.lineTo(cx2,ty+T-3);ctx.lineTo(tx+3,cy2);ctx.closePath();ctx.stroke();
+      ctx.beginPath();ctx.arc(cx2,cy2,r*0.42,0,Math.PI*2);ctx.stroke();
+      [[0,-r],[r,0],[0,r],[-r,0]].forEach(([dx,dy])=>{ctx.beginPath();ctx.arc(cx2+dx,cy2+dy,2.5,0,Math.PI*2);ctx.stroke();});
+    }
+  }
+  function drawFlower(fx,fy,r,color,rot=0){
+    ctx.strokeStyle=color;ctx.lineWidth=3;
+    for(let p=0;p<6;p++){const a=rot+(p/6)*Math.PI*2,px=fx+Math.cos(a)*r*0.72,py=fy+Math.sin(a)*r*0.72;ctx.beginPath();ctx.arc(px,py,r*0.45,0,Math.PI*2);ctx.stroke();}
+    ctx.beginPath();ctx.arc(fx,fy,r*0.22,0,Math.PI*2);ctx.stroke();
+  }
+  [[55,55,38,'#f5a623',0.2],[W-55,55,34,'#4a90d9',0.5],[30,H-50,32,'#e91e8c',0.1],[W-45,H-45,36,'#e67e22',0.8],[160,H-45,28,'#c0392b',0.3],[W-170,55,30,'#6ab04c',0.6],[W/2-120,42,24,'#e84393',0.0]].forEach(([fx,fy,r,col,rot])=>drawFlower(fx,fy,r,col,rot));
+  const txt=Array.isArray(lines)?lines:[lines];
+  const lineH=68, totalH=txt.length*lineH, startY=H/2-totalH/2+lineH*0.7;
+  ctx.save();ctx.textAlign='center';
+  txt.forEach((l,i)=>{
+    const y=startY+i*lineH;
+    ctx.font="62px 'SomeTimeLater','Arial Black',sans-serif";
+    ctx.lineWidth=10;ctx.strokeStyle='#6b0000';ctx.lineJoin='round';ctx.strokeText(l,W/2,y);
+    ctx.fillStyle='#f9c8c8';ctx.fillText(l,W/2,y);
+  });
+  ctx.restore();
+  ctx.restore();
+}
+
 function startIntro(levelName, lines) {
   introLevelName = levelName;
   introLines = lines;
@@ -1220,15 +1253,25 @@ function advanceIntro() {
 
 function drawIntro() {
   ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
-  for(let y=0;y<H;y+=4){ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(0,y,W,1);}
 
+  if(!introLines.length||!introLines[introIndex]) return;
+  const introLine = introLines[introIndex];
+  introTimer++;
+
+  // ── SpongeBob card inside intro ──────────────────────────────────
+  if(introLine.spongebob){
+    drawSpongebobCard(introLine.lines);
+    // Advance prompt
+    if(Math.floor(frameCount/25)%2===0) drawTextC('ENTER — NEXT ►', H-30, 7, '#aaa');
+    return;
+  }
+
+  for(let y=0;y<H;y+=4){ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(0,y,W,1);}
   ctx.fillStyle='#111';ctx.fillRect(0,0,W,36);
   ctx.strokeStyle='#ffd700';ctx.lineWidth=1;ctx.strokeRect(0,0,W,36);
   drawTextC(introLevelName,24,10,'#ffd700');
 
-  if(!introLines.length||!introLines[introIndex]) return;
-  const line = introLines[introIndex];
-  introTimer++;
+  const line = introLine;  // alias for rest of function
   const isLeft = introIndex % 2 === 0;
   const slideIn = Math.min(1, introTimer/12);
 
@@ -1303,57 +1346,61 @@ function drawIntro() {
 // ======== LEVEL INTRO LINES ========
 const INTROS = {
   1:[
-    {speaker:'DRAGAN',text:'*phone rings* GORJAN! We have an emergency! Check the app!',color:'#ffaa00',drawFn:drawDragan},
-    {speaker:'GORJAN',text:'DO YOU HAVE A BETTER IDEA? Get in the ship!',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'DRAGAN',text:'*phone rings* Gorjan! AirCare just turned red. Like... very red.',color:'#ffaa00',drawFn:drawDragan},
+    {speaker:'GORJAN',text:'How red?',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'DRAGAN',text:'Macedonian-winter red. People are checking the app and panicking.',color:'#ffaa00',drawFn:drawDragan},
     {speaker:'MARTELA',text:'So your brilliant plan is to shoot the bad clouds before they land. With spaceships.',color:'#ff69b4',drawFn:drawMartela},
+    {speaker:'GORJAN',text:'Do you have a better idea?',color:'#00ff88',drawFn:drawGorjan},
     {speaker:'MARTELA',text:'Fine. But I am flying the faster one.',color:'#ff69b4',drawFn:drawMartela},
   ],
   2:[
-    {speaker:'DRAGAN',text:'Welcome. To my game. As CTO of AirWatch I have planned a... team building exercise.',color:'#222',drawFn:drawDraganBoss},
-    {speaker:'GORJAN',text:'Dragan what are you WEARING. And why does your badge say CTO on it?',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'DRAGAN',text:'Welcome. To my game. I was given one birthday task and immediately abused the responsibility.',color:'#222',drawFn:drawDraganBoss},
+    {speaker:'GORJAN',text:'Dragan, what are you WEARING. And why do you have a whistle?',color:'#00ff88',drawFn:drawGorjan},
     {speaker:'DRAGAN',text:'The games begin. The winner gets cake. The others... go home. Probably.',color:'#222',drawFn:drawDraganBoss},
-    {speaker:'MARTELA',text:'I am NOT leaving without cake. Also someone fire this man.',color:'#ff69b4',drawFn:drawMartela},
+    {speaker:'MARTELA',text:'I am NOT leaving without cake. Also, someone take away his whistle.',color:'#ff69b4',drawFn:drawMartela},
+    {speaker:'GORJAN',text:'This is exactly why we cannot give Dragan props.',color:'#00ff88',drawFn:drawGorjan},
   ],
   3:[
     {speaker:'MARTELA',text:'JAPAN! Gorjan we are actually here! I cannot believe this is real!',color:'#ff69b4',drawFn:drawMartela},
-    {speaker:'GORJAN',text:'Indeed, I will be posting on instagram for months.',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'GORJAN',text:'Indeed. I will be posting this on Instagram for months.',color:'#00ff88',drawFn:drawGorjan},
     {speaker:'MARTELA',text:'That is the most romantic thing you have ever said. Now find me ramen.',color:'#ff69b4',drawFn:drawMartela},
     {speaker:'GORJAN',text:'There is a whole city full of it. Race you?',color:'#00ff88',drawFn:drawGorjan},
   ],
   4:[
     {speaker:'MARTELA',text:'That trip was amazing! I cannot wait to tell all our friends!',color:'#ff69b4',drawFn:drawMartela},
-    {speaker:'JOVAN',text:'Wait -- wow, how did this even happen? Are we actually doing this? Okay okay... focus. The wedding. Where is it going to be? Indoor? Outdoor? What if it rains?',color:'#d4a017',drawFn:drawJovan},
+    {spongebob:true, lines:['A WILD JOVAN', 'APPEARS!']},
+    {speaker:'JOVAN',text:'Wait — wow, how did this even happen? Are we actually doing this? Okay okay… focus. The wedding. Indoor? Outdoor? What if it rains?',color:'#d4a017',drawFn:drawJovan},
     {speaker:'JOVAN',text:'Do we need a backup tent? Is the tent waterproof? Like ACTUALLY waterproof? Food -- oh no, the food. Vegetarian? Vegan? Lactose-free? Gluten-free? What if someone is ALL of those at once?',color:'#d4a017',drawFn:drawJovan},
-    {speaker:'JOVAN',text:'You MUST have a pineapple as a centrepiece, it is a symbol of royalty. Also -- are people bringing dogs? Is Brodi vaccinated? Do we need dog supervision? Is that a job??',color:'#d4a017',drawFn:drawJovan},
-    {speaker:'JOVAN',text:'What if Sara catches the bouquet and then just... slowly turns to me. Smiling. Like it is a THREAT. Is that legally binding?? Do I run? Do I propose? Do I play dead??',color:'#d4a017',drawFn:drawJovan},
-    {speaker:'GORJAN',text:'His thoughts are polluting the air! We have to pop them!',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'JOVAN',text:'You MUST have a pineapple as a centrepiece. It is a symbol of royalty. Also — are people bringing dogs? Is Brodi invited? Does Brodi need a plus-one?',color:'#d4a017',drawFn:drawJovan},
+    {speaker:'JOVAN',text:'What if Sara catches the bouquet and slowly turns to me. Smiling. Is that legally binding? Do I run? Do I propose? Do I play dead?',color:'#d4a017',drawFn:drawJovan},
+    {speaker:'GORJAN',text:'His thoughts are taking over the wedding! We have to pop them!',color:'#00ff88',drawFn:drawGorjan},
   ],
   5:[
     {speaker:'MARTELA',text:'Okay. Wedding planning. Six months. How hard can this be?',color:'#ff69b4',drawFn:drawMartela},
-    {speaker:'JOANA',text:'I already made a 47-page spreadsheet colour coded by urgency. You are welcome.',color:'#ff4444',drawFn:drawJoana},
-    {speaker:'GORJAN',text:'Joana, who ordered 150 million liters of drinks for the wedding?',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'JOANA',text:'I NEED TO MEET MY QUARTERLY QUOTAS! YOU ARE BUYING ALL OF THE COKE!',color:'#ff4444',drawFn:drawJoana},
+    {speaker:'JOANA',text:'I already made a 47-page spreadsheet, colour coded by urgency. You are welcome.',color:'#ff4444',drawFn:drawJoana},
+    {speaker:'GORJAN',text:'Joana, why does the wedding budget say 150 million liters of drinks?',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'JOANA',text:'I NEED TO MEET MY QUARTERLY QUOTAS. LOVE IS TEMPORARY. SALES TARGETS ARE FOREVER.',color:'#ff4444',drawFn:drawJoana},
   ],
   6:[
     {speaker:'DORA',text:'I was just trying to install ONE small program on the wedding slideshow computer. A tiny one.',color:'#d49060',drawFn:drawDora},
-    {speaker:'VLADIMIR',text:'And I was helping her. By also installing a small virus. It seemed efficient at the time.',color:'#ff4444',drawFn:drawVladimir},
+    {speaker:'VLADIMIR',text:'And I was helping her. By installing a second small virus. It seemed efficient at the time.',color:'#ff4444',drawFn:drawVladimir},
     {speaker:'GORJAN',text:'You two DESTROYED the computer with our WEDDING PHOTOS on it!!',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MARTELA',text:'Both of you. Fix it. Right now. The wedding is in six days.',color:'#ff69b4',drawFn:drawMartela},
+    {speaker:'MARTELA',text:'Both of you. Fix it. Right now. The wedding is in four days.',color:'#ff69b4',drawFn:drawMartela},
   ],
   7:[
-    {speaker:'GORJAN',text:'Something feels wrong tonight. Have you noticed that man watching us?',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MARTELA',text:'Since yesterday. He is there every time we pass. Same spot. Same stare.',color:'#ff69b4',drawFn:drawMartela},
+    {speaker:'GORJAN',text:'Something feels wrong tonight. Have you noticed the man in the white hat watching us?',color:'#00ff88',drawFn:drawGorjan},
+    {speaker:'MARTELA',text:'Since yesterday. Same spot. Same stare. Very committed to the bit.',color:'#ff69b4',drawFn:drawMartela},
     {speaker:'GORJAN',text:'Three days before our wedding and I have a very bad feeling about this.',color:'#00ff88',drawFn:drawGorjan},
     {speaker:'MARTELA',text:'Gorjan. He is crossing the street. He is coming toward us.',color:'#ff69b4',drawFn:drawMartela},
   ],
   8:[
     {speaker:'GORJAN',text:'Martela is in there. Emir has her. I can see the tower from here.',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MARTELA',text:'Gorjan? Is that you? Take your time, honestly it is peaceful in here.',color:'#ff69b4',drawFn:drawMartela},
+    {speaker:'MARTELA',text:'Gorjan? Is that you? I am fine. Annoyed, but fine.',color:'#ff69b4',drawFn:drawMartela},
     {speaker:'GORJAN',text:'I am coming. Emir first. Then we go get married.',color:'#00ff88',drawFn:drawGorjan},
-    {speaker:'MARTELA',text:'Yes. Also the cage bars are really uncomfortable. Please hurry.',color:'#ff69b4',drawFn:drawMartela},
+    {speaker:'MARTELA',text:'Good. Also, if this delays hair and makeup, Emir is finished.',color:'#ff69b4',drawFn:drawMartela},
   ],
   9:[
-    {speaker:'MIHAELA',text:'We got Gorjan too. The plan is complete. Nothing can stop us now.',color:'#ff4444',drawFn:drawMihaela},
+    {speaker:'MIHAELA',text:'We secured the groom. The plan is complete. The wedding timeline is safe.',color:'#ff4444',drawFn:drawMihaela},
     {speaker:'MARTELA',text:'...You got Gorjan.',color:'#ff1493',drawFn:drawMartela},
     {speaker:'MIHAELA',text:'Oh no. She is doing the calm voice. Everyone run.',color:'#ff4444',drawFn:drawMihaela},
     {speaker:'MARTELA',text:'I did not eat all that ramen in Tokyo to be stopped by you. Move.',color:'#ff1493',drawFn:drawMartela},
@@ -1526,46 +1573,47 @@ function nextLevel(){
   if(currentLevel>=LEVELS.length){ gameState='credits'; cutsceneTimer=frameCount; setNarrator(''); return; }
   const intros={
     2:[
-      ['6 MONTHS AFTER THE BAR...','GORJAN THROWS A BIRTHDAY PARTY.','NOT A NORMAL ONE.'],
+      ['6 MONTHS AFTER THE BAR...','GORJAN THROWS A BIRTHDAY PARTY.','NOT A NORMAL ONE. OBVIOUSLY.'],
       ['"I ORDERED SQUID GAME THEMED"','"GAMES FOR MY BDAY."','"- GORJAN, COMPLETELY SERIOUS"'],
       ['MARTELA: "THIS IS EITHER"','THE BEST OR WORST DATE."','SPOILER: BEST DATE.'],
       ['SURVIVE OR GO HOME.','BOTH PLAYERS MUST FINISH!','GOOD LUCK. YOU NEED IT.'],
     ],
     3:[
       ['YEAR 2: JAPAN.','GORJAN SAVES UP FOR MONTHS.','MARTELA ACTS SURPRISED.'],
-      ['(SHE ALREADY KNEW.)','(DRAGAN CANNOT KEEP SECRETS.)','(DRAGAN IS THE WORST.)'],
+      ['SHE ALREADY KNEW.','DRAGAN CANNOT KEEP SECRETS.','DRAGAN IS THE WORST.'],
       ['"ALL THE PLACES TO EAT"','"IN TOKYO AND YOU WANT"','"RAMEN AGAIN?" — MARTELA'],
       ['"YES." — GORJAN, ALWAYS.','COLLECT ALL THE RAMEN!','DON\'T CRASH INTO EACH OTHER!'],
     ],
     4:[
-      ['BACK FROM JAPAN.','MARTELA WANTS TO TELL EVERYONE.','EVERYONE IS NOT READY.'],
-      {spongebob:true, lines:['A WILD JOVAN', 'APPEARS!']},
+      ['BACK FROM JAPAN. THE WEDDING ERA BEGINS.','MARTELA WANTS TO TELL EVERYONE.','EVERYONE IS NOT READY.'],
     ],
     5:[
-      ['THE WEDDING PLANNING BEGINS.','JOANA HAS ALREADY MADE A PLAN.','47 PAGES. COLOUR CODED.'],
+      ['THE WEDDING PLANNING BEGINS.','JOANA HAS ALREADY MADE A PLAN.','47 PAGES. COLOUR CODED. NOBODY ASKED. EVERYONE IS AFRAID.'],
       ['JOANA: "I NEED TO MEET MY"','"QUARTERLY QUOTAS."','"YOU ARE BUYING ALL THE COKE."'],
       ['CATCH THE BOTTLES!','DON\'T LET THEM HIT THE FLOOR!','JOANA WILL NOT STOP.'],
+      ['ALSO, SOMEONE NAMED EMIR','KEEPS ASKING ABOUT "THE PROPERTY SECTION."','NOBODY KNOWS WHAT THAT MEANS. YET.'],
     ],
     6:[
       ['4 DAYS BEFORE 31 MAY 2026.','THE SLIDESHOW IS ALMOST READY.','GORJAN SAVED 3 YEARS OF PHOTOS.'],
       ['"I JUST WANTED TO SEE"','"WHAT CTRL+ALT+DELETE DID."','"— DORA, BRIEFLY UNSUPERVISED"'],
       ['"I ALSO INSTALLED A SMALL VIRUS."','"FOR FUN."','"— VLAD, MAKING IT WORSE"'],
       ['VLAD.EXE IS EVERYWHERE.','THE PHOTOS ARE TRAPPED.','4 DAYS. FIX IT. NOW.'],
+      ['ALSO THERE IS A FOLDER CALLED:','PROPERTY_FINAL_FINAL_EMIR_DO_NOT_OPEN','NOBODY HAS TIME TO DISCUSS THIS.'],
     ],
     7:[
       ['3 DAYS BEFORE 31 MAY 2026.','EVERYTHING IS READY.','OR SO THEY THINK.'],
-      ['EMIR HASANOVIC.','HE HAS BEEN WATCHING THEM.','HE WANTS WHAT IS THEIRS.'],
-      ['A PROPERTY DISPUTE.','A DEADLINE.','AND HE IS DONE WAITING.'],
+      ['EMIR HASANOVIC.','WHITE HAT. PROPERTY CLAIMANT.','ZERO CHILL.'],
+      ['A PROPERTY DISPUTE. A DEADLINE.','A MAN WHO READ THE FOLDER.','AND ABSOLUTELY NO CHILL.'],
     ],
     8:[
       ['MARTELA IS GONE.','GORJAN STANDS IN THE STREET.','ALONE.'],
-      ['HE THINKS OF THE BAR.','HE THINKS OF JAPAN.','HE THINKS OF 31 MAY 2026.'],
+      ['HE THINKS OF THE BAR.','HE THINKS OF JAPAN. HE THINKS OF CALIFORNIA DREAMIN\'.','HE THINKS OF 31 MAY 2026.'],
       ['EMIR HAS HER.','HE IS NOT GETTING AWAY WITH THIS.','NOT TODAY.'],
       ['GORJAN MOVES.','GO GET HER.',''],
     ],
     9:[
-      ['GORJAN SAVED MARTELA.','THEN THE MAID OF HONOUR','SNATCHED HIM BACK.'],
-      ['MIHAELA JANEVSKA.','MAID OF HONOUR. VILLAIN.','PLANS WITHIN PLANS.'],
+      ['GORJAN SAVED MARTELA. THEN THE MAID OF HONOUR SNATCHED HIM BACK.','BECAUSE APPARENTLY,','THE GROOM DELIVERY PROCESS WAS NOT UNDER CONTROL.'],
+      ['MIHAELA JANEVSKA. MAID OF HONOUR. VILLAIN.','SHE HAD ONE JOB: MAKE SURE THE WEDDING HAPPENS.','UNFORTUNATELY, SHE CHOSE VIOLENCE.'],
       ['"SHE IS DOING THE CALM VOICE."','— MIHAELA, TOO LATE','MARTELA\'S TURN NOW.'],
     ],
   };
@@ -1601,7 +1649,7 @@ function initLevel1(){
   levelData.midEvent=false;
   levelData.startFrame=frameCount;
   levelData.winTickerFired=false;
-  showHint('SHOOT THE BAD CLOUDS!','P1: WASD + SPACE   |   P2: ARROWS + ENTER');
+  showHint('SHOOT THE POLLUTION CLOUDS BEFORE THEY REACH THE CITY!','P1: WASD + SPACE   |   P2: ARROWS + ENTER');
   for(let i=0;i<5;i++) spawnCloud();
 }
 
@@ -1733,7 +1781,13 @@ function runLevel1(){
   drawNewsTicker();
 
   updateDialogue(); drawDialogue();
-  if(d.killed>=d.goal) triggerLevelClear('AIR IS CLEAN!\nAPP GOES VIRAL!\n+' +score+ ' PTS');
+  // Dragan commentary at milestones
+  if(d.killed===2&&!d.drag1){d.drag1=true;queueDialogue('DRAGAN','AirCare is still red! Very bad!',120,'#ffaa00');}
+  if(d.killed===5&&!d.drag2){d.drag2=true;queueDialogue('DRAGAN','Okay, slightly less red. Continue!',120,'#ffaa00');}
+  if(d.killed===8&&!d.drag3){d.drag3=true;queueDialogue('DRAGAN','The app says "maybe stay inside forever."',140,'#ffaa00');}
+  if(d.killed===11&&!d.drag4){d.drag4=true;queueDialogue('DRAGAN','People are refreshing AirCare like football scores.',140,'#ffaa00');}
+  if(d.killed>=d.goal-2&&!d.drag5){d.drag5=true;queueDialogue('DRAGAN','If this works, I am taking partial credit.',130,'#ffaa00');}
+  if(d.killed>=d.goal) triggerLevelClear('AIR IS CLEAN!\nAIRCARE GOES VIRAL!\nSKOPJE CAN BREATHE AGAIN!\n+' +score+ ' PTS');
 }
 
 // ==================================================================
@@ -1919,7 +1973,7 @@ function runLevel2(){
     if((!p1Active()||d.step1>=9)&&(!p2Active()||d.step2>=9)){
       drawGorjan(W-20,270,1,frameCount);
       drawMartela(W-40,270,-1,frameCount);
-      triggerLevelClear('BRIDGE CROSSED!\nYOU SURVIVED!\nNOBODY FELL!');
+      triggerLevelClear('BRIDGE CROSSED!\nYOU SURVIVED!\nRELATIONSHIP STATUS: STRONGER!');
     }
     if(lives<=0) gameState='gameover';
     if(lives<=0) gameState='gameover';
@@ -2102,7 +2156,7 @@ function runLevel3(){
   if(total===6&&!d.midTalk){d.midTalk=true;queueDialogue('MARTELA','This is the best trip of my life.',160,'#ff69b4');queueDialogue('GORJAN','Wait until you see what I planned next...',180,'#00ff88');}
   if(total>=d.goal){
     startNewsTicker('EASTERN EUROPEAN COUPLE EATS ENTIRE TOKYO RAMEN SUPPLY. LOCAL RESTAURANTS OUT OF STOCK.');
-    triggerLevelClear('RAMEN EATEN!\nITASHIMAKITA! ♥\nBEST DATE EVER!');
+    triggerLevelClear('RAMEN EATEN!\nITADAKIMASU! ♥\nBEST TRIP EVER!\n\nNEXT STOP: THE WEDDING ERA.');
   }
 
   if(d.dead1) drawText('P1 DEAD! RESPAWNING...',10,H/2,8,'#ff4444');
@@ -2116,28 +2170,32 @@ function initLevel4(){
   Audio.playLevelTheme(4);
   dialogueQueue=[]; clueboard=[];
   levelData={
-    p1:{x:100,y:H-60,bullets:[],shootCool:0,score:0},
-    p2:{x:540,y:H-60,bullets:[],shootCool:0,score:0},
+    p1:{x:100,y:H-60,bullets:[],shootCool:0},
+    p2:{x:540,y:H-60,bullets:[],shootCool:0},
     bubbles:[],
-    popped:0,goal:10,
-    solved:false,
-    hitCooldown:0,
     platforms:[{x:0,y:H-40,w:W,h:40},{x:100,y:320,w:120,h:14},{x:350,y:280,w:120,h:14},{x:80,y:230,w:80,h:14},{x:440,y:230,w:80,h:14}],
     jovanX:W/2,jovanY:55,jovanDir:1,
+    // Fixed waves: 7 thoughts, one every ~5s
+    wave:0, waveMax:7, waveTimer:0, waveInterval:300,
+    overflowCooldown:0,  // prevent rapid lose-life spam
+    solved:false,
   };
   setNarrator('');
   levelData.startFrame=frameCount;
-  showHint('POP ALL OF JOVAN\'S OVERTHINKING BUBBLES!','P1: WASD + SPACE   |   P2: ARROWS + ENTER');
-  for(let i=0;i<2;i++) spawnBubble(Math.random()*W,100+Math.random()*100,30+Math.random()*30,1);
+  showHint("DON'T LET THOUGHTS OVERFLOW! KEEP BUBBLES UNDER 12!",'P1: WASD + SPACE   |   P2: ARROWS + ENTER');
+  // Seed with first 2 bubbles so it's not empty
+  spawnBubble(160,120,32,1);
+  spawnBubble(460,100,30,1);
+  levelData.wave=2; // already spawned 2
 }
 
 function spawnBubble(x,y,r,gen){
-  if(gen>4||r<10)return;
-  const thoughts=['TENT?','DOGS?','SARA??','RAIN?','FOOD?','VEGAN?','PINEAPPLE','RING??','RUN?'];
+  if(gen>3||r<8)return;
+  const thoughts=['TENT?','DOGS?','SARA??','RAIN?','FOOD?','VEGAN?','PINEAPPLE','RING??','RUN?','BUDGET??'];
   levelData.bubbles.push({
     x,y,r,gen,alive:true,
-    vx:(Math.random()>.5?1:-1)*(2-gen*0.3),
-    vy:-(2+Math.random()),
+    vx:(Math.random()>.5?1:-1)*(2.2-gen*0.4),
+    vy:-(1.8+Math.random()*0.8),
     thought:thoughts[Math.floor(Math.random()*thoughts.length)],
     col:['#ff88aa','#ffaa44','#88aaff','#ff6644','#aa88ff'][Math.floor(Math.random()*5)],
   });
@@ -2145,9 +2203,13 @@ function spawnBubble(x,y,r,gen){
 
 function runLevel4(){
   const d=levelData;
-  // night sky / city bg
+  const aliveBubbles=d.bubbles.filter(b=>b.alive);
+  const bubbleCount=aliveBubbles.length;
+  const OVERFLOW_MAX=12;
+
+  // Background
   ctx.fillStyle='#080814';ctx.fillRect(0,0,W,H);
-  for(let i=0;i<20;i++){const rx=(frameCount*2+i*47)%W;const ry=(frameCount*4+i*31)%H;ctx.fillStyle='rgba(100,150,255,0.25)';ctx.fillRect(rx,ry,1,5);}
+  for(let i=0;i<20;i++){const rx=(frameCount*2+i*47)%W,ry=(frameCount*4+i*31)%H;ctx.fillStyle='rgba(100,150,255,0.25)';ctx.fillRect(rx,ry,1,5);}
   [0,90,190,300,400,500].forEach((bx,i)=>{
     const bh=80+(i*53)%120;
     ctx.fillStyle='#0d0d1e';ctx.fillRect(bx,H-40-bh,80,bh);
@@ -2159,22 +2221,55 @@ function runLevel4(){
     ctx.fillStyle='#1a1a30';ctx.fillRect(pl.x,pl.y,pl.w,pl.h);
     ctx.fillStyle='#2a2a50';ctx.fillRect(pl.x,pl.y,pl.w,3);
   });
-  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,W,28);
-  drawText('BUBBLES: '+d.popped+'/'+d.goal,10,20,7,'#88aaff');
 
-  // Jovan generating thought bubbles
-  d.jovanX += d.jovanDir * 0.8;
-  if(d.jovanX < 60 || d.jovanX > W-60) d.jovanDir *= -1;
+  // ── JOVAN — fixed wave spawner ────────────────────────────────────
+  d.jovanX+=d.jovanDir*0.8;
+  if(d.jovanX<60||d.jovanX>W-60) d.jovanDir*=-1;
+
+  // Excited flash when about to spawn
+  const nextSpawnIn = d.wave < d.waveMax ? d.waveInterval - d.waveTimer : 999;
+  if(nextSpawnIn < 60 && d.wave < d.waveMax){
+    ctx.fillStyle=`rgba(255,200,50,${0.15+Math.sin(frameCount*.3)*.1})`;
+    ctx.beginPath();ctx.arc(d.jovanX,d.jovanY+30,35,0,Math.PI*2);ctx.fill();
+  }
   drawJovan(d.jovanX, d.jovanY, frameCount);
-  // Jovan brain sparks
-  if(frameCount%90===0 && d.popped < d.goal){
-    spawnBubble(d.jovanX+(Math.random()-0.5)*60, d.jovanY+50, 22+Math.random()*18, 1);
-    ctx.fillStyle='rgba(255,200,50,0.4)';
-    ctx.beginPath();ctx.arc(d.jovanX,d.jovanY+40,30,0,Math.PI*2);ctx.fill();
+
+  // Spawn next wave
+  d.waveTimer++;
+  if(d.wave < d.waveMax && d.waveTimer >= d.waveInterval){
+    d.waveTimer=0; d.wave++;
+    spawnBubble(d.jovanX+(Math.random()-.5)*50, d.jovanY+50, 30+Math.random()*8, 1);
+    // Jovan flash
+    ctx.fillStyle='rgba(255,200,50,0.5)';
+    ctx.beginPath();ctx.arc(d.jovanX,d.jovanY+30,40,0,Math.PI*2);ctx.fill();
+    Audio.sfx('pop');
+    if(d.wave===4) queueDialogue('JOVAN','WHY IS THE TENT NOT WATERPROOF?? WHAT IF IT RAINS??',160,'#d4a017');
+    if(d.wave===6) queueDialogue('JOVAN','Sara is going to catch the bouquet and look at me. I know it.',160,'#d4a017');
   }
 
-  updateDialogue(); drawDialogue();
-  // bubbles
+  // Waves remaining indicator (small dots above Jovan)
+  for(let w=0;w<d.waveMax;w++){
+    ctx.fillStyle=w<d.wave?'rgba(255,200,50,0.25)':'rgba(255,200,50,0.8)';
+    ctx.beginPath();ctx.arc(d.jovanX-((d.waveMax-1)*7)+w*14,d.jovanY-18,4,0,Math.PI*2);ctx.fill();
+  }
+
+  // ── OVERFLOW CHECK ────────────────────────────────────────────────
+  d.overflowCooldown=Math.max(0,d.overflowCooldown-1);
+  if(bubbleCount>=OVERFLOW_MAX && d.overflowCooldown===0){
+    lives=Math.max(0,lives-1);
+    screenFlash=25;screenFlashColor='#ff0000';
+    Audio.sfx('damage');
+    d.overflowCooldown=180; // 3s grace period before next overflow hit
+    queueDialogue('JOVAN','TOO MANY THOUGHTS! MY BRAIN IS FULL!!',160,'#ff4444');
+    // Mercy clear: pop 4 oldest bubbles
+    let cleared=0;
+    for(let i=0;i<d.bubbles.length&&cleared<4;i++){
+      if(d.bubbles[i].alive){d.bubbles[i].alive=false;spawnParticle(d.bubbles[i].x,d.bubbles[i].y,'#ff88aa',8,4);cleared++;}
+    }
+    if(lives<=0){gameState='gameover';return;}
+  }
+
+  // ── BUBBLES ───────────────────────────────────────────────────────
   d.bubbles.forEach(b=>{
     if(!b.alive)return;
     b.x+=b.vx;b.y+=b.vy;b.vy+=0.06;
@@ -2184,15 +2279,20 @@ function runLevel4(){
       if(b.y+b.r>pl.y&&b.y-b.r<pl.y+pl.h&&b.x>pl.x&&b.x<pl.x+pl.w&&b.vy>0){b.vy=-Math.abs(b.vy)*0.85;}
     });
     if(b.y-b.r<0){b.vy=Math.abs(b.vy)*0.8;}
-    ctx.globalAlpha=0.7;
+    ctx.globalAlpha=0.75;
     ctx.fillStyle=b.col;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=0.3;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(b.x-b.r*.3,b.y-b.r*.3,b.r*.35,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;
     ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.stroke();
+    // Flash red when nearing overflow
+    if(bubbleCount>=OVERFLOW_MAX-3&&Math.floor(frameCount/8)%2===0){
+      ctx.strokeStyle='#ff4444';ctx.lineWidth=2;ctx.beginPath();ctx.arc(b.x,b.y,b.r+3,0,Math.PI*2);ctx.stroke();
+    }
     drawText(b.thought,b.x-20,b.y+4,5,'#fff',true);
   });
 
-  function moveShooter(p,lk,rk,jk,sk,skalt){
+  // ── SHOOTERS ──────────────────────────────────────────────────────
+  function moveShooter(p,lk,rk,sk,skalt){
     if(keys[lk]) p.x=Math.max(20,p.x-3.2);
     if(keys[rk]) p.x=Math.min(W-20,p.x+3.2);
     p.shootCool--;
@@ -2202,9 +2302,9 @@ function runLevel4(){
       p.shootCool=15;
     }
   }
-  if(p1Active()) moveShooter(d.p1,'a','d','w',' ','f');
-  if(p2Active()) moveShooter(d.p2,'ArrowLeft','ArrowRight','ArrowUp','Enter','0');
-  if(!p1Active()){ moveShooter(d.p1,'ArrowLeft','ArrowRight','ArrowUp','Enter','0'); }
+  if(p1Active()) moveShooter(d.p1,'a','d',' ','f');
+  if(p2Active()) moveShooter(d.p2,'ArrowLeft','ArrowRight','Enter','0');
+  if(!p1Active()) moveShooter(d.p1,'ArrowLeft','ArrowRight','Enter','0');
 
   [d.p1,d.p2].forEach((p,pi)=>{
     p.bullets.forEach(b=>{
@@ -2215,45 +2315,49 @@ function runLevel4(){
       d.bubbles.forEach(bl=>{
         if(!bl.alive)return;
         if(Math.sqrt((b.x-bl.x)**2+(b.y-bl.y)**2)<bl.r+4){
-          b.alive=false;bl.alive=false;d.popped++;score+=150;
+          b.alive=false;bl.alive=false;score+=150;
+          Audio.sfx('pop');
           spawnHeart(bl.x,bl.y);
-          if(bl.r>14&&bl.gen<3){
-            spawnBubble(bl.x-bl.r/2,bl.y,bl.r*.6,bl.gen+1);
-            spawnBubble(bl.x+bl.r/2,bl.y,bl.r*.6,bl.gen+1);
+          if(bl.gen<3){
+            spawnBubble(bl.x-bl.r*.6,bl.y,bl.r*.6,bl.gen+1);
+            spawnBubble(bl.x+bl.r*.6,bl.y,bl.r*.6,bl.gen+1);
           }
-          if(d.bubbles.filter(bb=>bb.alive).length<2&&d.popped<d.goal) spawnBubble(Math.random()*W,50,30+Math.random()*20,1);
         }
       });
     });
     p.bullets.splice(0,p.bullets.length,...p.bullets.filter(b=>b.alive));
     if(pi===0&&p1Active()) drawGorjan(p.x,H-70,1,frameCount);
     else if(pi===1&&p2Active()) drawMartela(p.x,H-70,1,frameCount);
+    else if(pi===0&&!p1Active()) drawMartela(p.x,H-70,1,frameCount);
   });
 
-  d.bubbles.forEach(b=>{
-    if(!b.alive)return;
-    var l4players=[];
-    if(p1Active()) l4players.push(d.p1);
-    if(p2Active()) l4players.push(d.p2);
-    if(!p1Active()) l4players.push(d.p1);
-    d.hitCooldown=Math.max(0,(d.hitCooldown||0)-1);
-    l4players.forEach(p=>{
-      if(d.hitCooldown>0) return;
-      if(Math.sqrt((p.x-b.x)**2+((H-70)-b.y)**2)<b.r+14){
-        lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');
-        d.hitCooldown=120; // ~2s invincibility after hit
-        spawnParticle(p.x,p.y-30,'#ff4444',8,4);
-        if(lives<=0)gameState='gameover';
-      }
-    });
-  });
+  // ── HUD ───────────────────────────────────────────────────────────
+  ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,W,28);
+  // Thought meter (left)
+  const meterW=140, meterX=10;
+  ctx.fillStyle='#111';ctx.fillRect(meterX,8,meterW,14);
+  const fill=Math.min(1,bubbleCount/OVERFLOW_MAX);
+  const mCol=fill>0.75?'#ff4444':fill>0.5?'#ffaa00':'#88aaff';
+  ctx.fillStyle=mCol;ctx.fillRect(meterX,8,Math.round(meterW*fill),14);
+  ctx.strokeStyle='#555';ctx.lineWidth=1;ctx.strokeRect(meterX,8,meterW,14);
+  drawText('THOUGHTS',meterX+meterW+6,20,5,mCol,false);
+  // Waves remaining (right)
+  const wavesLeft=d.waveMax-d.wave;
+  drawText(wavesLeft>0?'JOVAN: '+wavesLeft+' thoughts left':'JOVAN: CALM!',W-220,20,5,wavesLeft>0?'#d4a017':'#00ff88',false);
 
-  if(d.popped>=d.goal&&!d.solved){
+  updateDialogue(); drawDialogue();
+
+  // ── WIN CONDITION ─────────────────────────────────────────────────
+  const allClear=d.wave>=d.waveMax && d.bubbles.every(b=>!b.alive);
+  if(allClear&&!d.solved){
     d.solved=true;
     queueDialogue('JOVAN','...okay I think I am fine now. Mostly. Sara still worries me.',220,'#d4a017');
-    triggerLevelClear('JOVAN CHILLED OUT!\nAIR CLEARED!\n\nFRIENDS: HAPPY\nANXIETY: DEFEATED ♥');
+    triggerLevelClear('JOVAN CHILLED OUT!\nMENTAL NOISE DEFEATED!\n\nFRIENDS: HAPPY\nWEDDING PANIC: TEMPORARILY CONTAINED ♥');
   }
+  if(lives<=0)gameState='gameover';
 }
+
+
 
 
 
@@ -2370,7 +2474,7 @@ function runLevel5(){
         bottle.alive=false;
         d.caught++; score+=120; Audio.sfx('collect');
         spawnHeart(bottle.x,bottle.y);
-        if(d.caught%5===0) queueDialogue('JOANA',['QUOTA MET!','EXCELLENT!','BUY MORE!','KEEP GOING!'][Math.floor(Math.random()*4)],80,'#ff4444');
+        if(d.caught%5===0) queueDialogue('JOANA',['QUOTA MET!','EXCELLENT!','PROCUREMENT APPROVED!','THE BAR LIVES!'][Math.floor(Math.random()*4)],80,'#ff4444');
       }
     });
   });
@@ -2385,12 +2489,12 @@ function runLevel5(){
   if(!d.joanaIdx) d.joanaIdx=0;
   d.joanaTimer++;
   const joanaLines=[
-    'I NEED TO MEET MY QUARTERLY QUOTAS!',
-    'YOU ARE BUYING ALL OF THE COKE!',
     'THE SPREADSHEET DEMANDS IT.',
     'FORTY-SEVEN PAGES. COLOUR CODED.',
-    'COKE. SPRITE. FANTA. ALL OF IT.',
-    'THIS IS NOT NEGOTIABLE.',
+    'HYDRATION IS A WEDDING PRIORITY.',
+    'THIS IS NOT A BAR. THIS IS A SALES TARGET.',
+    'COKE. SPRITE. FANTA. ROMANCE.',
+    'DO NOT QUESTION PROCUREMENT.',
   ];
   if(d.joanaTimer%500===0&&d.joanaIdx<joanaLines.length){
     queueDialogue('JOANA',joanaLines[d.joanaIdx],180,'#ff4444');
@@ -2427,7 +2531,7 @@ function runLevel5(){
   if(d.quota>=100){lives=Math.max(0,lives-1);d.quota=40;screenFlash=20;screenFlashColor='#ff8800';}
 
   updateDialogue(); drawDialogue();
-  if(d.caught>=d.goal) triggerLevelClear('QUOTA FULFILLED!\nJOANA IS SATISFIED.\nFOR NOW.\n\n♥ WEDDING BAR: STOCKED ♥');
+  if(d.caught>=d.goal) triggerLevelClear('QUOTA FULFILLED!\nJOANA IS SATISFIED.\nFOR NOW.\n\n♥ WEDDING BAR: STOCKED ♥\nPROPERTY ISSUE: IGNORED');
   if(lives<=0)gameState='gameover';
 }
 
@@ -2560,7 +2664,7 @@ function runLevel6(){
       screenFlash=8; screenFlashColor='#d49060';
       if(d.dora.hp<=0){
         spawnParticle(d.dora.x,d.dora.y,'#ffd700',15,7); score+=300;
-        queueDialogue('DORA','Fine. I was trying to put the virus back IN. On behalf of Emir.',200,'#d49060');
+        queueDialogue('DORA','Fine. I was trying to remove the virus. Then Vlad installed another one. Also... who is Emir?',200,'#d49060');
       }
     }
     for(let i=0;i<d.dora.hp;i++){ctx.fillStyle='#d49060';ctx.fillRect(d.dora.x-10+i*14,d.dora.y-48,12,6);}
@@ -2585,7 +2689,7 @@ function runLevel6(){
 
   updateDialogue(); drawDialogue();
   if(frameCount%300===0&&!d.bossDefeated){
-    const dq=['THE VIRUS IS SPREADING','ERROR 404: WEDDING NOT FOUND','DORA.EXE PANICKING','THIS IS NOT MY FAULT (IT IS)','VLAD IS EVERYWHERE'];
+    const dq=['ERROR 404: WEDDING NOT FOUND','DORA.EXE PANICKING','THIS IS NOT MY FAULT. IT IS A LITTLE MY FAULT.','WHY IS VLAD.EXE EVERYWHERE?','WHO NAMED A FOLDER PROPERTY_FINAL_FINAL?'];
     queueDialogue('DORA',dq[Math.floor(Math.random()*dq.length)],100,'#d49060');
   }
   // Mid-level BSOD flash
@@ -2619,7 +2723,7 @@ function runLevel6(){
     if((keys[' ']||keys['Enter'])){d.bsodActive=false;d.bsodShowing=false;d.ball.vx*=1.15;d.ball.vy*=1.15;}
     return;
   }
-  if(allBricks&&d.bossDefeated) triggerLevelClear('WINDOWS FIXED!\nVLAD.EXE DELETED!\nDORA GROUNDED!');
+  if(allBricks&&d.bossDefeated) triggerLevelClear('WINDOWS FIXED!\nVLAD.EXE DELETED!\nDORA GROUNDED!\nEMIR FOLDER: STILL SUSPICIOUS');
   else if(allBricks) {setNarrator('BRICKS DONE!\nNow hit VLAD\nwith the ball!');}
 }
 
@@ -2812,12 +2916,13 @@ function runLevel8(){
   const phase=em.hp>6?1:em.hp>3?2:3;
 
   // Screen shake
-  let sx=0,sy=0;
+  let sx=0,sy=0,didShake=false;
   if(d.shakeTimer>0){
     sx=(Math.random()-.5)*8*d.shakeTimer/20;
     sy=(Math.random()-.5)*8*d.shakeTimer/20;
     d.shakeTimer--;
     ctx.save(); ctx.translate(sx,sy);
+    didShake=true;
   }
 
   // Background
@@ -2859,7 +2964,7 @@ function runLevel8(){
     ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,28);
     drawText('GORJAN SOLO!',10,20,7,'#ffd700');
     drawText('LIVES: '+'♥'.repeat(lives),W-130,20,7,'#ff4444');
-    if(d.shakeTimer>0) ctx.restore();
+    if(didShake) ctx.restore();
     return;
   }
 
@@ -3002,9 +3107,10 @@ function runLevel8(){
     ctx.fillStyle='rgba(0,0,0,0.88)';ctx.fillRect(60,60,W-120,80);
     ctx.strokeStyle='#ffd700';ctx.lineWidth=2;ctx.strokeRect(60,60,W-120,80);
     drawTextC('MARTELA IS FREE!',90,10,'#ffd700');
-    drawTextC('GORJAN IS A HERO! ♥',112,8,'#ff69b4');
-    drawTextC('MARTELA: "I LOVE YOU."',140,7,'#ff69b4');
-    drawTextC('GORJAN: "I KNOW." ♥',160,7,'#ffd700');
+    drawTextC('GORJAN IS A HERO! ♥',108,8,'#ff69b4');
+    drawTextC('MARTELA: "I LOVE YOU."',128,7,'#ff69b4');
+    drawTextC('GORJAN: "I KNOW." ♥',146,7,'#ffd700');
+    drawTextC('BUT THE FRIEND GROUP IS NOT DONE YET.',166,6,'#aaa');
     if(d.victoryTimer>180) triggerLevelClear('GORJAN SAVED\nMARTELA!\nTRUE LOVE WINS! ♥');
   }
 
@@ -3022,11 +3128,26 @@ function runLevel8(){
     queueDialogue('GORJAN','I see you! Almost there!',130,'#00ff88');
   }
   updateDialogue();drawDialogue();
-  if(d.shakeTimer>0) ctx.restore();
+  if(didShake) ctx.restore();
   if(lives<=0)gameState='gameover';
 }
 
 // Deal damage to Emir — shared by stomp and punch
+function fireEmir(em,pl,phase,d){
+  const dx=pl.x-em.x,dy=pl.y-em.y;
+  const dist=Math.sqrt(dx*dx+dy*dy)||1;
+  const spd=phase===1?3.8:phase===2?4.8:5.5;
+  const count=phase===3?3:phase===2?2:1;
+  for(let i=0;i<count;i++){
+    const spread=(i-(count-1)/2)*0.35;
+    d.bullets.push({x:em.x,y:em.y+10,
+      vx:dx/dist*spd+spread,
+      vy:dy/dist*spd*0.65+(i===0?0:(Math.random()-.5)*0.5),
+      alive:true});
+  }
+  screenFlash=4;screenFlashColor='#ff8800';
+}
+
 function hitEmir(em,pl,d,phase,isStomp){
   if(isStomp) pl.vy=-10;
   em.hp--;
@@ -3041,7 +3162,7 @@ function hitEmir(em,pl,d,phase,isStomp){
     em.phaseTransTimer=90;
     d.shakeTimer=20;
     screenFlash=30;screenFlashColor='#ff0000';
-    if(newPhase===2) queueDialogue('EMIR','You dare. I have a GUN and I know how to USE it.',160,'#ff4444');
+    if(newPhase===2) queueDialogue('EMIR','You dare. I have a GUN, a HAT, and a PROPERTY CLAIM.',160,'#ff4444');
     if(newPhase===3) queueDialogue('EMIR','ENOUGH!!!',100,'#ff0000');
     Audio.sfx('damage');
   }
@@ -3057,32 +3178,33 @@ function hitEmir(em,pl,d,phase,isStomp){
 function initBonusLevel(){
   Audio.playLevelTheme(9);
   levelData={
-    p2:{x:40,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:4.2},
+    p2:{x:40,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:4.2,
+        flipCool:0,flipTimer:0,boostTimer:0},
     platforms:[
       {x:0,y:420,w:W,h:60},
       {x:100,y:350,w:100,h:14},{x:270,y:305,w:100,h:14},
       {x:430,y:260,w:100,h:14},{x:520,y:215,w:100,h:14},
       {x:60,y:275,w:85,h:14},{x:210,y:235,w:85,h:14},{x:360,y:195,w:85,h:14},
     ],
-    // Mihaela — main boss, full AI
     mihaela:{x:380,y:190,vx:0,vy:0,grounded:false,hp:5,facing:-1,
-             state:'patrol',stateTimer:0,jumpCool:0,shootTimer:0,phase:1},
-    // Guards appear after intro delay
+             state:'patrol',stateTimer:0,jumpCool:0,shootTimer:0,phase:1,
+             invincTimer:0},
     guards:[
-      {type:'dragan',x:180,y:300,vx:1.4,hp:3,alive:true},
-      {type:'emir',  x:460,y:255,vx:1.8,hp:3,alive:true},
+      {type:'dragan',x:180,y:300,vx:1.4,hp:3,alive:true,shootTimer:0},
+      {type:'emir',  x:460,y:255,vx:1.8,hp:3,alive:true,shootTimer:0},
     ],
     projectiles:[],
+    guardProjectiles:[],
     gorjanCapturedX:W-50,gorjanCapturedY:150,
     rescued:false,victoryTimer:0,
-    dashCool:0,dashActive:false,dashTimer:0,dashDir:0,
-    wave:1,  // 1=guards+mihaela, boss escalates
+    dashCool:0,lastLeft:0,lastRight:0,
     attTimer:0,attIdx:0,
     guardDefeated:0,
+    cheerTimer:0,cheerIdx:0,
   };
   setNarrator('');
   levelData.startFrame=frameCount;
-  showHint('STOMP ENEMIES TO DAMAGE — ARROW KEYS + UP=JUMP — LEFT+LEFT=DASH','P2 / Martela only');
+  showHint('ENTER = HAIR FLIP ATTACK   ← ← or → → = DASH','P2 / Martela only');
 }
 
 function runBonusLevel(){
@@ -3091,8 +3213,10 @@ function runBonusLevel(){
   const mh=d.mihaela;
   const phase=mh.hp>3?1:mh.hp>1?2:3;
   mh.phase=phase;
+  const boosted=pl.boostTimer>0;
+  pl.boostTimer=Math.max(0,pl.boostTimer-1);
 
-  // Background — deep purple
+  // Background
   const gr=ctx.createLinearGradient(0,0,0,H);
   gr.addColorStop(0,'#2d003d');gr.addColorStop(1,'#1a001a');
   ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
@@ -3101,7 +3225,6 @@ function runBonusLevel(){
     ctx.fillStyle=`rgba(255,100,200,${0.25+Math.sin(i+frameCount*.05)*.15})`;
     ctx.fillRect(sx,sy,2,2);
   }
-  // Phase 3 rage effect
   if(phase===3){ctx.fillStyle=`rgba(255,0,100,${0.04+Math.sin(frameCount*.3)*.03})`;ctx.fillRect(0,0,W,H);}
   ctx.fillStyle='#3d0030';ctx.fillRect(0,H-60,W,60);
   ctx.fillStyle='#ff1493';ctx.fillRect(0,H-60,W,3);
@@ -3110,160 +3233,229 @@ function runBonusLevel(){
     ctx.fillStyle='#ff1493';ctx.fillRect(p.x,p.y,p.w,2);
   });
 
-  // Gorjan in cage
+  // Gorjan in cage — cheers Martela
   if(!d.rescued){
     ctx.fillStyle='#1a1a2a';ctx.fillRect(W-85,100,70,90);
     ctx.strokeStyle='#ff1493';ctx.lineWidth=2;ctx.strokeRect(W-85,100,70,90);
     for(let bi=0;bi<4;bi++){ctx.strokeStyle='#888';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W-83+bi*17,102);ctx.lineTo(W-83+bi*17,188);ctx.stroke();}
-    drawGorjan(d.gorjanCapturedX,d.gorjanCapturedY,1,0);
+    drawGorjan(d.gorjanCapturedX,d.gorjanCapturedY,1,frameCount%40<20?frameCount:0);
+
+    // Gorjan cheer — every ~8s gives Martela a speed boost
+    d.cheerTimer++;
+    const cheerLines=[
+      {s:'GORJAN',t:'You got this! GO MARTELA!',c:'#00ff88'},
+      {s:'GORJAN',t:'Take her down!! I believe in you!',c:'#00ff88'},
+      {s:'GORJAN',t:'MARTELA!! She is wide open!!',c:'#ffd700'},
+    ];
+    if(d.cheerTimer%480===0&&d.cheerIdx<cheerLines.length){
+      const cl=cheerLines[d.cheerIdx++];
+      queueDialogue(cl.s,cl.t,160,cl.c);
+      pl.boostTimer=180; // 3s speed boost
+      spawnParticle(d.gorjanCapturedX,d.gorjanCapturedY,'#00ff88',12,6);
+      screenFlash=10;screenFlashColor='#00ff88';
+    }
+    // Boost visual — gold glow on Martela
+    if(boosted&&Math.floor(frameCount/8)%2===0){
+      ctx.fillStyle='rgba(255,215,0,0.15)';
+      ctx.beginPath();ctx.arc(pl.x,pl.y,28,0,Math.PI*2);ctx.fill();
+    }
   }
 
-  // ── GUARD ENEMIES (Dragan + Emir) ───────────────────────────────
+  // ── HAIR FLIP ATTACK ─────────────────────────────────────────────
+  pl.flipCool=Math.max(0,pl.flipCool-1);
+  pl.flipTimer=Math.max(0,pl.flipTimer-1);
+  if((keys['Enter']||keys['ArrowDown'])&&pl.flipCool===0){
+    pl.flipTimer=14; pl.flipCool=32;
+    pl.vx=pl.facing*5; // small lunge
+    Audio.sfx('pop');
+    spawnParticle(pl.x+pl.facing*30,pl.y,'#ff1493',10,5);
+  }
+  // Flip hitbox — arc in front of Martela
+  const flipX=pl.x+pl.facing*35, flipY=pl.y-5;
+  if(pl.flipTimer>0){
+    // Visual arc
+    ctx.strokeStyle=`rgba(255,20,147,${pl.flipTimer/14})`;
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.arc(pl.x,pl.y-5,42,pl.facing===1?-0.8:Math.PI+0.8,pl.facing===1?0.8:Math.PI-0.8);
+    ctx.stroke();
+    ctx.lineWidth=2;
+    ctx.strokeStyle=`rgba(255,150,200,${pl.flipTimer/20})`;
+    ctx.beginPath();
+    ctx.arc(pl.x,pl.y-5,52,pl.facing===1?-0.6:Math.PI+0.6,pl.facing===1?0.6:Math.PI-0.6);
+    ctx.stroke();
+
+    // Deflect projectiles
+    d.projectiles.forEach(b=>{
+      if(b.alive&&Math.abs(b.x-flipX)<50&&Math.abs(b.y-flipY)<35){
+        b.vx*=-1.2; b.vy-=3; Audio.sfx('collect');
+      }
+    });
+    d.guardProjectiles.forEach(b=>{
+      if(b.alive&&Math.abs(b.x-flipX)<50&&Math.abs(b.y-flipY)<35){
+        b.alive=false; Audio.sfx('collect');
+      }
+    });
+  }
+
+  // ── GUARDS ───────────────────────────────────────────────────────
   d.guards.forEach(en=>{
     if(!en.alive)return;
     en.x+=en.vx;
-    if(en.x<30||en.x>W-80)en.vx*=-1;
+    if(en.x<30||en.x>W-80) en.vx*=-1;
+    en.facing=en.vx>0?1:-1;
+
     if(en.type==='dragan') drawDragan(en.x,en.y,frameCount);
     else drawEmir(en.x,en.y,frameCount);
     for(let i=0;i<en.hp;i++){ctx.fillStyle='#ff6600';ctx.fillRect(en.x-15+i*11,en.y-48,9,5);}
-    // stomp
-    if(Math.abs(pl.x-en.x)<28&&Math.abs(pl.y-en.y)<34&&pl.vy<-2){
-      en.hp--;pl.vy=-8;spawnParticle(en.x,en.y,'#ff1493',12,6);screenFlash=7;screenFlashColor='#ff1493';
+
+    // Guards shoot at Martela
+    en.shootTimer=(en.shootTimer||0)+1;
+    const gdx=pl.x-en.x, gdy=pl.y-en.y;
+    const gdist=Math.sqrt(gdx*gdx+gdy*gdy)||1;
+    const shootRate=en.type==='dragan'?200:150;
+    if(en.shootTimer>shootRate&&gdist<300){
+      en.shootTimer=0;
+      const spd=en.type==='dragan'?2.5:4;
+      d.guardProjectiles.push({
+        x:en.x,y:en.y-10,
+        vx:gdx/gdist*spd,vy:gdy/gdist*spd*0.5,
+        alive:true,type:en.type,rot:0
+      });
+    }
+
+    // Stomp detection
+    const hitByFlip=pl.flipTimer>0&&Math.abs(pl.x+pl.facing*35-en.x)<50&&Math.abs(pl.y-5-en.y)<35;
+    if((Math.abs(pl.x-en.x)<28&&Math.abs(pl.y-en.y)<34&&pl.vy<-2)||hitByFlip){
+      if(hitByFlip&&pl.vy>=0) pl.vy=-4; else pl.vy=-8;
+      en.hp--;pl.flipCool=Math.max(pl.flipCool,hitByFlip?16:0);
+      spawnParticle(en.x,en.y,'#ff1493',12,6);screenFlash=7;screenFlashColor='#ff1493';
+      Audio.sfx('stomp');
       if(en.hp<=0){
         en.alive=false;d.guardDefeated++;spawnParticle(en.x,en.y,'#ffd700',18,8);score+=300;
         if(en.type==='dragan') queueDialogue('DRAGAN','Tell my son Papa fought a woman with purple hair. He will understand.',180,'#ffaa00');
         else queueDialogue('EMIR','The hat... at least I still have the hat...',160,'#ff4444');
       }
-    } else if(Math.abs(pl.x-en.x)<28&&Math.abs(pl.y-en.y)<34){
+    } else if(Math.abs(pl.x-en.x)<28&&Math.abs(pl.y-en.y)<34&&!hitByFlip){
       lives=Math.max(0,lives-1);screenFlash=12;screenFlashColor='#ff0000';pl.x=40;pl.vy=-5;
+      Audio.sfx('damage');
     }
   });
 
-  // ── MIHAELA BOSS AI ──────────────────────────────────────────────
+  // Guard projectiles
+  d.guardProjectiles=d.guardProjectiles.filter(b=>b.alive&&b.y<H+20&&b.x>-20&&b.x<W+20);
+  d.guardProjectiles.forEach(b=>{
+    b.x+=b.vx;b.y+=b.vy;b.vy+=0.12;b.rot=(b.rot||0)+.15;
+    // Dragan throws sandwiches (brown oval), Emir shoots bullets (orange circle)
+    if(b.type==='dragan'){
+      ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.rot);
+      ctx.fillStyle='#c8860a';ctx.strokeStyle='#8a5a00';ctx.lineWidth=1;
+      ctx.beginPath();ctx.ellipse(0,0,9,6,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='rgba(255,200,100,0.5)';ctx.beginPath();ctx.ellipse(-2,-1,4,2,0,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.fillStyle='#ff6600';ctx.beginPath();ctx.arc(b.x,b.y,4,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#ffee00';ctx.beginPath();ctx.arc(b.x,b.y,2,0,Math.PI*2);ctx.fill();
+    }
+    if(Math.abs(b.x-pl.x)<13&&Math.abs(b.y-pl.y)<16){
+      b.alive=false;lives=Math.max(0,lives-1);screenFlash=13;screenFlashColor='#ff4444';
+      Audio.sfx('damage');if(lives<=0)gameState='gameover';
+    }
+  });
+
+  // ── MIHAELA BOSS ─────────────────────────────────────────────────
   if(mh.hp>0){
     mh.stateTimer++;
     mh.jumpCool=Math.max(0,mh.jumpCool-1);
     mh.shootTimer++;
+    if(mh.invincTimer>0) mh.invincTimer--;
 
-    const dx=pl.x-mh.x, dy=pl.y-mh.y;
-    const dist=Math.sqrt(dx*dx+dy*dy)||1;
+    const dx=pl.x-mh.x,dy=pl.y-mh.y,dist=Math.sqrt(dx*dx+dy*dy)||1;
     const playerAbove=pl.y<mh.y-20&&Math.abs(dx)<90;
-    const spd=1.4+phase*0.6;
 
-    // State machine
     if(mh.state==='patrol'){
-      // Dodge if Martela above
       if(playerAbove&&mh.grounded){
-        mh.vx=dx>0?-5.5:5.5;
-        mh.state='dodge';mh.stateTimer=0;
+        mh.vx=dx>0?-5.5:5.5;mh.state='dodge';mh.stateTimer=0;
         if(phase>=2){screenFlash=3;screenFlashColor='#ff69b4';}
       } else {
-        // Phase 1: keep distance. Phase 2+: close in aggressively
-        if(phase===1){
-          if(dist>180) mh.vx+=(dx>0?.25:-.25);
-          else if(dist<100) mh.vx+=(dx>0?-.25:.25);
-          else mh.vx*=0.9;
-        } else {
-          mh.vx+=(dx>0?.35:-.35);
-        }
-        // Shoot spreadsheets
+        if(phase===1){if(dist>180)mh.vx+=(dx>0?.25:-.25);else if(dist<100)mh.vx+=(dx>0?-.25:.25);else mh.vx*=0.9;}
+        else mh.vx+=(dx>0?.35:-.35);
         const sRate=phase===1?100:phase===2?65:38;
-        if(mh.shootTimer>sRate){
-          fireSpreadsheet(mh,pl,phase,d);
-          mh.shootTimer=0;
-          if(phase===3){mh.state='burst';mh.stateTimer=0;}
-        }
-        // Jump occasionally / when chasing
-        if(mh.grounded&&mh.jumpCool===0&&(Math.random()<.01||playerAbove)){
-          mh.vy=-(10+phase*.8);mh.grounded=false;mh.jumpCool=80;
-        }
+        if(mh.shootTimer>sRate){fireSpreadsheet(mh,pl,phase,d);mh.shootTimer=0;if(phase===3){mh.state='burst';mh.stateTimer=0;}}
+        if(mh.grounded&&mh.jumpCool===0&&Math.random()<.01){mh.vy=-(10+phase*.8);mh.grounded=false;mh.jumpCool=80;}
       }
-    } else if(mh.state==='dodge'){
-      mh.vx*=.85;
-      if(mh.stateTimer>28){mh.state='patrol';mh.stateTimer=0;}
-    } else if(mh.state==='burst'){
-      // Phase 3: rapid spreadsheet burst
-      if(mh.stateTimer%10===0&&mh.stateTimer<50) fireSpreadsheet(mh,pl,phase,d);
-      if(mh.stateTimer>65){mh.state='patrol';mh.stateTimer=0;}
-    }
+    } else if(mh.state==='dodge'){mh.vx*=.85;if(mh.stateTimer>28){mh.state='patrol';mh.stateTimer=0;}}
+    else if(mh.state==='burst'){if(mh.stateTimer%10===0&&mh.stateTimer<50)fireSpreadsheet(mh,pl,phase,d);if(mh.stateTimer>65){mh.state='patrol';mh.stateTimer=0;}}
 
-    // Phase 2+: slam jump at Martela
     if(phase>=2&&mh.grounded&&Math.random()<.004&&dist<250){
       mh.vy=-(12+phase);mh.vx=dx>0?4:-4;mh.grounded=false;mh.jumpCool=100;
-      if(phase===3) queueDialogue('MIHAELA','YOU CANNOT DODGE THE SPREADSHEET!!',120,'#ff69b4');
+      if(phase===3)queueDialogue('MIHAELA','YOU CANNOT DODGE THE SPREADSHEET!!',120,'#ff69b4');
     }
 
-    // Physics
-    mh.vx=Math.max(-7,Math.min(7,mh.vx));
-    mh.vx*=.84;
-    mh.vy+=.5;
-    mh.x+=mh.vx;mh.y+=mh.vy;
+    mh.vx=Math.max(-7,Math.min(7,mh.vx));mh.vx*=.84;
+    mh.vy+=.5;mh.x+=mh.vx;mh.y+=mh.vy;
     mh.x=Math.max(10,Math.min(W-10,mh.x));
     mh.facing=mh.vx<-.1?-1:mh.vx>.1?1:mh.facing;
     mh.grounded=false;
-    d.platforms.forEach(p=>{
-      if(mh.x>p.x&&mh.x<p.x+p.w&&mh.y+18>p.y&&mh.y+18<p.y+p.h+Math.abs(mh.vy)+2&&mh.vy>=0){
-        mh.y=p.y-18;mh.vy=0;mh.grounded=true;
-      }
-    });
+    d.platforms.forEach(p=>{if(mh.x>p.x&&mh.x<p.x+p.w&&mh.y+18>p.y&&mh.y+18<p.y+p.h+Math.abs(mh.vy)+2&&mh.vy>=0){mh.y=p.y-18;mh.vy=0;mh.grounded=true;}});
     if(mh.y>H+40){mh.x=300;mh.y=200;mh.vy=0;}
 
-    drawMihaela(mh.x,mh.y,frameCount);
-
-    // HP bar
+    const showMh=mh.invincTimer===0||Math.floor(frameCount/6)%2===0;
+    if(showMh) drawMihaela(mh.x,mh.y,frameCount);
     for(let i=0;i<mh.hp;i++){
       ctx.fillStyle=phase===3?'#ff1493':phase===2?'#ff69b4':'#ff88cc';
-      ctx.fillRect(mh.x-26+i*12,mh.y-54,10,7);
-      ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(mh.x-26+i*12,mh.y-54,10,7);
+      ctx.fillRect(mh.x-26+i*12,mh.y-54,10,7);ctx.strokeStyle='#000';ctx.lineWidth=1;ctx.strokeRect(mh.x-26+i*12,mh.y-54,10,7);
     }
-    if(phase>1) drawText(phase===3?'FURIOUS!':'ANGRY!',mh.x-20,mh.y-62,5,phase===3?'#ff1493':'#ff88cc');
+    if(phase>1)drawText(phase===3?'FURIOUS!':'ANGRY!',mh.x-20,mh.y-62,5,phase===3?'#ff1493':'#ff88cc');
 
-    // Stomp Mihaela
-    if(Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&pl.vy<-2){
-      mh.hp--;pl.vy=-10;
+    // Stomp OR hair flip hits Mihaela
+    const flipHitsMh=pl.flipTimer>0&&mh.invincTimer===0&&Math.abs(pl.x+pl.facing*35-mh.x)<50&&Math.abs(pl.y-5-mh.y)<35;
+    const stompsMh=mh.invincTimer===0&&Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&pl.vy<-2;
+    if(flipHitsMh||stompsMh){
+      if(stompsMh) pl.vy=-10;
+      mh.hp--;mh.invincTimer=80;
       spawnParticle(mh.x,mh.y,'#ff1493',14,7);screenFlash=12;screenFlashColor='#fff';
-      if(mh.hp===3) queueDialogue('MIHAELA','The spreadsheet did NOT predict this.',140,'#ff69b4');
-      if(mh.hp===1) queueDialogue('MIHAELA','Column H was supposed to prevent this!!',140,'#ff1493');
+      Audio.sfx('stomp');
+      if(mh.hp===3)queueDialogue('MIHAELA','The spreadsheet did NOT predict this.',140,'#ff69b4');
+      if(mh.hp===1)queueDialogue('MIHAELA','Column H was supposed to prevent this!!',140,'#ff1493');
       if(mh.hp<=0){
         spawnParticle(mh.x,mh.y,'#ffd700',30,10);spawnParticle(mh.x,mh.y,'#ff1493',20,7);
-        score+=1200;
-        queueDialogue('MIHAELA','Fine. You are better at this than me. The spreadsheet predicted this outcome.',240,'#ff4444');
+        score+=1200;Audio.sfx('enemydie');
+        queueDialogue('MIHAELA','Fine. The spreadsheet allowed for this outcome.',240,'#ff4444');
       }
-    } else if(Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&mh.hp>0){
+    } else if(mh.invincTimer===0&&Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&mh.hp>0){
       lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');pl.x=40;pl.vy=-5;
     }
   }
 
-  // ── PROJECTILES (spreadsheet pages) ─────────────────────────────
+  // ── SPREADSHEET PROJECTILES ──────────────────────────────────────
   d.projectiles=d.projectiles.filter(b=>b.alive&&b.y<H+20&&b.x>-20&&b.x<W+20);
   d.projectiles.forEach(b=>{
     b.x+=b.vx;b.y+=b.vy;b.rot=(b.rot||0)+.12;
     ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.rot);
     ctx.fillStyle='#eef';ctx.fillRect(-8,-6,16,12);
     ctx.strokeStyle='#aac';ctx.lineWidth=1;ctx.strokeRect(-8,-6,16,12);
-    // lines on the page
     ctx.strokeStyle='rgba(0,0,180,0.4)';ctx.lineWidth=0.8;
     [-2,1,4].forEach(ly=>{ctx.beginPath();ctx.moveTo(-6,ly);ctx.lineTo(6,ly);ctx.stroke();});
     ctx.restore();
     if(Math.abs(b.x-pl.x)<14&&Math.abs(b.y-pl.y)<16){
       b.alive=false;lives=Math.max(0,lives-1);screenFlash=13;screenFlashColor='#ff4444';
-      if(lives<=0)gameState='gameover';
+      Audio.sfx('damage');if(lives<=0)gameState='gameover';
     }
   });
 
-  // ── MARTELA DASH (double-tap arrow) ──────────────────────────────
-  if(!d.dashCool) d.dashCool=0;
+  // ── DASH ──────────────────────────────────────────────────────────
   d.dashCool=Math.max(0,d.dashCool-1);
-  if(!d.lastLeft) d.lastLeft=0;
-  if(!d.lastRight) d.lastRight=0;
+  if(!d.lastLeft)d.lastLeft=0;if(!d.lastRight)d.lastRight=0;
   if(keys['ArrowLeft']){if(frameCount-d.lastLeft<12&&d.dashCool===0){pl.vx=-14;d.dashCool=50;spawnParticle(pl.x,pl.y,'#ff1493',6,4);}d.lastLeft=frameCount;}
   if(keys['ArrowRight']){if(frameCount-d.lastRight<12&&d.dashCool===0){pl.vx=14;d.dashCool=50;spawnParticle(pl.x,pl.y,'#ff1493',6,4);}d.lastRight=frameCount;}
 
-  // ── PLAYER PHYSICS ───────────────────────────────────────────────
-  if(keys['ArrowLeft']){pl.vx=Math.min(pl.vx,-pl.speed);pl.facing=-1;pl.frame++;}
-  else if(keys['ArrowRight']){pl.vx=Math.max(pl.vx,pl.speed);pl.facing=1;pl.frame++;}
+  // ── PLAYER PHYSICS ────────────────────────────────────────────────
+  const curSpeed=boosted?6.5:pl.speed;
+  if(keys['ArrowLeft']){pl.vx=Math.min(pl.vx,-curSpeed);pl.facing=-1;pl.frame++;}
+  else if(keys['ArrowRight']){pl.vx=Math.max(pl.vx,curSpeed);pl.facing=1;pl.frame++;}
   else pl.vx*=0.72;
-  if(keys['ArrowUp']&&pl.grounded){pl.vy=-11;pl.grounded=false;Audio.sfx('jump');}  // jumps higher than Gorjan
+  if(keys['ArrowUp']&&pl.grounded){pl.vy=-11;pl.grounded=false;Audio.sfx('jump');}
   pl.vy+=.42;pl.x+=pl.vx;pl.y+=pl.vy;
   pl.x=Math.max(10,Math.min(W-10,pl.x));
   pl.grounded=false;
@@ -3272,44 +3464,42 @@ function runBonusLevel(){
 
   drawMartela(pl.x,pl.y,pl.facing,pl.frame);
 
-  // ── ATTITUDE LINES ───────────────────────────────────────────────
+  // ── ATTITUDE LINES ────────────────────────────────────────────────
   d.attTimer++;
   const attLines=[
     {s:'MARTELA',t:'Purple hair. Bad attitude. Your problem now.',c:'#ff1493'},
     {s:'MARTELA',t:'I survived Tokyo ramen queues. You are nothing.',c:'#ff1493'},
-    {s:'MARTELA',t:'I planned a wedding in six months. I can handle YOU.',c:'#ff1493'},
+    {s:'MARTELA',t:'You kidnapped my groom. Bad decision.',c:'#ff1493'},
   ];
-  if(d.attTimer%380===0&&d.attIdx<attLines.length){
-    const al=attLines[d.attIdx++];
-    queueDialogue(al.s,al.t,160,al.c);
-  }
+  if(d.attTimer%380===0&&d.attIdx<attLines.length){const al=attLines[d.attIdx++];queueDialogue(al.s,al.t,160,al.c);}
 
-  // ── WIN CONDITION ────────────────────────────────────────────────
+  // ── WIN ───────────────────────────────────────────────────────────
   const allDead=mh.hp<=0&&d.guards.every(g=>!g.alive);
   if(allDead&&!d.rescued){
     d.rescued=true;d.victoryTimer=0;
-    spawnParticle(W/2,H/2,'#ff1493',30,9);spawnParticle(W/2,H/2,'#ffd700',20,6);
-    score+=1500;
+    spawnParticle(W/2,H/2,'#ff1493',30,9);spawnParticle(W/2,H/2,'#ffd700',20,6);score+=1500;
   }
   if(d.rescued){
     d.victoryTimer++;
     drawGorjan(W/2+30,H-100,-1,frameCount);
     ctx.fillStyle='rgba(0,0,0,0.9)';ctx.fillRect(40,70,W-80,100);
     ctx.strokeStyle='#ff1493';ctx.lineWidth=2;ctx.strokeRect(40,70,W-80,100);
-    if(d.victoryTimer===1) queueDialogue('GORJAN','You came for me!',130,'#00ff88');
-    if(d.victoryTimer===55) queueDialogue('MARTELA','Obviously. Now let us go get married.',150,'#ff1493');
-    if(d.victoryTimer===115) queueDialogue('GORJAN','31 May 2026. Nothing can stop us now.',180,'#ffd700');
+    if(d.victoryTimer===1)queueDialogue('GORJAN','You came for me!',130,'#00ff88');
+    if(d.victoryTimer===55)queueDialogue('MARTELA','Obviously. Now let us go get married.',150,'#ff1493');
+    if(d.victoryTimer===115)queueDialogue('GORJAN','31 May 2026. No more side quests.',180,'#ffd700');
     drawTextC('MARTELA SAVES GORJAN!',110,10,'#ff1493');
     drawTextC('FASTER. STRONGER. SASSIER.',132,6,'#ffd700');
     drawTextC('TRUE PARTNERSHIP ♥',152,6,'#fff');
     if(d.victoryTimer>180&&!d.endingStarted){d.endingStarted=true;setTimeout(startEnding,600);}
   }
 
-  // ── HUD ──────────────────────────────────────────────────────────
+  // ── HUD ───────────────────────────────────────────────────────────
   ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,W,28);
   drawText("MARTELA'S REVENGE!",10,20,7,'#ff1493');
   drawText('LIVES: '+'♥'.repeat(lives),W-130,20,7,'#ff4444');
-  if(d.dashCool===0&&mh.hp>0) drawText('← ← or → → = DASH',W/2-80,20,5,'#ff88cc');
+  const flipReady=pl.flipCool===0;
+  drawText(flipReady?'ENTER=FLIP ✓':'FLIP...',W/2-55,20,5,flipReady?'#ff88cc':'#555');
+  if(boosted)drawText('BOOSTED! ♥',W/2+40,20,5,'#ffd700');
   updateDialogue();drawDialogue();
   if(lives<=0)gameState='gameover';
 }
@@ -3439,11 +3629,12 @@ function drawEnding(){
   }
 
   const lines=[
-    [120,'THEY BEAT EVERY VILLAIN.','#ffd700',9],
-    [180,'THEY SURVIVED SQUID GAMES.','#fff',7],
-    [230,'THEY ATE ALL THE RAMEN IN TOKYO.','#fff',7],
-    [280,'THEY FIXED WINDOWS 95.','#fff',7],
+    [120,'THEY SURVIVED THE FRIEND GROUP.','#ffd700',9],
+    [180,'THEY CROSSED THE BRIDGE.','#fff',7],
+    [230,'THEY ATE THEIR WAY THROUGH TOKYO.','#fff',7],
+    [280,'THEY DEFEATED WINDOWS 95.','#fff',7],
     [330,'THEY SAVED EACH OTHER.','#ff69b4',8],
+    [390,'AND SOMEHOW, THEY STILL MADE IT TO THE WEDDING.','#ffd700',6],
   ];
   lines.forEach(([t,txt,col,sz],i)=>{
     if(endingTimer>t){
@@ -3495,15 +3686,18 @@ function runCredits(){
     {t:'JOANA RISTOSKA',s:7,c:'#ff6666'},{t:'QUARTERLY QUOTA CHAOS',s:5,c:'#888'},
     {t:'DORA TODORCEVSKA',s:7,c:'#ff6666'},{t:'WINDOWS 95 CULPRIT',s:5,c:'#888'},
     {t:'MALINA',s:7,c:'#ff6666'},{t:'RIVAL RAMEN CHEF / TOKYO OBSTACLE',s:5,c:'#888'},
+    {t:'',s:7,c:'#fff'},{t:'CREATED BY',s:7,c:'#ffd700'},
+    {t:'VLAD, DORA AND CLAUDE',s:7,c:'#fff'},
     {t:'',s:7,c:'#fff'},{t:'♥  31 MAY 2026  ♥',s:9,c:'#ffd700'},
     {t:'THE BIG DAY',s:7,c:'#ff69b4'},
     {t:'',s:6,c:'#fff'},{t:'WISHING YOU BOTH',s:7,c:'#ffd700'},
     {t:'A LIFETIME OF ADVENTURES',s:7,c:'#ffd700'},{t:'AND ENDLESS LOVE ♥',s:10,c:'#ff4d6d'},
     {t:'',s:7,c:'#fff'},
     {t:'IT STARTED WITH A DM.',s:7,c:'#aaa'},
+    {t:'IT SURVIVED THE FRIEND GROUP.',s:7,c:'#aaa'},
     {t:'IT ENDS AT THE ALTAR.',s:7,c:'#aaa'},
     {t:'31 MAY 2026 ♥',s:11,c:'#ffd700'},
-    {t:'♪ CALIFORNIA DREAMIN ♪',s:6,c:'#ff69b4'},
+    {t:"♪ CALIFORNIA DREAMIN' ♪",s:6,c:'#ff69b4'},
     {t:'',s:7,c:'#fff'},{t:'PRESS ENTER TO RESTART',s:6,c:'#555'},
   ];
   let cy=H-scroll+30;
@@ -3516,73 +3710,7 @@ function drawCutscene(){
   const isSponge = slide && slide.spongebob;
 
   if(isSponge){
-    ctx.save();
-    // ── SpongeBob time card ──────────────────────────────────────────
-    // 1. Deep red background
-    ctx.fillStyle='#c0100a'; ctx.fillRect(0,0,W,H);
-
-    // 2. Aztec tile pattern (4×4 repeating geometric motif)
-    const T=40; // tile size
-    ctx.strokeStyle='rgba(180,20,10,0.7)'; ctx.lineWidth=1.2;
-    for(let tx=0;tx<W;tx+=T){
-      for(let ty=0;ty<H;ty+=T){
-        const cx2=tx+T/2, cy2=ty+T/2, r=T*0.38;
-        // outer square rotated 45°
-        ctx.beginPath();
-        ctx.moveTo(cx2,ty+3); ctx.lineTo(tx+T-3,cy2);
-        ctx.lineTo(cx2,ty+T-3); ctx.lineTo(tx+3,cy2);
-        ctx.closePath(); ctx.stroke();
-        // inner circle
-        ctx.beginPath(); ctx.arc(cx2,cy2,r*0.42,0,Math.PI*2); ctx.stroke();
-        // 4 notches on diamond edges
-        [[0,-r],[r,0],[0,r],[-r,0]].forEach(([dx,dy])=>{
-          ctx.beginPath(); ctx.arc(cx2+dx,cy2+dy,2.5,0,Math.PI*2); ctx.stroke();
-        });
-      }
-    }
-
-    // 3. Corner flowers — outline style, 6 petals, different colours per corner
-    function drawFlower(fx,fy,r,color,rot=0){
-      ctx.strokeStyle=color; ctx.lineWidth=3; ctx.fillStyle='rgba(0,0,0,0)';
-      for(let p=0;p<6;p++){
-        const a=rot+(p/6)*Math.PI*2;
-        const px=fx+Math.cos(a)*r*0.72, py=fy+Math.sin(a)*r*0.72;
-        ctx.beginPath(); ctx.arc(px,py,r*0.45,0,Math.PI*2); ctx.stroke();
-      }
-      // center circle
-      ctx.beginPath(); ctx.arc(fx,fy,r*0.22,0,Math.PI*2); ctx.stroke();
-    }
-    const flowers=[
-      // [x, y, radius, colour, rot, scale]
-      [55,  55,  38, '#f5a623', 0.2],
-      [W-55,55,  34, '#4a90d9', 0.5],
-      [30,  H-50,32, '#e91e8c', 0.1],
-      [W-45,H-45,36, '#e67e22', 0.8],
-      [160, H-45,28, '#c0392b', 0.3],
-      [W-170,55, 30, '#6ab04c', 0.6],
-      [W/2-120,42,24, '#e84393',0.0],
-    ];
-    flowers.forEach(([fx,fy,r,col,rot])=>drawFlower(fx,fy,r,col,rot));
-
-    // 4. Chunky slab text — pink fill, dark red thick outline
-    const txt = Array.isArray(slide.lines) ? slide.lines : [slide.lines];
-    const lineH = 68;
-    const totalH = txt.length * lineH;
-    const startY = H/2 - totalH/2 + lineH*0.7;
-    ctx.save();
-    ctx.textAlign='center';
-    txt.forEach((line, i)=>{
-      const y = startY + i*lineH;
-      // thick dark outline
-      ctx.font="62px 'SomeTimeLater', 'Arial Black', sans-serif";
-      ctx.lineWidth=10; ctx.strokeStyle='#6b0000';
-      ctx.lineJoin='round'; ctx.strokeText(line, W/2, y);
-      // pink fill
-      ctx.fillStyle='#f9c8c8';
-      ctx.fillText(line, W/2, y);
-    });
-    ctx.restore();
-
+    drawSpongebobCard(slide.lines);
     // 5. Continue prompt
     if(Math.floor(frameCount/30)%2===0){
       const isFirst = cutsceneIndex===0;
@@ -3590,7 +3718,6 @@ function drawCutscene(){
       ctx.font="7px 'Press Start 2P'"; ctx.fillStyle='rgba(255,200,200,0.6)';
       ctx.textAlign='center'; ctx.fillText(msg, W/2, H-18);
     }
-    ctx.restore();
     return;
   }
 
