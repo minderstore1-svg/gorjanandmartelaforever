@@ -634,31 +634,11 @@ function drawMartela(x,y,facing=1,anim=0,captured=false){
   ctx.quadraticCurveTo(hx-14,hy-18,hx-10,hy-10);
   ctx.closePath(); ctx.fill(); ctx.stroke();
 
-  // Extra visible hair pieces — reinforces the original Martela silhouette so no locks look missing
-  ctx.fillStyle=hc; ctx.strokeStyle='#000'; ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(hx-15,hy-14);
-  ctx.quadraticCurveTo(hx-20,hy-2,hx-17,hy+18);
-  ctx.quadraticCurveTo(hx-13,hy+24,hx-8,hy+19);
-  ctx.quadraticCurveTo(hx-12,hy+5,hx-10,hy-8);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(hx+10,hy-16);
-  ctx.quadraticCurveTo(hx+18,hy-4,hx+15,hy+17);
-  ctx.quadraticCurveTo(hx+11,hy+24,hx+6,hy+18);
-  ctx.quadraticCurveTo(hx+10,hy+4,hx+8,hy-8);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-
   // Hair highlight/sheen
   ctx.strokeStyle=hhi; ctx.lineWidth=2;
   ctx.beginPath();
   ctx.moveTo(hx+2,hy-40);
   ctx.quadraticCurveTo(hx+6,hy-30,hx+8,hy-18);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(hx-13,hy-10);
-  ctx.quadraticCurveTo(hx-16,hy+4,hx-13,hy+16);
   ctx.stroke();
 
   // ears
@@ -999,30 +979,9 @@ function drawJoana(x,y,anim){
   // long straight sides going well below face
   ctx.beginPath(); ctx.moveTo(hx-26,hy-12); ctx.quadraticCurveTo(hx-30,hy+8,hx-24,by+28); ctx.lineTo(hx-14,by+28); ctx.quadraticCurveTo(hx-18,hy+6,hx-16,hy-10); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(hx+26,hy-12); ctx.quadraticCurveTo(hx+30,hy+8,hx+24,by+28); ctx.lineTo(hx+14,by+28); ctx.quadraticCurveTo(hx+18,hy+6,hx+16,hy-10); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // Reinforced Joana hair pieces: extra red side locks so the long hair stays visible
-  // even when scaled in fullscreen or drawn near other objects.
-  ctx.fillStyle='#aa1a00'; ctx.strokeStyle='#000'; ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(hx-23,hy-16);
-  ctx.quadraticCurveTo(hx-34,hy+6,hx-29,by+34);
-  ctx.lineTo(hx-20,by+34);
-  ctx.quadraticCurveTo(hx-24,hy+10,hx-18,hy-12);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(hx+23,hy-16);
-  ctx.quadraticCurveTo(hx+34,hy+6,hx+29,by+34);
-  ctx.lineTo(hx+20,by+34);
-  ctx.quadraticCurveTo(hx+24,hy+10,hx+18,hy-12);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.beginPath();
-  ctx.ellipse(hx,hy-22,27,13,0,Math.PI,0);
-  ctx.fill(); ctx.stroke();
-
   // auburn highlights
   ctx.strokeStyle='#cc3300'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.moveTo(hx-4,hy-28); ctx.quadraticCurveTo(hx,hy-24,hx+4,hy-28); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(hx-24,hy+4); ctx.quadraticCurveTo(hx-27,hy+18,hx-23,by+30); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(hx+24,hy+4); ctx.quadraticCurveTo(hx+27,hy+18,hx+23,by+30); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(hx-16,hy+8); ctx.quadraticCurveTo(hx-18,hy+16,hx-16,hy+24); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(hx+16,hy+8); ctx.quadraticCurveTo(hx+18,hy+16,hx+16,hy+24); ctx.stroke();
   // ears
@@ -1796,6 +1755,7 @@ function drawSelect() {
 
 function p2Active(){ return playerMode==='multi'||playerMode==='martela'; }
 function p1Active(){ return playerMode==='multi'||playerMode==='gorjan'; }
+function isCoopMode(){ return playerMode==='multi'; }
 
 
 // DRAGAN as Squid Game Boss - black hooded coat, mask
@@ -2941,7 +2901,7 @@ function initLevel6(){
   setNarrator('');
   levelData.bsodTimer=0; levelData.bsodActive=false;
   levelData.startFrame=frameCount;
-  showHint('SMASH THE VIRUS BRICKS — KEEP THE BALL ALIVE!','P1: A/D to move   |   P2: ARROWS to move');
+  showHint('SMASH THE VIRUS BRICKS — KEEP THE BALL ALIVE!','CO-OP: BOTH PADDLES   |   SOLO: YOUR CONTROLLER');
 }
 
 function runLevel6(){
@@ -3016,7 +2976,7 @@ function runLevel6(){
   ctx.fillStyle='#ff8888';ctx.beginPath();ctx.arc(ball.x-2,ball.y-2,ball.r*.4,0,Math.PI*2);ctx.fill();
 
   // pads
-  if(p2Active()){
+  if(playerMode==='multi'){
     if(keys['a']||keys['A']) d.pad1.x=Math.max(0,d.pad1.x-6);
     if(keys['d']||keys['D']) d.pad1.x=Math.min(W-d.pad1.w,d.pad1.x+6);
     if(keys['ArrowLeft']) d.pad2.x=Math.max(0,d.pad2.x-6);
@@ -3027,7 +2987,7 @@ function runLevel6(){
     d.pad1.x=Math.max(0,Math.min(W-d.pad1.w,d.pad1.x+(keys[rk]?5:0)-(keys[lk]?5:0)));
     d.pad1.w=210; d.pad2.x=-999;
   }
-  var l6pads=p2Active()?[d.pad1,d.pad2]:[d.pad1];
+  var l6pads=(playerMode==='multi')?[d.pad1,d.pad2]:[d.pad1];
   l6pads.forEach((pad,pi)=>{
     const col=pi===0?'#00ff88':'#ff69b4';
     ctx.fillStyle=col;ctx.fillRect(pad.x,pad.y,pad.w,12);
