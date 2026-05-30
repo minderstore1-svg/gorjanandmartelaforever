@@ -20,7 +20,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 /* ── SCREENS ── */
 .screen{display:none;width:100%;height:100%;position:absolute;top:0;left:0;}
 .screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
-#screen-ctrl.active{display:grid;flex-direction:unset;}
+#screen-ctrl.active{display:grid !important;}
 
 /* ── CONNECT SCREEN ── */
 #screen-connect{background:linear-gradient(135deg,#000010,#1a0030);}
@@ -46,7 +46,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 #screen-ctrl{
   padding-top:44px;
   padding-bottom:4px;
-  display:grid;
   grid-template-columns: 1fr 1fr 72px;
   align-items:center;
   height:100%;
@@ -294,7 +293,14 @@ function choosePlayer(p){
     if(document.getElementById('status-dot'))
       document.getElementById('status-dot').classList.remove('on');
     setTimeout(()=>{
-      if(player){ sock=new WebSocket(WS_URL); sock.onopen=()=>sock.send(JSON.stringify({type:'player_register',player})); sock.onmessage=arguments.callee; }
+      if(!player) return;
+      sock=new WebSocket(WS_URL);
+      sock.onopen=()=>sock.send(JSON.stringify({type:'player_register',player}));
+      sock.onmessage=function(e){
+        var msg; try{ msg=JSON.parse(e.data); }catch(x){ return; }
+        if(msg.type==='registered'){ connected=true; document.getElementById('status-dot').classList.add('on'); }
+      };
+      sock.onclose = arguments.callee;
     },3000);
   };
 }
