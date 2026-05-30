@@ -127,7 +127,7 @@ const Audio = (function(){
     4: 'fun-puzzle-quest.mp3',    // Level 4 — Bubble Trouble (puzzle/quest energy)
     5: 'back-to-business.mp3',    // Level 5 — Wedding Planning (Joana's quota energy)
     6: '8bit-dungeon.mp3',        // Level 6 — Windows 95 (retro 8-bit)
-    7: null,                       // Level 7 — The Kidnapping (silence)
+    7: 'night-shade.mp3',          // Level 7 — The Kidnapping (dark/gloomy, low volume)
     8: 'underclocked.mp3',        // Level 8 — Boss fight (intense chiptune)
     9: 'dreams-of-childhood.mp3', // Level 9 — Martela's Revenge (emotional closer)
   };
@@ -3055,7 +3055,7 @@ function runLevel6(){
 // == LEVEL 7: THE KIDNAPPING (cinematic) ===========================
 // ==================================================================
 function initLevel7(){
-  Audio.playLevelTheme(7);
+  Audio.playLevelTheme(7, 0.12); // dark/gloomy, noticeably quieter
   levelData={
     phase:0,timer:0,emirX:W+80,
     clouds:Array.from({length:8},()=>({x:Math.random()*W,y:40+Math.random()*120,w:60+Math.random()*80})),
