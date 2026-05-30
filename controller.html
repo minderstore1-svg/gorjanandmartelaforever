@@ -11,14 +11,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;}
 :root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);}
-html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Press Start 2P',monospace;touch-action:none;}
+html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#000;font-family:'Press Start 2P',monospace;touch-action:none;overscroll-behavior:none;}
 
 /* ── ROTATE OVERLAY ── */
 #rotate-overlay{display:none;position:fixed;inset:0;z-index:999;background:#000;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:32px;}
 @keyframes spin{0%{transform:rotate(0deg)}40%,60%{transform:rotate(90deg)}100%{transform:rotate(90deg)}}
 
 /* ── SCREENS ── */
-.screen{display:none;width:100%;height:100%;position:absolute;top:0;left:0;}
+.screen{display:none;position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;}
 .screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
 #screen-ctrl.active{display:grid !important;}
 
@@ -42,13 +42,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 #status-dot{width:12px;height:12px;border-radius:50%;background:#555;}
 #status-dot.on{background:#00ff88;box-shadow:0 0 8px #00ff88;}
 
-/* ── CONTROLLER SCREEN — 3-column grid ── */
+/* ── CONTROLLER SCREEN — fullscreen joystick + action only ── */
 #screen-ctrl{
-  padding-top:44px;
-  padding-bottom:4px;
-  grid-template-columns: 1fr 1fr 72px;
+  padding-top:calc(44px + var(--sat));
+  padding-bottom:max(8px, var(--sab));
+  padding-left:max(8px, env(safe-area-inset-left,0px));
+  padding-right:max(8px, env(safe-area-inset-right,0px));
+  grid-template-columns: minmax(250px, 42vw) 1fr;
   align-items:center;
-  height:100%;
+  height:100vh;
+  height:100dvh;
   gap:0;
 }
 #screen-ctrl.p1{background:linear-gradient(135deg,#000d00,#001a00);}
@@ -56,14 +59,16 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 
 /* ── JOYSTICK — column 1, centred ── */
 #joystick-wrap{
-  justify-self:center;
+  justify-self:start;
   align-self:center;
   position:relative;
-  /* Fill the column height as much as possible */
-  width:min(46vw, calc(100dvh - 56px));
-  height:min(46vw, calc(100dvh - 56px));
-  max-width:260px;
-  max-height:260px;
+  margin-left:max(6px, env(safe-area-inset-left,0px));
+  width:min(42vw, calc(100dvh - 76px));
+  height:min(42vw, calc(100dvh - 76px));
+  max-width:255px;
+  max-height:255px;
+  min-width:170px;
+  min-height:170px;
 }
 #joystick-base{
   position:absolute;inset:0;
@@ -110,17 +115,18 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 .joy-arrow.lt{left:6%;top:50%;transform:translateY(-50%);}
 .joy-arrow.rt{right:6%;top:50%;transform:translateY(-50%);}
 
-/* ── ACTION COLUMN (column 2) — centred ── */
+/* ── ACTION COLUMN (right side) — keep action in the same play position ── */
 #action-col{
   justify-self:center;
   align-self:center;
   display:flex;
   align-items:center;
   justify-content:center;
+  width:100%;
 }
 #btn-action{
-  width:min(20vw, 130px);
-  height:min(20vw, 130px);
+  width:min(20vw, 130px, calc(100dvh - 92px));
+  height:min(20vw, 130px, calc(100dvh - 92px));
   border-radius:50%;
   border:4px solid;
   font-family:inherit;font-size:10px;font-weight:bold;
@@ -133,15 +139,44 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 #btn-action.p1-style{background:#1a1000;border-color:#ffd700;color:#ffd700;}
 #btn-action.p2-style{background:#1a0010;border-color:#ff1493;color:#ff1493;}
 
-/* ── UTILITY COLUMN (column 3) — 72px fixed ── */
+/* ── UTILITY PANEL — hidden by default, available when needed ── */
+#util-toggle{
+  position:fixed;
+  top:max(6px, var(--sat));
+  right:max(10px, env(safe-area-inset-right,0px));
+  z-index:130;
+  width:34px;
+  height:30px;
+  border-radius:8px;
+  border:1.5px solid rgba(255,255,255,0.22);
+  background:rgba(0,0,0,0.35);
+  color:#aaa;
+  font-family:inherit;
+  font-size:12px;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  touch-action:none;
+}
+#util-toggle.visible{display:flex;}
+#util-toggle.pressed{background:rgba(255,255,255,0.18);color:#fff;}
 #util-col{
   display:none;
+  position:fixed;
+  top:calc(44px + var(--sat));
+  right:max(8px, env(safe-area-inset-right,0px));
+  bottom:max(8px, var(--sab));
+  z-index:120;
+  width:78px;
   flex-direction:column;
   align-items:stretch;
   justify-content:center;
   gap:6px;
-  padding:4px 6px 4px 4px;
-  height:100%;
+  padding:6px;
+  border-radius:12px;
+  background:rgba(0,0,0,0.58);
+  border:1.5px solid rgba(255,255,255,0.12);
+  backdrop-filter:blur(4px);
 }
 #util-col.visible{display:flex;}
 .util-btn{
@@ -161,6 +196,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 .util-btn.mute-btn.pressed{background:rgba(255,200,0,0.15);}
 .util-btn.sfx-btn{border-color:rgba(100,200,255,0.4);color:#88ccff;}
 .util-btn.sfx-btn.pressed{background:rgba(100,200,255,0.15);}
+
+@media (max-height:420px){
+  #status-bar{height:36px;font-size:6px;padding:0 12px;}
+  #status-name{font-size:8px;}
+  #screen-ctrl{padding-top:calc(36px + var(--sat));grid-template-columns:minmax(210px, 40vw) 1fr;}
+  #joystick-wrap{width:min(40vw, calc(100dvh - 62px));height:min(40vw, calc(100dvh - 62px));min-width:145px;min-height:145px;}
+  #btn-action{width:min(18vw, 112px, calc(100dvh - 74px));height:min(18vw, 112px, calc(100dvh - 74px));font-size:8px;}
+}
+@media (max-width:720px){
+  #screen-ctrl{grid-template-columns:minmax(200px, 43vw) 1fr;}
+  #joystick-wrap{margin-left:0;}
+}
+
 </style>
 </head>
 <body>
@@ -186,7 +234,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
       <span>MARTELA<br>Player 2</span>
     </button>
   </div>
-  <p style="font-size:5px;color:#444;margin-top:20px;">TAP A BUTTON TO GO FULLSCREEN</p>
+  <p style="font-size:5px;color:#444;margin-top:20px;">TAP A PLAYER TO GO FULLSCREEN</p>
   <p class="connecting-msg" id="connecting-msg">Connecting...</p>
 </div>
 
@@ -219,7 +267,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
       data-key-p1=" " data-key-p2="Enter">ACTION</button>
   </div>
 
-  <!-- RIGHT: Utility buttons stacked vertically -->
+  <!-- Utility toggle and hidden utility buttons -->
+  <button id="util-toggle" aria-label="Show utility buttons">⋯</button>
   <div id="util-col">
     <button class="util-btn esc-btn"  id="btn-esc">⏸ ESC</button>
     <button class="util-btn"          id="btn-prev">◄ PREV</button>
@@ -276,6 +325,7 @@ function vibrate(pattern){
 
 // ── Player select ────────────────────────────────────────────────
 function choosePlayer(p){
+  requestFullscreen();
   player = p;
   document.getElementById('connecting-msg').style.display='block';
   document.getElementById('connecting-msg').textContent='Connecting...';
@@ -308,10 +358,13 @@ function choosePlayer(p){
 function requestFullscreen(){
   const el = document.documentElement;
   try{
-    if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'});
-    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    if(!document.fullscreenElement && !document.webkitFullscreenElement){
+      if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'});
+      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }
   }catch(e){}
   try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape'); }catch(e){}
+  setTimeout(()=>window.scrollTo(0,0), 60);
 }
 
 function showController(){
@@ -323,14 +376,14 @@ function showController(){
   document.getElementById('status-bar').className=player==='p1'?'p1':'p2';
   document.getElementById('status-name').textContent=player==='p1'?'P1 — GORJAN':'P2 — MARTELA';
   document.getElementById('status-dot').classList.add('on');
-  document.getElementById('util-col').classList.add('visible');
+  // Utility buttons are intentionally hidden: controller is joystick + action only.
   // Style action button
   const ab = document.getElementById('btn-action');
   ab.classList.add(player==='p1'?'p1-style':'p2-style');
   requestFullscreen();
   attachJoystick();
   attachActionBtn();
-  attachUtilButtons();
+  // attachUtilButtons();
 }
 
 // ── JOYSTICK ────────────────────────────────────────────────────
@@ -447,6 +500,22 @@ function attachActionBtn(){
 
 // ── UTILITY BUTTONS ───────────────────────────────────────────────
 function attachUtilButtons(){
+  const utilToggle = document.getElementById('util-toggle');
+  const utilPanel = document.getElementById('util-col');
+  if(utilToggle && utilPanel && !utilToggle.dataset.bound){
+    utilToggle.dataset.bound = '1';
+    const toggle = e=>{
+      e.preventDefault();
+      utilToggle.classList.add('pressed');
+      utilPanel.classList.toggle('visible');
+      utilToggle.textContent = utilPanel.classList.contains('visible') ? '×' : '⋯';
+      vibrate(12);
+      setTimeout(()=>utilToggle.classList.remove('pressed'),100);
+    };
+    utilToggle.addEventListener('touchstart', toggle, {passive:false});
+    utilToggle.addEventListener('click', toggle);
+  }
+
   function utilBtn(id, key){
     const btn = document.getElementById(id);
     if(!btn) return;
@@ -491,7 +560,7 @@ function checkOrientation(){
   if(!overlay) return;
   overlay.style.display = window.innerHeight > window.innerWidth ? 'flex' : 'none';
 }
-window.addEventListener('resize', checkOrientation);
+window.addEventListener('resize', ()=>{ checkOrientation(); setTimeout(()=>window.scrollTo(0,0),50); });
 window.addEventListener('orientationchange', ()=>{ setTimeout(checkOrientation,200); });
 checkOrientation();
 
