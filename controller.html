@@ -48,8 +48,9 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
   padding-bottom:max(8px, var(--sab));
   padding-left:max(8px, env(safe-area-inset-left,0px));
   padding-right:max(8px, env(safe-area-inset-right,0px));
-  grid-template-columns: minmax(250px, 42vw) 1fr;
+  grid-template-columns: 1fr 1fr;
   align-items:center;
+  justify-items:center;
   height:100vh;
   height:100dvh;
   gap:0;
@@ -59,10 +60,9 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
 
 /* ── JOYSTICK — column 1, centred ── */
 #joystick-wrap{
-  justify-self:start;
+  justify-self:center;
   align-self:center;
   position:relative;
-  margin-left:max(6px, env(safe-area-inset-left,0px));
   width:min(42vw, calc(100dvh - 76px));
   height:min(42vw, calc(100dvh - 76px));
   max-width:255px;
@@ -125,8 +125,8 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
   width:100%;
 }
 #btn-action{
-  width:min(20vw, 130px, calc(100dvh - 92px));
-  height:min(20vw, 130px, calc(100dvh - 92px));
+  width:min(22vw, 136px, calc(100dvh - 92px));
+  height:min(22vw, 136px, calc(100dvh - 92px));
   border-radius:50%;
   border:4px solid;
   font-family:inherit;font-size:10px;font-weight:bold;
@@ -145,14 +145,14 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
   top:max(6px, var(--sat));
   right:max(10px, env(safe-area-inset-right,0px));
   z-index:130;
-  width:34px;
+  width:54px;
   height:30px;
   border-radius:8px;
   border:1.5px solid rgba(255,255,255,0.22);
   background:rgba(0,0,0,0.35);
   color:#aaa;
   font-family:inherit;
-  font-size:12px;
+  font-size:7px;
   display:none;
   align-items:center;
   justify-content:center;
@@ -200,13 +200,13 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
 @media (max-height:420px){
   #status-bar{height:36px;font-size:6px;padding:0 12px;}
   #status-name{font-size:8px;}
-  #screen-ctrl{padding-top:calc(36px + var(--sat));grid-template-columns:minmax(210px, 40vw) 1fr;}
+  #screen-ctrl{padding-top:calc(36px + var(--sat));grid-template-columns:1fr 1fr;}
   #joystick-wrap{width:min(40vw, calc(100dvh - 62px));height:min(40vw, calc(100dvh - 62px));min-width:145px;min-height:145px;}
   #btn-action{width:min(18vw, 112px, calc(100dvh - 74px));height:min(18vw, 112px, calc(100dvh - 74px));font-size:8px;}
 }
 @media (max-width:720px){
-  #screen-ctrl{grid-template-columns:minmax(200px, 43vw) 1fr;}
-  #joystick-wrap{margin-left:0;}
+  #screen-ctrl{grid-template-columns:1fr 1fr;}
+  #joystick-wrap{justify-self:center;}
 }
 
 </style>
@@ -268,7 +268,7 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
   </div>
 
   <!-- Utility toggle and hidden utility buttons -->
-  <button id="util-toggle" aria-label="Show utility buttons">⋯</button>
+  <button id="util-toggle" aria-label="Show utility buttons">MENU</button>
   <div id="util-col">
     <button class="util-btn esc-btn"  id="btn-esc">⏸ ESC</button>
     <button class="util-btn"          id="btn-prev">◄ PREV</button>
@@ -376,14 +376,15 @@ function showController(){
   document.getElementById('status-bar').className=player==='p1'?'p1':'p2';
   document.getElementById('status-name').textContent=player==='p1'?'P1 — GORJAN':'P2 — MARTELA';
   document.getElementById('status-dot').classList.add('on');
-  // Utility buttons are intentionally hidden: controller is joystick + action only.
+  const utilToggle = document.getElementById('util-toggle');
+  if(utilToggle) utilToggle.classList.add('visible');
   // Style action button
   const ab = document.getElementById('btn-action');
   ab.classList.add(player==='p1'?'p1-style':'p2-style');
   requestFullscreen();
   attachJoystick();
   attachActionBtn();
-  // attachUtilButtons();
+  attachUtilButtons();
 }
 
 // ── JOYSTICK ────────────────────────────────────────────────────
@@ -508,7 +509,7 @@ function attachUtilButtons(){
       e.preventDefault();
       utilToggle.classList.add('pressed');
       utilPanel.classList.toggle('visible');
-      utilToggle.textContent = utilPanel.classList.contains('visible') ? '×' : '⋯';
+      utilToggle.textContent = utilPanel.classList.contains('visible') ? '×' : 'MENU';
       vibrate(12);
       setTimeout(()=>utilToggle.classList.remove('pressed'),100);
     };
