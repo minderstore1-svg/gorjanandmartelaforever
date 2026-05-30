@@ -2196,10 +2196,15 @@ function runLevel2(){
       const target=d.step1+1;
       if(target<=8){
         const bp=d.bridge[target];
-        bp.revealed=true;
         const safe=d.p1row==='top'?bp.safe:!bp.safe;
-        if(safe){d.step1=target;score+=50;Audio.sfx('bridgesafe');}
-        else{lives=Math.max(0,lives-1);screenFlash=18;screenFlashColor='#ff0000';Audio.sfx('bridgeunsafe');/* stay on d.step1 */}
+        if(bp.revealed&&!safe){
+          // Already known to be wrong — warn but no life lost
+          screenFlash=10;screenFlashColor='#ff8800';Audio.sfx('bridgeunsafe');
+        } else {
+          bp.revealed=true;
+          if(safe){d.step1=target;score+=50;Audio.sfx('bridgesafe');}
+          else{lives=Math.max(0,lives-1);screenFlash=18;screenFlashColor='#ff0000';Audio.sfx('bridgeunsafe');}
+        }
       } else {d.step1=9;}
     }
     const p1bx=d.step1<0?spdX+spdW/2:(d.step1<9?startX+d.step1*gap+panW/2:epdX+epdW/2);
@@ -2221,10 +2226,15 @@ function runLevel2(){
       const target2=d.step2+1;
       if(target2<=8){
         const bp2=d.bridge[target2];
-        bp2.revealed=true;
         const safe2=d.p2row==='top'?bp2.safe:!bp2.safe;
-        if(safe2){d.step2=target2;score+=50;Audio.sfx('bridgesafe');}
-        else{lives=Math.max(0,lives-1);screenFlash=18;screenFlashColor='#ff0000';Audio.sfx('bridgeunsafe');/* stay on d.step2 */}
+        if(bp2.revealed&&!safe2){
+          // Already known to be wrong — warn but no life lost
+          screenFlash=10;screenFlashColor='#ff8800';Audio.sfx('bridgeunsafe');
+        } else {
+          bp2.revealed=true;
+          if(safe2){d.step2=target2;score+=50;Audio.sfx('bridgesafe');}
+          else{lives=Math.max(0,lives-1);screenFlash=18;screenFlashColor='#ff0000';Audio.sfx('bridgeunsafe');}
+        }
       } else {d.step2=9;}
     }
     const p2bx=d.step2<0?spdX+spdW/2+20:(d.step2<9?startX+d.step2*gap+panW/2:epdX+epdW/2);
