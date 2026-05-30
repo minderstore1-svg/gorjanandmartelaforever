@@ -857,7 +857,7 @@ function drawJovan(x,y,anim){
   // curls
   [[hx-16,hy-30,8],[hx-4,hy-33,9],[hx+10,hy-33,9],[hx+20,hy-30,8],[hx-24,hy-22,6],[hx+24,hy-22,6]].forEach(([cx,cy,r])=>{
     ctx.fillStyle='#1a1008'; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle=bad?'#ff0033':'#000'; ctx.lineWidth=bad?2.5:1.5; ctx.stroke();
+    ctx.strokeStyle='#000'; ctx.lineWidth=1.5; ctx.stroke();
   });
   // ears
   spOval(hx-26,hy,4,6,'#b8834a'); spOval(hx+26,hy,4,6,'#b8834a');
