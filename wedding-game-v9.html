@@ -82,21 +82,19 @@ canvas { display:block; image-rendering:auto; width:640px; height:480px; }
     <div id="narrator-name">★ NARRATOR ★</div>
     <div id="narrator-text"></div>
   </div>
+  <div id="qr-panel" style="
+    display:none; position:absolute; text-align:center; z-index:30; pointer-events:none;
+    left:16px; top:112px; padding:5px; border-radius:8px;
+    background:rgba(0,0,0,0.72); border:1px solid rgba(255,215,0,0.45);
+    box-shadow:0 0 12px rgba(0,0,0,0.65);">
+    <img id="qr-img" style="width:86px;height:86px;border:4px solid #fff;display:block;border-radius:5px;background:#fff;"/>
+    <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:#ffd700;margin-top:6px;line-height:1.5;">SCAN TO PLAY</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:5px;color:#aaa;margin-top:3px;">ON YOUR PHONE</div>
+  </div>
   <div id="scanline-overlay"></div>
 </div>
 <div id="hint-bar"></div>
 <div id="god-bar">★ GOD MODE ★ &nbsp; 1-9: jump to level &nbsp;|&nbsp; ]: next level &nbsp;|&nbsp; [: prev level &nbsp;|&nbsp; 0: bonus</div>
-
-<!-- QR panel — fixed to a fullscreen-safe corner on title screen -->
-<div id="qr-panel" style="
-  display:none; position:fixed; text-align:center; z-index:200; pointer-events:none;
-  right:16px; top:16px; padding:8px; border-radius:10px;
-  background:rgba(0,0,0,0.72); border:1px solid rgba(255,215,0,0.35);
-  box-shadow:0 0 18px rgba(0,0,0,0.65);">
-  <img id="qr-img" style="width:clamp(96px,16vw,170px);height:clamp(96px,16vw,170px);border:6px solid #fff;display:block;border-radius:6px;background:#fff;"/>
-  <div style="font-family:'Press Start 2P',monospace;font-size:clamp(6px,0.9vw,9px);color:#ffd700;margin-top:8px;line-height:1.6;">SCAN TO PLAY</div>
-  <div style="font-family:'Press Start 2P',monospace;font-size:clamp(5px,0.75vw,7px);color:#aaa;margin-top:4px;">ON YOUR PHONE</div>
-</div>
 
 <!-- Mobile controller status (shown when server is running) -->
 <div id="ctrl-bar" style="display:none;width:640px;margin-top:4px;display:none;align-items:center;justify-content:space-between;font-family:'Press Start 2P',monospace;font-size:6px;color:#555;">
@@ -636,11 +634,31 @@ function drawMartela(x,y,facing=1,anim=0,captured=false){
   ctx.quadraticCurveTo(hx-14,hy-18,hx-10,hy-10);
   ctx.closePath(); ctx.fill(); ctx.stroke();
 
+  // Extra visible hair pieces — reinforces the original Martela silhouette so no locks look missing
+  ctx.fillStyle=hc; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(hx-15,hy-14);
+  ctx.quadraticCurveTo(hx-20,hy-2,hx-17,hy+18);
+  ctx.quadraticCurveTo(hx-13,hy+24,hx-8,hy+19);
+  ctx.quadraticCurveTo(hx-12,hy+5,hx-10,hy-8);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(hx+10,hy-16);
+  ctx.quadraticCurveTo(hx+18,hy-4,hx+15,hy+17);
+  ctx.quadraticCurveTo(hx+11,hy+24,hx+6,hy+18);
+  ctx.quadraticCurveTo(hx+10,hy+4,hx+8,hy-8);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
   // Hair highlight/sheen
   ctx.strokeStyle=hhi; ctx.lineWidth=2;
   ctx.beginPath();
   ctx.moveTo(hx+2,hy-40);
   ctx.quadraticCurveTo(hx+6,hy-30,hx+8,hy-18);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(hx-13,hy-10);
+  ctx.quadraticCurveTo(hx-16,hy+4,hx-13,hy+16);
   ctx.stroke();
 
   // ears
@@ -981,9 +999,30 @@ function drawJoana(x,y,anim){
   // long straight sides going well below face
   ctx.beginPath(); ctx.moveTo(hx-26,hy-12); ctx.quadraticCurveTo(hx-30,hy+8,hx-24,by+28); ctx.lineTo(hx-14,by+28); ctx.quadraticCurveTo(hx-18,hy+6,hx-16,hy-10); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(hx+26,hy-12); ctx.quadraticCurveTo(hx+30,hy+8,hx+24,by+28); ctx.lineTo(hx+14,by+28); ctx.quadraticCurveTo(hx+18,hy+6,hx+16,hy-10); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // Reinforced Joana hair pieces: extra red side locks so the long hair stays visible
+  // even when scaled in fullscreen or drawn near other objects.
+  ctx.fillStyle='#aa1a00'; ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(hx-23,hy-16);
+  ctx.quadraticCurveTo(hx-34,hy+6,hx-29,by+34);
+  ctx.lineTo(hx-20,by+34);
+  ctx.quadraticCurveTo(hx-24,hy+10,hx-18,hy-12);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(hx+23,hy-16);
+  ctx.quadraticCurveTo(hx+34,hy+6,hx+29,by+34);
+  ctx.lineTo(hx+20,by+34);
+  ctx.quadraticCurveTo(hx+24,hy+10,hx+18,hy-12);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(hx,hy-22,27,13,0,Math.PI,0);
+  ctx.fill(); ctx.stroke();
+
   // auburn highlights
   ctx.strokeStyle='#cc3300'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.moveTo(hx-4,hy-28); ctx.quadraticCurveTo(hx,hy-24,hx+4,hy-28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(hx-24,hy+4); ctx.quadraticCurveTo(hx-27,hy+18,hx-23,by+30); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(hx+24,hy+4); ctx.quadraticCurveTo(hx+27,hy+18,hx+23,by+30); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(hx-16,hy+8); ctx.quadraticCurveTo(hx-18,hy+16,hx-16,hy+24); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(hx+16,hy+8); ctx.quadraticCurveTo(hx+18,hy+16,hx+16,hy+24); ctx.stroke();
   // ears
@@ -4266,36 +4305,17 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
   scaleGame();
 })();
 
-// QR code — rendered as HTML element outside the game box
+// QR code — rendered inside the game box on the title screen
 (function(){
   var CTRL_URL = 'https://gorjanandmartelaforever-production.up.railway.app/controller';
   var img = document.getElementById('qr-img');
   if(img) img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data=' + encodeURIComponent(CTRL_URL);
 
-  // Show QR panel only on title/select screens. Keep it inside the fullscreen viewport.
   function updateQRPanel(){
     var panel = document.getElementById('qr-panel');
     if(!panel) return;
-    var show = (gameState==='title'||gameState==='select');
+    var show = (gameState==='title');
     panel.style.display = show ? 'block' : 'none';
-    if(!show) return;
-
-    var margin = 16;
-    panel.style.right = margin + 'px';
-    panel.style.top = margin + 'px';
-    panel.style.left = 'auto';
-    panel.style.bottom = 'auto';
-    panel.style.transform = 'none';
-
-    // On short screens, make the QR smaller so it never clips vertically.
-    var img = document.getElementById('qr-img');
-    if(img){
-      var maxByHeight = Math.max(82, Math.min(170, Math.floor((window.innerHeight - 90) * 0.55)));
-      var maxByWidth = Math.max(82, Math.min(170, Math.floor(window.innerWidth * 0.16)));
-      var size = Math.max(82, Math.min(maxByHeight, maxByWidth));
-      img.style.width = size + 'px';
-      img.style.height = size + 'px';
-    }
   }
   window.addEventListener('resize', updateQRPanel);
   window.addEventListener('orientationchange', function(){ setTimeout(updateQRPanel,150); });
