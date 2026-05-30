@@ -1658,7 +1658,10 @@ const INTROS = {
 
 function launchLevel(num) {
   initCurrentLevel();
-  if(INTROS[num]) {
+  // Level 2: skip intro after first time (retry shouldn't replay dialogue)
+  const skipIntro = (num === 2 && level2IntroShown);
+  if(INTROS[num] && !skipIntro) {
+    if(num === 2) level2IntroShown = true;
     startIntro((LEVELS[num]&&LEVELS[num].name)||'LEVEL '+num, INTROS[num]);
   } else {
     gameState='playing';
@@ -1799,11 +1802,13 @@ function initCurrentLevel(){
 }
 
 function retryLevel(){ window.__goSfx=false;
- lives=3; particles=[]; screenFlash=0; dialogueQueue=[]; currentDialogue=null; launchLevel(currentLevel); }
+ lives=playerMode==='multi'?6:3; particles=[]; screenFlash=0; dialogueQueue=[]; currentDialogue=null; launchLevel(currentLevel); }
 
 function startGame(){
   window.__goSfx=false;
-  currentLevel=1; score=0; lives=3; particles=[];
+  currentLevel=1; score=0; particles=[];
+  lives = playerMode==='multi' ? 6 : 3;
+  level2BridgeReached=false; level2IntroShown=false; // reset on full new game
   gameState='cutscene';
   cutsceneText=[
     ['SOMETIME IN THE 2020s...','GORJAN DISCOVERS INSTAGRAM.','SPECIFICALLY, ONE PROFILE.'],
@@ -2047,6 +2052,7 @@ function runLevel1(){
 // == LEVEL 2: SQUID GAMES -- RED LIGHT/GREEN LIGHT + BRIDGE =========
 // ==================================================================
 let level2BridgeReached = false; // persists so restart skips red light
+let level2IntroShown   = false; // persists so restart skips dialogue
 
 function initLevel2(){
   Audio.playLevelTheme(2);
@@ -2245,6 +2251,7 @@ function runLevel2(){
       drawGorjan(W-20,270,1,frameCount);
       drawMartela(W-40,270,-1,frameCount);
       level2BridgeReached = false; // reset so next playthrough starts fresh
+      level2IntroShown   = false;  // reset so next playthrough shows intro again
       triggerLevelClear('BRIDGE CROSSED!\nYOU SURVIVED!\nRELATIONSHIP STATUS: STRONGER!');
     }
     if(lives<=0) gameState='gameover';
