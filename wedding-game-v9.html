@@ -1113,14 +1113,28 @@ function updateDialogue(){
 }
 function drawDialogue(){
   if(!currentDialogue)return;
-  const d=currentDialogue, progress=Math.min(1,d.timer/20), y=H-100+(1-progress)*30;
-  ctx.fillStyle='rgba(0,0,0,0.92)';ctx.fillRect(10,y,W-20,88);
-  ctx.strokeStyle=d.color;ctx.lineWidth=2.5;ctx.strokeRect(10,y,W-20,88);
-  ctx.fillStyle=d.color;ctx.font="bold 11px 'Press Start 2P'";ctx.fillText('> '+d.speaker+':',18,y+20);
-  ctx.font="10px 'Press Start 2P'";ctx.fillStyle='#fff';
-  const words=d.text.split(' ');let line='',lineY=y+40,maxW=W-44;
-  words.forEach(w=>{const t=line+(line?' ':'')+w;if(ctx.measureText(t).width>maxW){ctx.fillText(line,18,lineY);lineY+=20;line=w;}else line=t;});
-  if(line)ctx.fillText(line,18,lineY);
+  const d=currentDialogue;
+  const atTop = currentLevel===1;
+  const progress=Math.min(1,d.timer/20);
+
+  ctx.font="7px 'Press Start 2P'";
+  const maxW=W-60;
+  const words=d.text.split(' ');
+  let line='',lines=[];
+  words.forEach(w=>{const t=line+(line?' ':'')+w;if(ctx.measureText(t).width>maxW){lines.push(line);line=w;}else line=t;});
+  if(line)lines.push(line);
+  const boxH=12+lines.length*14+8;
+
+  const y = atTop
+    ? 32+(1-progress)*(-(boxH+10))
+    : H-boxH-8+(1-progress)*30;
+
+  ctx.fillStyle='rgba(0,0,0,0.85)';ctx.fillRect(10,y,W-20,boxH);
+  ctx.strokeStyle=d.color;ctx.lineWidth=1.5;ctx.strokeRect(10,y,W-20,boxH);
+  ctx.fillStyle=d.color;ctx.font="bold 7px 'Press Start 2P'";
+  ctx.fillText('> '+d.speaker+':',14,y+11);
+  ctx.font="7px 'Press Start 2P'";ctx.fillStyle='#fff';
+  lines.forEach((l,i)=>ctx.fillText(l,14,y+22+i*14));
 }
 function startNewsTicker(text){newsTicker=text;newsTickerX=W;newsTickerActive=true;}
 function drawNewsTicker(){
@@ -1809,7 +1823,7 @@ function runLevel1(){
   if(d.killed===8&&!d.drag3){d.drag3=true;queueDialogue('DRAGAN','The app says "maybe stay inside forever."',140,'#ffaa00');}
   if(d.killed===11&&!d.drag4){d.drag4=true;queueDialogue('DRAGAN','People are refreshing AirCare like football scores.',140,'#ffaa00');}
   if(d.killed>=d.goal-2&&!d.drag5){d.drag5=true;queueDialogue('DRAGAN','If this works, I am taking partial credit.',130,'#ffaa00');}
-  if(d.killed>=d.goal) triggerLevelClear('AIR IS CLEAN!\nAIRCARE GOES VIRAL!\nSKOPJE CAN BREATHE AGAIN!\n+' +score+ ' PTS');
+  if(d.killed>=d.goal) triggerLevelClear('AIR IS CLEAN!\nAIRCARE GOES VIRAL!\nSKOPJE CAN BREATHE AGAIN!');
 }
 
 // ==================================================================
@@ -3824,14 +3838,28 @@ function advanceCutscene(){ cutsceneIndex++; if(cutsceneIndex>=cutsceneText.leng
 // == LEVEL CLEAR ==================================================
 function drawLevelClear(){
   levelClearTimer++;
+  const ml = levelClearMsg.split('\n');
+  const lineH = 22;
+  const msgH = ml.length * lineH;
+  const boxH = Math.max(230, msgH + 110); // enough for title + lines + score + prompt
+  const boxY = Math.round(H/2 - boxH/2);
+
   ctx.fillStyle='rgba(0,0,0,0.72)';ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#1a1a2a';ctx.fillRect(80,95,W-160,230);
-  ctx.strokeStyle='#ffd700';ctx.lineWidth=3;ctx.strokeRect(80,95,W-160,230);
-  ctx.strokeStyle='#ff4d6d';ctx.lineWidth=1;ctx.strokeRect(84,99,W-168,222);
-  drawTextC('LEVEL CLEAR!',138,13,'#ffd700');
-  const ml=levelClearMsg.split('\n');ml.forEach((l,i)=>drawTextC(l,170+i*22,7,'#fff'));
-  drawTextC('+'+score+' PTS',242,9,'#00ff88');
-  if(Math.floor(levelClearTimer/30)%2===0) drawTextC('PRESS ENTER TO CONTINUE',298,6,'#888');
+  ctx.fillStyle='#1a1a2a';ctx.fillRect(80,boxY,W-160,boxH);
+  ctx.strokeStyle='#ffd700';ctx.lineWidth=3;ctx.strokeRect(80,boxY,W-160,boxH);
+  ctx.strokeStyle='#ff4d6d';ctx.lineWidth=1;ctx.strokeRect(84,boxY+4,W-168,boxH-8);
+
+  const titleY = boxY + 43;
+  drawTextC('LEVEL CLEAR!', titleY, 13, '#ffd700');
+
+  const linesStartY = titleY + 32;
+  ml.forEach((l,i) => drawTextC(l, linesStartY + i*lineH, 7, '#fff'));
+
+  const scoreY = linesStartY + msgH + 18;
+  drawTextC('+'+score+' PTS', scoreY, 9, '#00ff88');
+
+  const promptY = scoreY + 30;
+  if(Math.floor(levelClearTimer/30)%2===0) drawTextC('PRESS ENTER TO CONTINUE', promptY, 6, '#888');
 }
 
 // == GAME OVER ====================================================
@@ -3914,7 +3942,7 @@ function gameLoop(){
       updateParticles();drawParticles();drawScreenFlash();drawGodOverlay();
       break;
     case 'levelclear':
-      if(currentLevel<LEVELS.length) LEVELS[currentLevel]?.fn();
+      // Draw a frozen frame — no level logic, just particles + overlay
       updateParticles();drawParticles();drawLevelClear();
       break;
     case 'gameover': drawGameOver(); break;
