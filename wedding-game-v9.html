@@ -1345,7 +1345,7 @@ const LEVELS=[
   {id:3,name:'JAPAN - RAMEN SNAKE',fn:runLevel3},
   {id:4,name:'OVERTHINKING FRIENDS',fn:runLevel4},
   {id:5,name:'WEDDING PLANNING',fn:runLevel5},
-  {id:6,name:'WINDOWS 95 - BREAKOUT',fn:runLevel6},
+  {id:6,name:'RSVP RECOVERY',fn:runLevel6},
   {id:7,name:'THE KIDNAPPING',fn:runLevel7},
   {id:8,name:'GORJAN SAVES HER',fn:runLevel8},
   {id:9,name:"MARTELA'S REVENGE",fn:runBonusLevel},
@@ -1694,10 +1694,10 @@ const INTROS = {
   9:[
     {speaker:'MIHAELA',text:'The Ringtones? You hired The Ringtones?',color:'#ff4444',drawFn:drawMihaela},
     {speaker:'MARTELA',text:'They were available. They are very good.',color:'#ff1493',drawFn:drawMartela},
-    {speaker:'MIHAELA',text:'I play guitar. I wanted to perform at this wedding. And you hired The Ringtones.',color:'#ff4444',drawFn:drawMihaela},
-    {speaker:'MARTELA',text:'...You wanted to perform at our wedding.',color:'#ff1493',drawFn:drawMartela},
-    {speaker:'MIHAELA',text:'I have been playing guitar for years. THIS was supposed to be my moment.',color:'#ff4444',drawFn:drawMihaela},
-    {speaker:'MARTELA',text:'The Ringtones have a sound system. You have a grudge. This is not the same.',color:'#ff1493',drawFn:drawMartela},
+    {speaker:'MIHAELA',text:'I wrote you both a song. A real one. With chords. And feelings. And a bridge.',color:'#ff4444',drawFn:drawMihaela},
+    {speaker:'MARTELA',text:'Wait. You wrote us a wedding song?',color:'#ff1493',drawFn:drawMartela},
+    {speaker:'MIHAELA',text:'Yes. It was supposed to be a surprise. Then I heard The Ringtones were already booked.',color:'#ff4444',drawFn:drawMihaela},
+    {speaker:'MARTELA',text:'That is very sweet. Locking Gorjan backstage is less sweet.',color:'#ff1493',drawFn:drawMartela},
   ],
 };
 
@@ -1915,8 +1915,9 @@ function nextLevel(){
     ],
     9:[
       ['THE WEDDING HAS A BAND.','THE RINGTONES.','VERY POPULAR. VERY BOOKED.'],
-      ['MIHAELA ALSO PLAYS GUITAR.','MIHAELA WANTED TO PERFORM.','NOBODY ASKED MIHAELA.'],
-      ['THE RINGTONES ARE ALREADY AT THE VENUE.','MIHAELA DOES NOT ACCEPT THIS.','MIHAELA HAS NEVER ACCEPTED THINGS.'],
+      ['MIHAELA HAS A SONG.','A REAL WEDDING SONG.','WITH CHORDS. AND FEELINGS.'],
+      ['SHE WANTED IT TO BE A SURPRISE.','THEN PANICKED.','THEN LOCKED GORJAN BACKSTAGE.'],
+      ['MARTELA MUST SAVE THE SCHEDULE.','AND ALSO MAKE ROOM FOR ONE SONG.','NO KIDNAPPING REQUIRED.'],
     ],
   };
   if(intros[currentLevel]){ gameState='cutscene'; cutsceneText=intros[currentLevel]; cutsceneIndex=0; }
@@ -2922,8 +2923,8 @@ function initLevel6(){
     levelData={
     ball:{x:W/2,y:H/2,vx:4,vy:-4.5,r:8},
     malina:{x:200,y:180,vx:-1.5,vy:0.9,hp:4,dropTimer:0},
-    pad1:{x:80,w:90,y:H-50},
-    pad2:{x:480,w:90,y:H-50},
+    pad1:{x:70,w:120,y:H-50},
+    pad2:{x:450,w:120,y:H-50},
     bricks:[],
     broken:0,goal:0,
     bossDefeated:false,
@@ -2940,7 +2941,7 @@ function initLevel6(){
   setNarrator('');
   levelData.bsodTimer=0; levelData.bsodActive=false;
   levelData.startFrame=frameCount;
-  showHint('SMASH THE VIRUS BRICKS — STOP MALINA ADDING MORE!','P1: A/D to move   |   P2: ARROWS to move');
+  showHint('SMASH THE VIRUS BRICKS — KEEP THE BALL ALIVE!','P1: A/D to move   |   P2: ARROWS to move');
 }
 
 function runLevel6(){
@@ -2990,8 +2991,14 @@ function runLevel6(){
   }
   // pad bounce
   [d.pad1,d.pad2].forEach(pad=>{
-    if(ball.y+ball.r>pad.y&&ball.y+ball.r<pad.y+14&&ball.x>pad.x&&ball.x<pad.x+pad.w&&ball.vy>0){
-      ball.vy=-Math.abs(ball.vy);ball.vx+=(ball.x-(pad.x+pad.w/2))*0.08;
+    // Forgiving paddle collision: the ball can hit with its left/right edges, not only its centre.
+    const overlapsX = ball.x + ball.r >= pad.x && ball.x - ball.r <= pad.x + pad.w;
+    const overlapsY = ball.y + ball.r >= pad.y && ball.y - ball.r <= pad.y + 14;
+    if(overlapsX && overlapsY && ball.vy>0){
+      ball.y = pad.y - ball.r;
+      ball.vy = -Math.abs(ball.vy);
+      const contact = Math.max(-1, Math.min(1, (ball.x-(pad.x+pad.w/2))/(pad.w/2)));
+      ball.vx += contact * 1.0;
       spawnParticle(ball.x,pad.y,'#00ff88',6,3);
     }
   });
@@ -3010,15 +3017,15 @@ function runLevel6(){
 
   // pads
   if(p2Active()){
-    if(keys['a']||keys['A']) d.pad1.x=Math.max(0,d.pad1.x-5);
-    if(keys['d']||keys['D']) d.pad1.x=Math.min(W/2-d.pad1.w,d.pad1.x+5);
-    if(keys['ArrowLeft']) d.pad2.x=Math.max(W/2,d.pad2.x-5);
-    if(keys['ArrowRight']) d.pad2.x=Math.min(W-d.pad2.w,d.pad2.x+5);
+    if(keys['a']||keys['A']) d.pad1.x=Math.max(0,d.pad1.x-6);
+    if(keys['d']||keys['D']) d.pad1.x=Math.min(W-d.pad1.w,d.pad1.x+6);
+    if(keys['ArrowLeft']) d.pad2.x=Math.max(0,d.pad2.x-6);
+    if(keys['ArrowRight']) d.pad2.x=Math.min(W-d.pad2.w,d.pad2.x+6);
   } else {
     var soloKeys=p1Active();
     var lk=soloKeys?'a':'ArrowLeft', rk=soloKeys?'d':'ArrowRight';
     d.pad1.x=Math.max(0,Math.min(W-d.pad1.w,d.pad1.x+(keys[rk]?5:0)-(keys[lk]?5:0)));
-    d.pad1.w=180; d.pad2.x=-999;
+    d.pad1.w=210; d.pad2.x=-999;
   }
   var l6pads=p2Active()?[d.pad1,d.pad2]:[d.pad1];
   l6pads.forEach((pad,pi)=>{
@@ -3046,11 +3053,11 @@ function runLevel6(){
       spawnParticle(d.malina.x,d.malina.y,'#ff8888',10,5);
       screenFlash=8;screenFlashColor='#ff8888';
       Audio.sfx('enemyhit');
-      if(d.malina.hp===2) queueDialogue('MALINA','Some of the RSVPs might still be recoverable. Probably. Statistically.',150,'#ff8888');
+      
       if(d.malina.hp<=0){
         d.bossDefeated=true;
         spawnParticle(d.malina.x,d.malina.y,'#ffd700',20,8);score+=600;
-        queueDialogue('MALINA','Fine. I will restore the RSVPs. I remember most of them. Roughly. Give or take ten people.',220,'#ff8888');
+        
         startNewsTicker('PRANKMASTER 3000 DEFEATED. RSVPS RESTORED. 87 GUESTS BACK ON THE LIST. DIETARY REQUIREMENTS: MOSTLY INTACT. MALINA: GROUNDED.');
       }
     }
@@ -3066,20 +3073,16 @@ function runLevel6(){
         spawnParticle(b.x+b.w/2,b.y,'#ff4444',8,4);
         screenFlash=5;screenFlashColor='#ff4444';
       }
-      queueDialogue('MALINA',['ADDING MORE.','YOU CANNOT DELETE ME.','THERE ARE BACKUPS.','THE USB HAS LAYERS.'][Math.floor(Math.random()*4)],90,'#ff8888');
+      
     }
   }
 
   ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(0,0,W,28);
   drawText(`BRICKS: ${d.broken}/${d.goal}  ♥:${lives}`,10,20,7,'#00ff44');
 
-  updateDialogue(); drawDialogue();
-  if(frameCount%320===0&&!d.bossDefeated&&d.malina.hp>0){
-    const mq=['The RSVPs are technically still in memory. Somewhere.','87 people do not know they are coming.','In 2008 this was very funny. Different context.','The dietary requirements are also gone. All 47 of them.','This PC survived Y2K. It did not survive me.'];
-    queueDialogue('MALINA',mq[Math.floor(Math.random()*mq.length)],110,'#ff8888');
-  }
+  // No dialogue during Level 6: keep the breakout gameplay unobstructed.
   // Mid-level BSOD flash
-  if(d.broken===16&&!d.bsodActive){d.bsodActive=true;d.bsodTimer=60;}
+  if(false&&d.broken===16&&!d.bsodActive){d.bsodActive=true;d.bsodTimer=60;}
   if(d.bsodTimer>0){
     d.bsodTimer--;
     ctx.fillStyle='#0000aa'; ctx.fillRect(0,0,W,H);
@@ -3092,7 +3095,7 @@ function runLevel6(){
   }
   const allBricks=d.bricks.every(b=>!b.alive);
   // BSOD at 50% bricks
-  if(!d.bsodDone&&d.broken>=Math.floor(d.goal/2)){
+  if(false&&!d.bsodDone&&d.broken>=Math.floor(d.goal/2)){
     d.bsodDone=true;
     if(!d.bsodTimer) d.bsodTimer=0;
     setNarrator('');
@@ -3110,7 +3113,7 @@ function runLevel6(){
     return;
   }
   if(allBricks&&d.bossDefeated) triggerLevelClear('WINDOWS 95 RESTORED!\nRSVPS RECOVERED!\nMALINA: GROUNDED.\nEMIR FOLDER: STILL SUSPICIOUS');
-  else if(allBricks) {queueDialogue('MALINA','...I can fix this. Probably.',120,'#ff8888');}
+  else if(allBricks) { /* no dialogue: keep gameplay clear */ }
 }
 
 // ==================================================================
@@ -3273,7 +3276,7 @@ function runLevel7(){
 function initLevel8(){
   Audio.playLevelTheme(8);
   levelData={
-    p1:{x:80,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:3,
+    p1:{x:80,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:3.4,
         punchCool:0,punchTimer:0},
     platforms:[
       // Wide ground — Gorjan won't just fall off the bottom
@@ -3286,7 +3289,7 @@ function initLevel8(){
       {x:30,  y:220,w:120, h:14},    // upper left
       {x:490, y:220,w:120, h:14},    // upper right
     ],
-    emir:{x:480,y:200,vx:0,vy:0,grounded:false,hp:6,facing:-1,
+    emir:{x:480,y:200,vx:0,vy:0,grounded:false,hp:4,facing:-1,
           state:'patrol',stateTimer:0,shootTimer:0,dashCool:0,jumpCool:0,
           invincTimer:0,phaseTransTimer:0,lastPhase:1},
     bullets:[],rescued:false,victoryTimer:0,cageChat:false,
@@ -3301,7 +3304,7 @@ function runLevel8(){
   const d=levelData;
   const pl=d.p1;
   const em=d.emir;
-  const phase=em.hp>6?1:em.hp>3?2:3;
+  const phase=em.hp>3?1:em.hp>1?2:3;
 
   // Screen shake
   let sx=0,sy=0,didShake=false;
@@ -3367,7 +3370,7 @@ function runLevel8(){
     const dx=pl.x-em.x, dy=pl.y-em.y;
     const dist=Math.sqrt(dx*dx+dy*dy)||1;
     const playerAbove=pl.y<em.y-20&&Math.abs(dx)<80;
-    const spd=1.2+phase*0.5;
+    const spd=0.8+phase*0.35;
 
     if(em.state==='patrol'){
       if(playerAbove&&em.grounded&&em.dashCool===0){
@@ -3376,7 +3379,7 @@ function runLevel8(){
         if(dist>180) em.vx+=(dx>0?.25:-.25);
         else if(dist<80&&phase>1) em.vx+=(dx>0?-.15:.15);
         else em.vx*=0.9;
-        const sRate=phase===1?130:phase===2?85:55;
+        const sRate=phase===1?180:phase===2?130:95;
         if(em.shootTimer>sRate&&dist<350){
           fireEmir(em,pl,phase,d); em.shootTimer=0;
           if(phase===3){em.state='burst';em.stateTimer=0;}
@@ -3389,18 +3392,18 @@ function runLevel8(){
       em.vx*=.85;
       if(em.stateTimer>28){em.state='patrol';em.stateTimer=0;}
     } else if(em.state==='burst'){
-      if(em.stateTimer%10===0&&em.stateTimer<50) fireEmir(em,pl,phase,d);
-      if(em.stateTimer>65){em.state='patrol';em.stateTimer=0;}
+      if(em.stateTimer%18===0&&em.stateTimer<40) fireEmir(em,pl,phase,d);
+      if(em.stateTimer>50){em.state='patrol';em.stateTimer=0;}
     } else if(em.state==='dash'){
-      em.vx=dx>0?7:-7;
+      em.vx=dx>0?4.8:-4.8;
       if(em.stateTimer>20){em.state='patrol';em.stateTimer=0;}
     }
     if(phase>=3&&em.grounded&&em.dashCool===0&&Math.random()<.003){
-      em.state='dash';em.stateTimer=0;em.dashCool=120;
+      em.state='dash';em.stateTimer=0;em.dashCool=180;
     }
 
     // Physics
-    em.vx=Math.max(-5,Math.min(5,em.vx)); em.vx*=.82;
+    em.vx=Math.max(-3.8,Math.min(3.8,em.vx)); em.vx*=.82;
     em.vy+=.5; em.x+=em.vx; em.y+=em.vy;
     em.x=Math.max(10,Math.min(W-10,em.x));
     em.facing=em.vx<-.1?-1:em.vx>.1?1:em.facing;
@@ -3425,10 +3428,10 @@ function runLevel8(){
     if(phase>1) drawText(phase===3?'ENRAGED!':'ANGRY!',em.x-22,em.y-62,5,phase===3?'#ff2200':'#ff8800');
 
     // ── STOMP (jump on Emir from above) ─────────────────────────────
-    if(em.invincTimer===0&&Math.abs(pl.x-em.x)<32&&Math.abs(pl.y-em.y)<36&&pl.vy<-2){
+    if(em.invincTimer===0&&Math.abs(pl.x-em.x)<42&&Math.abs(pl.y-em.y)<44&&pl.vy<-1){
       hitEmir(em,pl,d,phase,1);
-    } else if(em.invincTimer===0&&Math.abs(pl.x-em.x)<32&&Math.abs(pl.y-em.y)<36&&pl.vy>=0&&em.hp>0){
-      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';pl.x=80;pl.vy=-5;
+    } else if(em.invincTimer===0&&Math.abs(pl.x-em.x)<24&&Math.abs(pl.y-em.y)<30&&pl.vy>=0&&em.hp>0){
+      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';pl.x=80;pl.vy=-5;em.invincTimer=70;
       Audio.sfx('damage');
     }
   }
@@ -3444,7 +3447,7 @@ function runLevel8(){
     if(pl.punchTimer>0&&Math.abs(b.x-pl.x)<55&&Math.abs(b.y-pl.y)<30){
       b.vx*=-1.5; b.vy-=2; Audio.sfx('collect');
     }
-    if(Math.abs(b.x-pl.x)<12&&Math.abs(b.y-pl.y)<18){
+    if(Math.abs(b.x-pl.x)<9&&Math.abs(b.y-pl.y)<13){
       b.alive=false;lives=Math.max(0,lives-1);screenFlash=14;screenFlashColor='#ff4444';
       Audio.sfx('damage');if(lives<=0)gameState='gameover';
     }
@@ -3454,10 +3457,10 @@ function runLevel8(){
   pl.punchCool=Math.max(0,pl.punchCool-1);
   pl.punchTimer=Math.max(0,pl.punchTimer-1);
   if((keys[' ']||keys['f']||keys['F']||keys['Enter'])&&pl.punchCool===0){
-    pl.punchTimer=12; pl.punchCool=28;
+    pl.punchTimer=16; pl.punchCool=20;
     Audio.sfx('shoot');
     // Hit Emir if close
-    if(em.hp>0&&em.invincTimer===0&&Math.abs(pl.x-em.x)<55&&Math.abs(pl.y-em.y)<40){
+    if(em.hp>0&&em.invincTimer===0&&Math.abs(pl.x-em.x)<75&&Math.abs(pl.y-em.y)<52){
       hitEmir(em,pl,d,phase,0);
     }
   }
@@ -3525,10 +3528,10 @@ function runLevel8(){
 function fireEmir(em,pl,phase,d){
   const dx=pl.x-em.x,dy=pl.y-em.y;
   const dist=Math.sqrt(dx*dx+dy*dy)||1;
-  const spd=phase===1?3.8:phase===2?4.8:5.5;
-  const count=phase===3?3:phase===2?2:1;
+  const spd=phase===1?2.5:phase===2?3.2:3.8;
+  const count=phase===3?2:phase===2?1:1;
   for(let i=0;i<count;i++){
-    const spread=(i-(count-1)/2)*0.35;
+    const spread=(i-(count-1)/2)*0.22;
     d.bullets.push({x:em.x,y:em.y+10,
       vx:dx/dist*spd+spread,
       vy:dy/dist*spd*0.65+(i===0?0:(Math.random()-.5)*0.5),
@@ -3540,15 +3543,15 @@ function fireEmir(em,pl,phase,d){
 function hitEmir(em,pl,d,phase,isStomp){
   if(isStomp) pl.vy=-10;
   em.hp--;
-  em.invincTimer=85;  // ~1.4s invincibility
+  em.invincTimer=45;  // easier: shorter invincibility
   Audio.sfx('stomp');
   spawnParticle(em.x,em.y,'#ff4444',14,7);
   screenFlash=10;screenFlashColor='#fff';
 
   // Phase transition at HP 6 and 3
-  const newPhase=em.hp>6?1:em.hp>3?2:3;
+  const newPhase=em.hp>3?1:em.hp>1?2:3;
   if(newPhase>phase&&em.hp>0){
-    em.phaseTransTimer=90;
+    em.phaseTransTimer=45;
     d.shakeTimer=20;
     screenFlash=30;screenFlashColor='#ff0000';
     if(newPhase===2) queueDialogue('EMIR','You dare. I have a GUN, a HAT, and a PROPERTY CLAIM.',160,'#ff4444');
@@ -3567,7 +3570,7 @@ function hitEmir(em,pl,d,phase,isStomp){
 function initBonusLevel(){
   Audio.playLevelTheme(9);
   levelData={
-    p2:{x:60,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:4.2,
+    p2:{x:60,y:380,vx:0,vy:0,grounded:true,facing:1,frame:0,speed:4.8,
         flipCool:0,flipTimer:0,boostTimer:0},
     platforms:[
       {x:0,y:420,w:W,h:60},
@@ -3577,7 +3580,7 @@ function initBonusLevel(){
       {x:60,y:240,w:90,h:14},
       {x:490,y:240,w:90,h:14},
     ],
-    mihaela:{x:380,y:310,vx:0,vy:0,grounded:false,hp:4,facing:-1,
+    mihaela:{x:380,y:310,vx:0,vy:0,grounded:false,hp:3,facing:-1,
              state:'patrol',stateTimer:0,shootTimer:0,phase:1,
              invincTimer:0},
     notes:[],
@@ -3596,7 +3599,7 @@ function runBonusLevel(){
   const d=levelData;
   const pl=d.p2;
   const mh=d.mihaela;
-  const phase=mh.hp>3?1:mh.hp>1?2:3;
+  const phase=mh.hp>2?1:mh.hp>1?2:3;
   mh.phase=phase;
   const boosted=pl.boostTimer>0;
   pl.boostTimer=Math.max(0,pl.boostTimer-1);
@@ -3622,9 +3625,9 @@ function runBonusLevel(){
     drawGorjan(d.gorjanCapturedX,d.gorjanCapturedY,1,frameCount%40<20?frameCount:0);
     d.cheerTimer++;
     const cheerLines=[
-      {s:'GORJAN',t:'She is actually really good. I am still Team Ringtones.',c:'#00ff88'},
-      {s:'GORJAN',t:'MARTELA! HAIR FLIP! The Ringtones need you!',c:'#ffd700'},
-      {s:'GORJAN',t:'We paid a deposit. The Ringtones are playing.',c:'#00ff88'},
+      {s:'GORJAN',t:'She is actually really good. I just prefer not being locked backstage.',c:'#00ff88'},
+      {s:'GORJAN',t:'MARTELA! HAIR FLIP! Save the schedule!',c:'#ffd700'},
+      {s:'GORJAN',t:'The Ringtones can play the party. Mihaela can get one song.',c:'#00ff88'},
     ];
     if(d.cheerTimer%480===0&&d.cheerIdx<cheerLines.length){
       const cl=cheerLines[d.cheerIdx++];
@@ -3643,16 +3646,16 @@ function runBonusLevel(){
   pl.flipCool=Math.max(0,pl.flipCool-1);
   pl.flipTimer=Math.max(0,pl.flipTimer-1);
   if((keys['Enter']||keys['ArrowDown']||keys[' ']||keys['s']||keys['S'])&&pl.flipCool===0){
-    pl.flipTimer=14;pl.flipCool=32;
+    pl.flipTimer=20;pl.flipCool=20;
     pl.vx=pl.facing*5;
     Audio.sfx('pop');
     spawnParticle(pl.x+pl.facing*30,pl.y,'#ff1493',10,5);
   }
   if(pl.flipTimer>0){
-    ctx.strokeStyle=`rgba(255,20,147,${pl.flipTimer/14})`;ctx.lineWidth=4;
-    ctx.beginPath();ctx.arc(pl.x,pl.y-5,42,pl.facing===1?-0.8:Math.PI+0.8,pl.facing===1?0.8:Math.PI-0.8);ctx.stroke();
+    ctx.strokeStyle=`rgba(255,20,147,${Math.min(1,pl.flipTimer/14)})`;ctx.lineWidth=5;
+    ctx.beginPath();ctx.arc(pl.x,pl.y-5,58,pl.facing===1?-0.95:Math.PI+0.95,pl.facing===1?0.95:Math.PI-0.95);ctx.stroke();
     ctx.lineWidth=2;ctx.strokeStyle=`rgba(255,150,200,${pl.flipTimer/20})`;
-    ctx.beginPath();ctx.arc(pl.x,pl.y-5,52,pl.facing===1?-0.6:Math.PI+0.6,pl.facing===1?0.6:Math.PI-0.6);ctx.stroke();
+    ctx.beginPath();ctx.arc(pl.x,pl.y-5,68,pl.facing===1?-0.75:Math.PI+0.75,pl.facing===1?0.75:Math.PI-0.75);ctx.stroke();
   }
 
   // ── MUSICAL NOTES ────────────────────────────────────────────
@@ -3676,10 +3679,10 @@ function runBonusLevel(){
     // Hair flip deflects note
     if(pl.flipTimer>0&&!n.deflected){
       const fx=pl.x+pl.facing*35;
-      if(Math.abs(n.x-fx)<55&&Math.abs(n.y-(pl.y-5))<35){
+      if(Math.abs(n.x-fx)<85&&Math.abs(n.y-(pl.y-5))<55){
         n.deflected=true;
-        n.vx=(mh.x-n.x>0?3.5:-3.5)+(Math.random()-.5);
-        n.vy=-3;
+        n.vx=(mh.x-n.x>0?4.4:-4.4)+(Math.random()-.3);
+        n.vy=-2.4;
         Audio.sfx('collect');
         spawnParticle(n.x,n.y,'#ffd700',8,4);
       }
@@ -3687,7 +3690,7 @@ function runBonusLevel(){
 
     // Deflected note hits Mihaela
     if(n.deflected&&mh.hp>0&&mh.invincTimer===0){
-      if(Math.abs(n.x-mh.x)<28&&Math.abs(n.y-mh.y)<36){
+      if(Math.abs(n.x-mh.x)<42&&Math.abs(n.y-mh.y)<48){
         n.alive=false;
         hitMihaela(mh,d,phase);
         Audio.sfx('stomp');
@@ -3695,7 +3698,7 @@ function runBonusLevel(){
     }
 
     // Note hits player
-    if(!n.deflected&&Math.abs(n.x-pl.x)<12&&Math.abs(n.y-pl.y)<16){
+    if(!n.deflected&&Math.abs(n.x-pl.x)<9&&Math.abs(n.y-pl.y)<12){
       n.alive=false;
       lives=Math.max(0,lives-1);screenFlash=14;screenFlashColor='#ff4444';
       Audio.sfx('damage');if(lives<=0)gameState='gameover';
@@ -3712,31 +3715,31 @@ function runBonusLevel(){
     const playerAbove=pl.y<mh.y-20&&Math.abs(dx)<90;
 
     // Dodge when Martela above
-    if(playerAbove&&mh.grounded&&mh.stateTimer%40===0){
-      mh.vx=dx>0?-5:5;
+    if(playerAbove&&mh.grounded&&mh.stateTimer%70===0){
+      mh.vx=dx>0?-3.2:3.2;
     }
 
     // Phase-based movement
-    if(phase===1){mh.vx+=(dx>0?.08:-.08);mh.vx*=.86;}
+    if(phase===1){mh.vx+=(dx>0?.05:-.05);mh.vx*=.86;}
     else if(phase===2){
-      mh.vx+=(dx>0?.13:-.13);mh.vx*=.84;
-      if(mh.grounded&&Math.random()<.005){mh.vy=-(10+phase*.8);mh.grounded=false;}
+      mh.vx+=(dx>0?.08:-.08);mh.vx*=.84;
+      if(mh.grounded&&Math.random()<.002){mh.vy=-(8+phase*.5);mh.grounded=false;}
     } else {
       // Phase 3: stay back, play power ballad
       const targetX=dx>0?100:W-100;
-      mh.vx+=(targetX-mh.x>0?.15:-.15);mh.vx*=.85;
+      mh.vx+=(targetX-mh.x>0?.08:-.08);mh.vx*=.86;
     }
 
     // Fire notes
-    const rates=[0,160,110,75];
+    const rates=[0,220,170,130];
     if(mh.shootTimer>rates[phase]){
       mh.shootTimer=0;
       fireNotes(mh,pl,phase,d);
       // Phase 3 dialog
-      if(phase===3&&Math.random()<.3) queueDialogue('MIHAELA',['THE RINGTONES CANNOT DO THIS!!','I AM LITERALLY THE BETTER CHOICE!!','DO YOU HEAR THAT CHORD PROGRESSION?!'][Math.floor(Math.random()*3)],100,'#ff4444');
+      if(phase===3&&Math.random()<.3) queueDialogue('MIHAELA',['I JUST WANTED IT TO BE SPECIAL!!','THE RINGTONES DO NOT KNOW YOU LIKE I DO!!','DO YOU HEAR THAT CHORD PROGRESSION?!'][Math.floor(Math.random()*3)],100,'#ff4444');
     }
 
-    mh.vx=Math.max(-6,Math.min(6,mh.vx));
+    mh.vx=Math.max(-3.8,Math.min(3.8,mh.vx));
     mh.vy+=.5;mh.x+=mh.vx;mh.y+=mh.vy;
     mh.x=Math.max(10,Math.min(W-10,mh.x));
     mh.facing=mh.vx<-.1?-1:mh.vx>.1?1:mh.facing;
@@ -3755,11 +3758,11 @@ function runBonusLevel(){
     if(phase>1)drawText(phase===3?'POWER BALLAD!':'CRESCENDO!',mh.x-28,mh.y-66,5,phase===3?'#ff1493':'#ff88cc');
 
     // Stomp Mihaela
-    if(mh.invincTimer===0&&Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&pl.vy<-2){
+    if(mh.invincTimer===0&&Math.abs(pl.x-mh.x)<42&&Math.abs(pl.y-mh.y)<46&&pl.vy<-1){
       pl.vy=-10;
       hitMihaela(mh,d,phase);
-    } else if(mh.invincTimer===0&&Math.abs(pl.x-mh.x)<30&&Math.abs(pl.y-mh.y)<36&&mh.hp>0&&pl.vy>=0){
-      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');pl.x=60;pl.vy=-5;
+    } else if(mh.invincTimer===0&&Math.abs(pl.x-mh.x)<22&&Math.abs(pl.y-mh.y)<28&&mh.hp>0&&pl.vy>=0){
+      lives=Math.max(0,lives-1);screenFlash=15;screenFlashColor='#ff0000';Audio.sfx('damage');pl.x=60;pl.vy=-5;mh.invincTimer=70;
     }
   }
 
@@ -3785,9 +3788,9 @@ function runBonusLevel(){
   // ── ATTITUDE LINES ────────────────────────────────────────────
   d.attTimer++;
   const attLines=[
-    {s:'MARTELA',t:'The Ringtones are professionals. You are the maid of honour.',c:'#ff1493'},
-    {s:'MARTELA',t:'You cannot fire the band by fighting me.',c:'#ff1493'},
-    {s:'MARTELA',t:'This is not in the maid of honour handbook.',c:'#ff1493'},
+    {s:'MARTELA',t:'Your song can be special without cancelling the band.',c:'#ff1493'},
+    {s:'MARTELA',t:'One song. No kidnapping. That is the offer.',c:'#ff1493'},
+    {s:'MARTELA',t:'This is emotional. But it is still not in the maid of honour handbook.',c:'#ff1493'},
   ];
   if(d.attTimer%380===0&&d.attIdx<attLines.length){const al=attLines[d.attIdx++];queueDialogue(al.s,al.t,160,al.c);}
 
@@ -3801,12 +3804,13 @@ function runBonusLevel(){
     drawGorjan(W/2+30,H-100,-1,frameCount);
     ctx.fillStyle='rgba(0,0,0,0.9)';ctx.fillRect(40,70,W-80,100);
     ctx.strokeStyle='#ff1493';ctx.lineWidth=2;ctx.strokeRect(40,70,W-80,100);
-    if(d.victoryTimer===1) queueDialogue('GORJAN','You came for me! Also The Ringtones say thank you.',140,'#00ff88');
-    if(d.victoryTimer===55) queueDialogue('MARTELA','Obviously. The Ringtones are setting up. Let us go.',155,'#ff1493');
-    if(d.victoryTimer===115) queueDialogue('GORJAN','31 May 2026. No more side quests.',180,'#ffd700');
-    drawTextC('THE RINGTONES ARE SAFE!',110,10,'#ff1493');
-    drawTextC('MARTELA SAVES THE WEDDING BAND.',132,6,'#ffd700');
-    drawTextC('TRUE PARTNERSHIP ♥',152,6,'#fff');
+    if(d.victoryTimer===1) queueDialogue('GORJAN','You came for me! Also... the song was kind of beautiful.',155,'#00ff88');
+    if(d.victoryTimer===55) queueDialogue('MARTELA','One song before The Ringtones. No kidnapping during the vows.',170,'#ff1493');
+    if(d.victoryTimer===115) queueDialogue('MIHAELA','Fine. But I still get the emotional bridge.',160,'#ff69b4');
+    if(d.victoryTimer===170) queueDialogue('GORJAN','31 May 2026. Final setlist approved.',160,'#ffd700');
+    drawTextC('MIHAELA JOINS THE SETLIST!',110,9,'#ff1493');
+    drawTextC('ONE SONG. ZERO KIDNAPPINGS.',132,6,'#ffd700');
+    drawTextC('THE RINGTONES SURVIVE ♥',152,6,'#fff');
     if(d.victoryTimer>180&&!d.endingStarted){d.endingStarted=true;setTimeout(startEnding,600);}
   }
 
@@ -3822,17 +3826,17 @@ function runBonusLevel(){
 }
 
 function hitMihaela(mh,d,phase){
-  mh.hp--;mh.invincTimer=80;
+  mh.hp--;mh.invincTimer=45;
   spawnParticle(mh.x,mh.y,'#ff1493',14,7);screenFlash=12;screenFlashColor='#fff';
   if(mh.hp===3){
-    queueDialogue('MIHAELA','The Ringtones cannot even do this. I am literally better.',150,'#ff69b4');
+    queueDialogue('MIHAELA','But The Ringtones do not know you like I do!',150,'#ff69b4');
     Audio.sfx('damage');
   }
-  if(mh.hp===1) queueDialogue('MIHAELA','The Ringtones do not even have a guitarist this good!!',140,'#ff1493');
+  if(mh.hp===1) queueDialogue('MIHAELA','I just wanted the wedding to feel special!!',140,'#ff1493');
   if(mh.hp<=0){
     Audio.sfx('enemydie');
     spawnParticle(mh.x,mh.y,'#ffd700',30,10);
-    queueDialogue('MIHAELA','Fine. But for the record — I sound better than The Ringtones.',230,'#ff4444');
+    queueDialogue('MIHAELA','Fine. The Ringtones can play the party. But I still get one song.',230,'#ff4444');
   }
 }
 
@@ -3843,37 +3847,34 @@ function fireNotes(mh,pl,phase,d){
   const colors=['#ffd700','#ff88cc','#88ffcc','#ffaa44'];
 
   if(phase===1){
-    // 2 notes in a gentle arc
-    for(let i=0;i<2;i++){
-      const spread=(i-0.5)*0.5;
-      d.notes.push({x:mh.x,y:mh.y-10,
-        vx:dx/dist*2.0+spread, vy:dy/dist*1.5+(i===0?-1.2:-0.4),
-        alive:true,deflected:false,
-        type:noteTypes[i%2],color:colors[i%colors.length]});
-    }
+    // Easier phase 1: one slow note
+    d.notes.push({x:mh.x,y:mh.y-10,
+      vx:dx/dist*1.55, vy:dy/dist*1.15-0.7,
+      alive:true,deflected:false,
+      type:'quarter',color:colors[0]});
   } else if(phase===2){
-    // 3-note chord burst
-    for(let i=0;i<3;i++){
-      const spread=(i-1.5)*0.6;
+    // Easier phase 2: two-note chord with a wider gap
+    for(let i=0;i<2;i++){
+      const spread=(i-0.5)*0.55;
       d.notes.push({x:mh.x,y:mh.y-10,
-        vx:dx/dist*2.5+spread, vy:dy/dist*1.8+(i%2===0?-1.5:-0.6),
+        vx:dx/dist*1.9+spread, vy:dy/dist*1.35+(i===0?-1.0:-0.25),
         alive:true,deflected:false,
         type:noteTypes[i%2],color:colors[i%colors.length]});
     }
   } else {
-    // Phase 3: power ballad — sweeping wave from both sides
+    // Easier phase 3: dramatic but readable power-ballad wave
     const wavePhase=Math.sin(frameCount*.04);
-    for(let i=0;i<5;i++){
-      const side=i%2===0?1:-1;
-      d.notes.push({x:mh.x+(side*i*12),y:mh.y-10,
-        vx:dx/dist*3.0+(i-1)*0.4, vy:dy/dist*2+wavePhase*1.0-1.5,
+    for(let i=0;i<3;i++){
+      d.notes.push({x:mh.x+(i-1)*10,y:mh.y-10,
+        vx:dx/dist*2.15+(i-1)*0.35, vy:dy/dist*1.45+wavePhase*0.55-1.1,
         alive:true,deflected:false,
         type:i%2===0?'quarter':'eighth',color:colors[i%colors.length]});
     }
-    // Edge notes: only every 90 frames in phase 3 (much less frequent)
-    if(frameCount%90===0){
-      d.notes.push({x:Math.random()>0.5?-10:W+10,y:pl.y+Math.random()*60,
-        vx:Math.random()>0.5?3:-3, vy:-0.5,
+    // Rare edge note, slower and less punishing
+    if(frameCount%150===0){
+      const fromLeft=Math.random()>0.5;
+      d.notes.push({x:fromLeft?-10:W+10,y:pl.y+Math.random()*45,
+        vx:fromLeft?2.0:-2.0, vy:-0.25,
         alive:true,deflected:false,type:'eighth',color:'#ff88cc'});
     }
   }
@@ -4029,7 +4030,7 @@ function drawEnding(){
     [120,'THEY SURVIVED THE FRIEND GROUP.','#ffd700',8],
     [170,'THEY CROSSED THE BRIDGE.','#fff',7],
     [210,'THEY ATE THEIR WAY THROUGH TOKYO.','#fff',7],
-    [250,'THEY SAVED THEIR WINDOWS 95 PC.','#fff',7],
+    [250,'THEY SAVED THE WEDDING WEBSITE.','#fff',7],
     [290,'THEY SAVED EACH OTHER.','#ff69b4',7],
     [330,'AND SOMEHOW, THEY STILL MADE IT TO THE WEDDING.','#ffd700',6],
   ];
@@ -4074,11 +4075,11 @@ function runCredits(){
     {t:'',s:7,c:'#fff'},{t:'THE VILLAINS',s:8,c:'#ff4444'},
     {t:'EMIR HASANOVIC',s:7,c:'#ff6666'},{t:'THE KIDNAPPER (WHITE HAT)',s:5,c:'#888'},
     {t:'DRAGAN',s:7,c:'#ff6666'},{t:'BEST MAN / TRAITOR / FORMER CTO',s:5,c:'#888'},
-    {t:'MIHAELA JANEVSKA',s:7,c:'#ff6666'},{t:'MAID OF HONOUR VILLAIN',s:5,c:'#888'},
+    {t:'MIHAELA JANEVSKA',s:7,c:'#ff6666'},{t:'MAID OF HONOUR / SURPRISE PERFORMER',s:5,c:'#888'},
     {t:'JOVAN OGJANOVIC',s:7,c:'#ff6666'},{t:'OVERTHINKING FRIEND',s:5,c:'#888'},
     {t:'VLADIMIR MITKOV',s:7,c:'#ff6666'},{t:'VLAD.EXE THE VIRUS',s:5,c:'#888'},
     {t:'JOANA RISTOSKA',s:7,c:'#ff6666'},{t:'QUARTERLY QUOTA CHAOS',s:5,c:'#888'},
-    {t:'DORA TODORCEVSKA',s:7,c:'#ff6666'},{t:'WINDOWS 95 CULPRIT',s:5,c:'#888'},
+    {t:'DORA TODORCEVSKA',s:7,c:'#ff6666'},{t:'RSVP CHAOS SPECIALIST',s:5,c:'#888'},
     {t:'MALINA',s:7,c:'#ff6666'},{t:'RIVAL RAMEN CHEF / TOKYO OBSTACLE',s:5,c:'#888'},
     {t:'',s:7,c:'#fff'},{t:'CREATED BY',s:7,c:'#ffd700'},
     {t:'VLAD, DORA AND CLAUDE',s:7,c:'#fff'},
