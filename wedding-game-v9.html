@@ -84,6 +84,7 @@ canvas { display:block; image-rendering:auto; width:640px; height:480px; }
   <div id="scanline-overlay"></div>
 </div>
 <div id="hint-bar"></div>
+<div id="fs-hint" style="text-align:center;font-family:'Press Start 2P',monospace;font-size:9px;color:#666;padding:6px;cursor:pointer;" onclick="if(window._requestFS)window._requestFS()">CLICK HERE FOR FULLSCREEN</div>
 <div id="god-bar">★ GOD MODE ★ &nbsp; 1-9: jump to level &nbsp;|&nbsp; ]: next level &nbsp;|&nbsp; [: prev level &nbsp;|&nbsp; 0: bonus</div>
 
 <!-- QR panel — outside the game box, shown on title screen -->
@@ -2307,6 +2308,26 @@ function initLevel3(){
   showHint('EAT THE RAMEN — DON\'T CRASH!','P1: WASD to steer   |   P2: ARROWS to steer');
   levelData.midMsg=false; levelData.endMsg=false;
   spawnRamen();spawnRamen();spawnRamen();spawnRamen();
+
+  // Keydown buffer — ensures controller taps register even if released before move tick
+  if(levelData._dirHandler) document.removeEventListener('keydown', levelData._dirHandler);
+  levelData._dirHandler = function(e){
+    if(currentLevel!==3) return;
+    const d=levelData, k=e.key;
+    if(p1Active()){
+      if((k==='w'||k==='W')&&d.dir1.y!==1) d.nextDir1={x:0,y:-1};
+      if((k==='s'||k==='S')&&d.dir1.y!==-1) d.nextDir1={x:0,y:1};
+      if((k==='a'||k==='A')&&d.dir1.x!==1) d.nextDir1={x:-1,y:0};
+      if((k==='d'||k==='D')&&d.dir1.x!==-1) d.nextDir1={x:1,y:0};
+    }
+    if(p2Active()){
+      if(k==='ArrowUp'&&d.dir2.y!==1) d.nextDir2={x:0,y:-1};
+      if(k==='ArrowDown'&&d.dir2.y!==-1) d.nextDir2={x:0,y:1};
+      if(k==='ArrowLeft'&&d.dir2.x!==1) d.nextDir2={x:-1,y:0};
+      if(k==='ArrowRight'&&d.dir2.x!==-1) d.nextDir2={x:1,y:0};
+    }
+  };
+  document.addEventListener('keydown', levelData._dirHandler);
 }
 
 function spawnRamen(){
@@ -2336,7 +2357,7 @@ function runLevel3(){
   for(let gx=0;gx<=W;gx+=CELL){ctx.beginPath();ctx.moveTo(gx,G_TOP);ctx.lineTo(gx,G_TOP+PA_H);ctx.stroke();}
   for(let gy=0;gy<=PA_H;gy+=CELL){ctx.beginPath();ctx.moveTo(0,G_TOP+gy);ctx.lineTo(W,G_TOP+gy);ctx.stroke();}
 
-  // input
+  // input — also buffered via keydown for controller reliability
   if(p1Active()){
     if((keys['w']||keys['W'])&&d.dir1.y!==1) d.nextDir1={x:0,y:-1};
     if((keys['s']||keys['S'])&&d.dir1.y!==-1) d.nextDir1={x:0,y:1};
@@ -4324,6 +4345,15 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
 
 // ── FULLSCREEN SCALING ──────────────────────────────────────────────
 (function(){
+  function requestFS(){
+    const el = document.documentElement;
+    if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
+    else if(el.msRequestFullscreen) el.msRequestFullscreen();
+  }
+  window._requestFS = requestFS;
+
   function applyFSScale(){
     const c  = document.getElementById('game-container');
     const cv = c && c.querySelector('canvas');
@@ -4335,7 +4365,7 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
       c.style.cssText  += ';width:'+w+'px!important;height:'+h+'px!important;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;border:none;';
       cv.style.width   = w+'px'; cv.style.height = h+'px';
     } else {
-      c.style.cssText  = '';  // restore to stylesheet defaults
+      c.style.cssText  = '';
       cv.style.width   = '640px'; cv.style.height = '480px';
     }
   }
@@ -4343,6 +4373,10 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
   document.addEventListener('webkitfullscreenchange', applyFSScale);
   document.addEventListener('mozfullscreenchange',    applyFSScale);
   window.addEventListener('resize', applyFSScale);
+
+  // Click anywhere on the game to go fullscreen (works when controller is used)
+  const canvas = document.querySelector('canvas');
+  if(canvas) canvas.addEventListener('click', ()=>{ if(!document.fullscreenElement) requestFS(); });
 })();
 
 // Preload custom font then start loop
@@ -4386,8 +4420,15 @@ document.fonts.load("62px 'SomeTimeLater'").then(()=>{ gameLoop(); }).catch(()=>
         var key  = raw.slice(2);
         // Direct keys[] update for held-key polling
         keys[key] = down;
+        // Auto-release timeout — if keyup is lost, release after 600ms
+        if(!window.__keyTimers) window.__keyTimers = {};
+        if(down){
+          clearTimeout(window.__keyTimers[key]);
+          window.__keyTimers[key] = setTimeout(function(){ keys[key]=false; if(window.__heldKeys) window.__heldKeys[key]=false; }, 600);
+        } else {
+          clearTimeout(window.__keyTimers[key]);
+        }
         // Dispatch keydown only on fresh press (not heartbeat repeats)
-        // Heartbeat sends 'd:key' but keys[key] is already true — skip re-dispatch
         if(down && !window.__heldKeys) window.__heldKeys = {};
         if(down && !window.__heldKeys[key]){
           window.__heldKeys[key] = true;
@@ -4418,6 +4459,8 @@ document.fonts.load("62px 'SomeTimeLater'").then(()=>{ gameLoop(); }).catch(()=>
     sock.onclose = function(){
       // Clear all held keys on disconnect to prevent stuck keys
       Object.keys(keys).forEach(function(k){ keys[k]=false; });
+      if(window.__keyTimers) Object.keys(window.__keyTimers).forEach(function(k){ clearTimeout(window.__keyTimers[k]); });
+      if(window.__heldKeys) Object.keys(window.__heldKeys).forEach(function(k){ window.__heldKeys[k]=false; });
       if(ctrlBar) ctrlBar.style.display='none';
       reconnectTimer = setTimeout(connect, 3000);
     };
