@@ -89,9 +89,9 @@ canvas { display:block; image-rendering:auto; width:640px; height:480px; }
 <!-- QR panel — outside the game box, shown on title screen -->
 <div id="qr-panel" style="
   display:none; position:fixed; text-align:center; z-index:200; pointer-events:none; transform:translateY(-50%);">
-  <img id="qr-img" style="width:200px;height:200px;border:8px solid #fff;display:block;border-radius:6px;"/>
-  <div style="font-family:'Press Start 2P',monospace;font-size:11px;color:#ffd700;margin-top:14px;line-height:1.8;">SCAN TO PLAY</div>
-  <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:#aaa;margin-top:6px;">ON YOUR PHONE</div>
+  <img id="qr-img" style="width:110px;height:110px;border:5px solid #fff;display:block;border-radius:4px;"/>
+  <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#ffd700;margin-top:8px;line-height:1.8;">SCAN TO PLAY</div>
+  <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:#aaa;margin-top:4px;">ON YOUR PHONE</div>
 </div>
 
 <!-- Mobile controller status (shown when server is running) -->
@@ -163,7 +163,7 @@ const Audio = (function(){
     currentAudio = null;
   }
 
-  function playTrackFile(filename){
+  function playTrackFile(filename, vol){
     if(!musicEnabled || !filename){ stopMusic(); return; }
     if(currentTrack === filename) return; // already playing
     stopMusic();
@@ -171,16 +171,22 @@ const Audio = (function(){
     const a = preloaded[filename] || loadTrack(filename);
     preloaded[filename] = a;
     currentAudio = a;
-    a.volume = MUSIC_VOL;
+    a.volume = (vol !== undefined) ? vol : MUSIC_VOL;
+    // Fallback: if wedding march fails, play dreams-of-childhood softly
+    a.addEventListener('error', ()=>{
+      if(filename==='wedding-march.mp3') playTrackFile('dreams-of-childhood.mp3', 0.4);
+    }, {once:true});
     // Resume Web Audio context on first gesture
     if(ctx && ctx.state==='suspended') ctx.resume();
     const playPromise = a.play();
-    if(playPromise) playPromise.catch(()=>{}); // suppress autoplay error
+    if(playPromise) playPromise.catch(()=>{});
   }
 
-  function playLevelTheme(lvl){
-    const file = MUSIC_TRACKS[lvl] !== undefined ? MUSIC_TRACKS[lvl] : null;
-    playTrackFile(file);
+  function playLevelTheme(lvl, vol){
+    // Accept numeric key OR direct filename string
+    const file = typeof lvl==='string' ? lvl
+                 : (MUSIC_TRACKS[lvl] !== undefined ? MUSIC_TRACKS[lvl] : null);
+    playTrackFile(file, vol);
   }
 
   function playTheme(name){
@@ -1817,6 +1823,10 @@ function retryLevel(){ window.__goSfx=false;
 
 function startGame(){
   window.__goSfx=false;
+  // Go fullscreen on play
+  const el = document.getElementById('game-container') || document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   currentLevel=1; score=0; particles=[];
   lives = playerMode==='multi' ? 6 : 3;
   level2BridgeReached=false; level2IntroShown=false; // reset on full new game
@@ -4073,14 +4083,14 @@ function runCredits(){
     {t:'GORJAN',s:7,c:'#00ff88'},{t:'PLAYER 1 / THE RESCUER',s:5,c:'#888'},
     {t:'MARTELA',s:7,c:'#ff69b4'},{t:'PLAYER 2 / THE AVENGER',s:5,c:'#888'},
     {t:'',s:7,c:'#fff'},{t:'THE VILLAINS',s:8,c:'#ff4444'},
+    {t:'VLADIMIR',s:7,c:'#ff6666'},{t:'VLAD.EXE THE VIRUS',s:5,c:'#888'},
+    {t:'DORA',s:7,c:'#ff6666'},{t:'WINDOWS 95 CULPRIT',s:5,c:'#888'},
+    {t:'JOANA',s:7,c:'#ff6666'},{t:'QUARTERLY QUOTA CHAOS',s:5,c:'#888'},
+    {t:'MALINA',s:7,c:'#ff6666'},{t:'RIVAL RAMEN CHEF / TOKYO OBSTACLE',s:5,c:'#888'},
     {t:'EMIR',s:7,c:'#ff6666'},{t:'THE KIDNAPPER (WHITE HAT)',s:5,c:'#888'},
     {t:'DRAGAN',s:7,c:'#ff6666'},{t:'BEST MAN / TRAITOR / FORMER CTO',s:5,c:'#888'},
     {t:'MIHAELA',s:7,c:'#ff6666'},{t:'MAID OF HONOUR VILLAIN',s:5,c:'#888'},
     {t:'JOVAN',s:7,c:'#ff6666'},{t:'OVERTHINKING FRIEND',s:5,c:'#888'},
-    {t:'VLADIMIR',s:7,c:'#ff6666'},{t:'VLAD.EXE THE VIRUS',s:5,c:'#888'},
-    {t:'JOANA',s:7,c:'#ff6666'},{t:'QUARTERLY QUOTA CHAOS',s:5,c:'#888'},
-    {t:'DORA',s:7,c:'#ff6666'},{t:'WINDOWS 95 CULPRIT',s:5,c:'#888'},
-    {t:'MALINA',s:7,c:'#ff6666'},{t:'RIVAL RAMEN CHEF / TOKYO OBSTACLE',s:5,c:'#888'},
     {t:'',s:7,c:'#fff'},{t:'CREATED BY',s:7,c:'#ffd700'},
     {t:'VLAD, DORA AND CLAUDE',s:7,c:'#fff'},
     {t:'',s:7,c:'#fff'},{t:'♥  31 MAY 2026  ♥',s:9,c:'#ffd700'},
@@ -4290,24 +4300,19 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
   var img = document.getElementById('qr-img');
   if(img) img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data=' + encodeURIComponent(CTRL_URL);
 
-  // Show QR panel only on title/select screens, positioned in right gap
+  // Show QR panel only on title/select screens, positioned in top-left of game container
   function updateQRPanel(){
     var panel = document.getElementById('qr-panel');
     if(!panel) return;
     var show = (gameState==='title'||gameState==='select');
     panel.style.display = show ? 'block' : 'none';
     if(!show) return;
-    // Position: center of space between right edge of (scaled) game box and right viewport edge
     var container = document.getElementById('game-container');
     var rect = container ? container.getBoundingClientRect() : null;
     if(rect){
-      var gameRight = rect.right;
-      var vpRight   = window.innerWidth;
-      var gapWidth  = vpRight - gameRight;
-      var centerX   = gameRight + gapWidth / 2;
-      panel.style.left  = centerX + 'px';
-      panel.style.top   = '50%';
-      panel.style.transform = 'translate(-50%, -50%)';
+      panel.style.left      = (rect.left + 10) + 'px';
+      panel.style.top       = (rect.top  + 10) + 'px';
+      panel.style.transform = 'none';
     }
   }
   setInterval(updateQRPanel, 500);
