@@ -22,22 +22,6 @@ body { background:#000; display:flex; flex-direction:column; align-items:center;
   flex-shrink:0;
 }
 canvas { display:block; image-rendering:auto; width:640px; height:480px; }
-/* Fullscreen scaling — maintain 4:3 ratio */
-:fullscreen, :-webkit-full-screen {
-  background:#000 !important;
-  display:flex !important;
-  justify-content:center !important;
-  align-items:center !important;
-}
-:fullscreen #game-container, :-webkit-full-screen #game-container {
-  width: min(100vw, calc(100vh * 4 / 3)) !important;
-  height: min(100vh, calc(100vw * 3 / 4)) !important;
-  border:none !important;
-}
-:fullscreen canvas, :-webkit-full-screen canvas {
-  width:100% !important;
-  height:100% !important;
-}
 #hud { position:absolute; top:0; left:0; right:0; padding:4px 8px; display:flex; justify-content:space-between; font-size:7px; color:#fff; pointer-events:none; text-shadow:1px 1px 0 #000; z-index:10; background:rgba(0,0,0,0.5); }
 #narrator-box {
   position:absolute;
@@ -1848,7 +1832,6 @@ function startGame(){
     else if(el.msRequestFullscreen) el.msRequestFullscreen();
   };
   requestFS();
-  // Also expose globally so canvas click can trigger it
   window._requestFS = requestFS;
   currentLevel=1; score=0; particles=[];
   lives = playerMode==='multi' ? 6 : 3;
@@ -3138,7 +3121,7 @@ function runLevel6(){
 // == LEVEL 7: THE KIDNAPPING (cinematic) ===========================
 // ==================================================================
 function initLevel7(){
-  Audio.playLevelTheme(7, 0.12); // dark/gloomy, noticeably quieter
+  Audio.playLevelTheme(7, 0.85); // dark/gloomy
   levelData={
     phase:0,timer:0,emirX:W+80,
     clouds:Array.from({length:8},()=>({x:Math.random()*W,y:40+Math.random()*120,w:60+Math.random()*80})),
@@ -3874,7 +3857,7 @@ function hitMihaela(mh,d,phase){
   if(mh.hp<=0){
     Audio.sfx('enemydie');
     spawnParticle(mh.x,mh.y,'#ffd700',30,10);
-    Audio.playLevelTheme('wedding-march.mp3', 0.85); // 🎵 HERE COMES THE BRIDE
+    Audio.playLevelTheme('wedding-march.mp3', 1.0); // 🎵 HERE COMES THE BRIDE
     queueDialogue('MIHAELA','Fine. But for the record — I sound better than The Ringtones.',230,'#ff4444');
     d.rescued=true; d.victoryTimer=0;
     score+=2000;
@@ -4339,6 +4322,29 @@ function drawScreenFlash(){if(screenFlash>0){ctx.fillStyle=screenFlashColor;ctx.
     }
   }
   setInterval(updateQRPanel, 500);
+})();
+
+// ── FULLSCREEN SCALING ──────────────────────────────────────────────
+(function(){
+  function applyFSScale(){
+    const c  = document.getElementById('game-container');
+    const cv = c && c.querySelector('canvas');
+    if(!c || !cv) return;
+    const inFS = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if(inFS){
+      const scale = Math.min(window.innerWidth/640, window.innerHeight/480);
+      const w = Math.floor(640*scale), h = Math.floor(480*scale);
+      c.style.cssText  += ';width:'+w+'px!important;height:'+h+'px!important;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;border:none;';
+      cv.style.width   = w+'px'; cv.style.height = h+'px';
+    } else {
+      c.style.cssText  = '';  // restore to stylesheet defaults
+      cv.style.width   = '640px'; cv.style.height = '480px';
+    }
+  }
+  document.addEventListener('fullscreenchange',       applyFSScale);
+  document.addEventListener('webkitfullscreenchange', applyFSScale);
+  document.addEventListener('mozfullscreenchange',    applyFSScale);
+  window.addEventListener('resize', applyFSScale);
 })();
 
 // Preload custom font then start loop
