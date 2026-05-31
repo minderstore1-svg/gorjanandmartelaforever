@@ -168,15 +168,14 @@ const Audio = (function(){
     if(currentTrack === filename) return; // already playing
     stopMusic();
     currentTrack = filename;
-    const a = preloaded[filename] || loadTrack(filename);
-    preloaded[filename] = a;
-    currentAudio = a;
+    // Always fresh element — avoids stale preload state if file wasn't on server at load time
+    const a = new window.Audio('/music/' + filename);
+    a.loop = true;
     a.volume = (vol !== undefined) ? vol : MUSIC_VOL;
-    // Fallback: if wedding march fails, play dreams-of-childhood softly
     a.addEventListener('error', ()=>{
       if(filename==='wedding-march.mp3') playTrackFile('dreams-of-childhood.mp3', 0.4);
     }, {once:true});
-    // Resume Web Audio context on first gesture
+    currentAudio = a;
     if(ctx && ctx.state==='suspended') ctx.resume();
     const playPromise = a.play();
     if(playPromise) playPromise.catch(()=>{});
@@ -4089,8 +4088,8 @@ function runCredits(){
     {t:'GORJAN',s:7,c:'#00ff88'},{t:'PLAYER 1 / THE RESCUER',s:5,c:'#888'},
     {t:'MARTELA',s:7,c:'#ff69b4'},{t:'PLAYER 2 / THE AVENGER',s:5,c:'#888'},
     {t:'',s:7,c:'#fff'},{t:'THE VILLAINS',s:8,c:'#ff4444'},
-    {t:'VLADIMIR',s:7,c:'#ff6666'},{t:'VLAD.EXE THE VIRUS',s:5,c:'#888'},
-    {t:'DORA',s:7,c:'#ff6666'},{t:'WINDOWS 95 CULPRIT',s:5,c:'#888'},
+    {t:'VLADIMIR',s:7,c:'#ff6666'},{t:'BUSINESS EXPENSER',s:5,c:'#888'},
+    {t:'DORA',s:7,c:'#ff6666'},{t:'RAMEN-EATER',s:5,c:'#888'},
     {t:'JOANA',s:7,c:'#ff6666'},{t:'QUARTERLY QUOTA CHAOS',s:5,c:'#888'},
     {t:'MALINA',s:7,c:'#ff6666'},{t:'RIVAL RAMEN CHEF / TOKYO OBSTACLE',s:5,c:'#888'},
     {t:'EMIR',s:7,c:'#ff6666'},{t:'THE KIDNAPPER (WHITE HAT)',s:5,c:'#888'},

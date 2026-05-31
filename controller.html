@@ -226,7 +226,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
     <button class="util-btn"          id="btn-next">NEXT ►</button>
     <button class="util-btn mute-btn" id="btn-mute">🔊 MUSIC</button>
     <button class="util-btn sfx-btn"  id="btn-sfx">🔔 SFX</button>
-    <button class="util-btn"          id="btn-fs" style="border-color:rgba(100,255,200,0.5);color:#88ffcc;">⛶ FULL</button>
   </div>
 
 </div>
@@ -458,24 +457,6 @@ function attachUtilButtons(){
   utilBtn('btn-esc',  'Escape');
   utilBtn('btn-prev', '[');
   utilBtn('btn-next', ']');
-
-  // Fullscreen button — fullscreens the controller page on the phone
-  const fsBtn = document.getElementById('btn-fs');
-  function goFullscreen(){
-    const el = document.documentElement;
-    if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
-  }
-  if(fsBtn){
-    fsBtn.addEventListener('touchstart', e=>{ e.preventDefault(); fsBtn.classList.add('pressed'); goFullscreen(); vibrate(15); },{passive:false});
-    fsBtn.addEventListener('touchend', e=>{ e.preventDefault(); fsBtn.classList.remove('pressed'); },{passive:false});
-  }
-  // Auto-fullscreen on very first tap anywhere on the controller
-  let _fsTriggered = false;
-  document.addEventListener('touchstart', ()=>{
-    if(!_fsTriggered){ _fsTriggered=true; goFullscreen(); }
-  }, {once:true, passive:true});
 
   // Music mute
   const muteBtn = document.getElementById('btn-mute');
