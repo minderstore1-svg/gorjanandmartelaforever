@@ -11,14 +11,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;}
 :root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);}
-html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#000;font-family:'Press Start 2P',monospace;touch-action:none;overscroll-behavior:none;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Press Start 2P',monospace;touch-action:none;}
 
 /* ── ROTATE OVERLAY ── */
 #rotate-overlay{display:none;position:fixed;inset:0;z-index:999;background:#000;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:32px;}
 @keyframes spin{0%{transform:rotate(0deg)}40%,60%{transform:rotate(90deg)}100%{transform:rotate(90deg)}}
 
 /* ── SCREENS ── */
-.screen{display:none;position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;}
+.screen{display:none;width:100%;height:100%;position:absolute;top:0;left:0;}
 .screen.active{display:flex;flex-direction:column;align-items:center;justify-content:center;}
 #screen-ctrl.active{display:grid !important;}
 
@@ -42,17 +42,13 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
 #status-dot{width:12px;height:12px;border-radius:50%;background:#555;}
 #status-dot.on{background:#00ff88;box-shadow:0 0 8px #00ff88;}
 
-/* ── CONTROLLER SCREEN — fullscreen joystick + action only ── */
+/* ── CONTROLLER SCREEN — 3-column grid ── */
 #screen-ctrl{
-  padding-top:calc(44px + var(--sat));
-  padding-bottom:max(8px, var(--sab));
-  padding-left:max(8px, env(safe-area-inset-left,0px));
-  padding-right:max(8px, env(safe-area-inset-right,0px));
-  grid-template-columns: 1fr 1fr;
+  padding-top:44px;
+  padding-bottom:4px;
+  grid-template-columns: 1fr 1fr 72px;
   align-items:center;
-  justify-items:center;
-  height:100vh;
-  height:100dvh;
+  height:100%;
   gap:0;
 }
 #screen-ctrl.p1{background:linear-gradient(135deg,#000d00,#001a00);}
@@ -63,12 +59,11 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
   justify-self:center;
   align-self:center;
   position:relative;
-  width:min(42vw, calc(100dvh - 76px));
-  height:min(42vw, calc(100dvh - 76px));
-  max-width:255px;
-  max-height:255px;
-  min-width:170px;
-  min-height:170px;
+  /* Fill the column height as much as possible */
+  width:min(46vw, calc(100dvh - 56px));
+  height:min(46vw, calc(100dvh - 56px));
+  max-width:260px;
+  max-height:260px;
 }
 #joystick-base{
   position:absolute;inset:0;
@@ -115,18 +110,17 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
 .joy-arrow.lt{left:6%;top:50%;transform:translateY(-50%);}
 .joy-arrow.rt{right:6%;top:50%;transform:translateY(-50%);}
 
-/* ── ACTION COLUMN (right side) — keep action in the same play position ── */
+/* ── ACTION COLUMN (column 2) — centred ── */
 #action-col{
   justify-self:center;
   align-self:center;
   display:flex;
   align-items:center;
   justify-content:center;
-  width:100%;
 }
 #btn-action{
-  width:min(22vw, 136px, calc(100dvh - 92px));
-  height:min(22vw, 136px, calc(100dvh - 92px));
+  width:min(20vw, 130px);
+  height:min(20vw, 130px);
   border-radius:50%;
   border:4px solid;
   font-family:inherit;font-size:10px;font-weight:bold;
@@ -139,46 +133,15 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
 #btn-action.p1-style{background:#1a1000;border-color:#ffd700;color:#ffd700;}
 #btn-action.p2-style{background:#1a0010;border-color:#ff1493;color:#ff1493;}
 
-/* ── UTILITY PANEL — hidden by default, available when needed ── */
-#util-toggle{
-  position:fixed;
-  top:calc(50px + var(--sat));
-  right:max(12px, env(safe-area-inset-right,0px));
-  z-index:9999;
-  min-width:86px;
-  height:38px;
-  padding:0 10px;
-  border-radius:10px;
-  border:2px solid rgba(255,215,0,0.9);
-  background:rgba(0,0,0,0.82);
-  color:#ffd700;
-  box-shadow:0 0 14px rgba(255,215,0,0.35);
-  font-family:inherit;
-  font-size:7px;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  touch-action:none;
-}
-#util-toggle.visible{display:flex !important;}
-#util-toggle.pressed{background:rgba(255,215,0,0.24);color:#fff;}
+/* ── UTILITY COLUMN (column 3) — 72px fixed ── */
 #util-col{
   display:none;
-  position:fixed;
-  top:calc(92px + var(--sat));
-  right:max(10px, env(safe-area-inset-right,0px));
-  bottom:max(8px, var(--sab));
-  z-index:9998;
-  width:96px;
   flex-direction:column;
   align-items:stretch;
   justify-content:center;
   gap:6px;
-  padding:6px;
-  border-radius:12px;
-  background:rgba(0,0,0,0.58);
-  border:1.5px solid rgba(255,255,255,0.12);
-  backdrop-filter:blur(4px);
+  padding:4px 6px 4px 4px;
+  height:100%;
 }
 #util-col.visible{display:flex;}
 .util-btn{
@@ -198,21 +161,6 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
 .util-btn.mute-btn.pressed{background:rgba(255,200,0,0.15);}
 .util-btn.sfx-btn{border-color:rgba(100,200,255,0.4);color:#88ccff;}
 .util-btn.sfx-btn.pressed{background:rgba(100,200,255,0.15);}
-.util-btn.fs-btn{border-color:rgba(180,140,255,0.45);color:#c8a8ff;}
-.util-btn.fs-btn.pressed{background:rgba(180,140,255,0.16);}
-
-@media (max-height:420px){
-  #status-bar{height:36px;font-size:6px;padding:0 12px;}
-  #status-name{font-size:8px;}
-  #screen-ctrl{padding-top:calc(36px + var(--sat));grid-template-columns:1fr 1fr;}
-  #joystick-wrap{width:min(40vw, calc(100dvh - 62px));height:min(40vw, calc(100dvh - 62px));min-width:145px;min-height:145px;}
-  #btn-action{width:min(18vw, 112px, calc(100dvh - 74px));height:min(18vw, 112px, calc(100dvh - 74px));font-size:8px;}
-}
-@media (max-width:720px){
-  #screen-ctrl{grid-template-columns:1fr 1fr;}
-  #joystick-wrap{justify-self:center;}
-}
-
 </style>
 </head>
 <body>
@@ -238,7 +186,7 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
       <span>MARTELA<br>Player 2</span>
     </button>
   </div>
-  <p style="font-size:5px;color:#444;margin-top:20px;">TAP A PLAYER TO GO FULLSCREEN</p>
+  <p style="font-size:5px;color:#444;margin-top:20px;">TAP A BUTTON TO GO FULLSCREEN</p>
   <p class="connecting-msg" id="connecting-msg">Connecting...</p>
 </div>
 
@@ -271,15 +219,14 @@ html,body{width:100%;height:100%;min-height:100dvh;overflow:hidden;background:#0
       data-key-p1=" " data-key-p2="Enter">ACTION</button>
   </div>
 
-  <!-- Utility toggle and hidden utility buttons -->
-  <button id="util-toggle" class="visible" aria-label="Show utility buttons">OPTIONS</button>
+  <!-- RIGHT: Utility buttons stacked vertically -->
   <div id="util-col">
     <button class="util-btn esc-btn"  id="btn-esc">⏸ ESC</button>
     <button class="util-btn"          id="btn-prev">◄ PREV</button>
     <button class="util-btn"          id="btn-next">NEXT ►</button>
     <button class="util-btn mute-btn" id="btn-mute">🔊 MUSIC</button>
     <button class="util-btn sfx-btn"  id="btn-sfx">🔔 SFX</button>
-    <button class="util-btn fs-btn"   id="btn-fullscreen">⛶ FULL</button>
+    <button class="util-btn"          id="btn-fs" style="border-color:rgba(100,255,200,0.5);color:#88ffcc;">⛶ FULL</button>
   </div>
 
 </div>
@@ -330,7 +277,6 @@ function vibrate(pattern){
 
 // ── Player select ────────────────────────────────────────────────
 function choosePlayer(p){
-  requestFullscreen();
   player = p;
   document.getElementById('connecting-msg').style.display='block';
   document.getElementById('connecting-msg').textContent='Connecting...';
@@ -363,33 +309,10 @@ function choosePlayer(p){
 function requestFullscreen(){
   const el = document.documentElement;
   try{
-    if(!document.fullscreenElement && !document.webkitFullscreenElement){
-      if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'});
-      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    }
+    if(el.requestFullscreen) el.requestFullscreen({navigationUI:'hide'});
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   }catch(e){}
   try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape'); }catch(e){}
-  setTimeout(()=>window.scrollTo(0,0), 60);
-}
-
-function toggleFullscreenMode(){
-  const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
-  try{
-    if(isFull){
-      if(document.exitFullscreen) document.exitFullscreen();
-      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
-    } else {
-      requestFullscreen();
-    }
-  }catch(e){}
-  setTimeout(updateFullscreenButton, 120);
-}
-
-function updateFullscreenButton(){
-  const btn = document.getElementById('btn-fullscreen');
-  if(!btn) return;
-  const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
-  btn.textContent = isFull ? '⛶ EXIT' : '⛶ FULL';
 }
 
 function showController(){
@@ -401,8 +324,7 @@ function showController(){
   document.getElementById('status-bar').className=player==='p1'?'p1':'p2';
   document.getElementById('status-name').textContent=player==='p1'?'P1 — GORJAN':'P2 — MARTELA';
   document.getElementById('status-dot').classList.add('on');
-  const utilToggle = document.getElementById('util-toggle');
-  if(utilToggle){ utilToggle.classList.add('visible'); utilToggle.textContent='OPTIONS'; }
+  document.getElementById('util-col').classList.add('visible');
   // Style action button
   const ab = document.getElementById('btn-action');
   ab.classList.add(player==='p1'?'p1-style':'p2-style');
@@ -526,22 +448,6 @@ function attachActionBtn(){
 
 // ── UTILITY BUTTONS ───────────────────────────────────────────────
 function attachUtilButtons(){
-  const utilToggle = document.getElementById('util-toggle');
-  const utilPanel = document.getElementById('util-col');
-  if(utilToggle && utilPanel && !utilToggle.dataset.bound){
-    utilToggle.dataset.bound = '1';
-    const toggle = e=>{
-      e.preventDefault();
-      utilToggle.classList.add('pressed');
-      utilPanel.classList.toggle('visible');
-      utilToggle.textContent = utilPanel.classList.contains('visible') ? '× CLOSE' : 'OPTIONS';
-      vibrate(12);
-      setTimeout(()=>utilToggle.classList.remove('pressed'),100);
-    };
-    utilToggle.addEventListener('touchstart', toggle, {passive:false});
-    utilToggle.addEventListener('click', toggle);
-  }
-
   function utilBtn(id, key){
     const btn = document.getElementById(id);
     if(!btn) return;
@@ -552,6 +458,24 @@ function attachUtilButtons(){
   utilBtn('btn-esc',  'Escape');
   utilBtn('btn-prev', '[');
   utilBtn('btn-next', ']');
+
+  // Fullscreen button — fullscreens the controller page on the phone
+  const fsBtn = document.getElementById('btn-fs');
+  function goFullscreen(){
+    const el = document.documentElement;
+    if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
+  }
+  if(fsBtn){
+    fsBtn.addEventListener('touchstart', e=>{ e.preventDefault(); fsBtn.classList.add('pressed'); goFullscreen(); vibrate(15); },{passive:false});
+    fsBtn.addEventListener('touchend', e=>{ e.preventDefault(); fsBtn.classList.remove('pressed'); },{passive:false});
+  }
+  // Auto-fullscreen on very first tap anywhere on the controller
+  let _fsTriggered = false;
+  document.addEventListener('touchstart', ()=>{
+    if(!_fsTriggered){ _fsTriggered=true; goFullscreen(); }
+  }, {once:true, passive:true});
 
   // Music mute
   const muteBtn = document.getElementById('btn-mute');
@@ -578,26 +502,7 @@ function attachUtilButtons(){
     },{passive:false});
     sfxBtn.addEventListener('touchend', e=>{ e.preventDefault(); sfxBtn.classList.remove('pressed'); },{passive:false});
   }
-
-  // Fullscreen toggle
-  const fsBtn = document.getElementById('btn-fullscreen');
-  if(fsBtn && !fsBtn.dataset.bound){
-    fsBtn.dataset.bound = '1';
-    const toggleFs = e=>{
-      e.preventDefault();
-      fsBtn.classList.add('pressed');
-      toggleFullscreenMode();
-      vibrate(20);
-      setTimeout(()=>fsBtn.classList.remove('pressed'),120);
-    };
-    fsBtn.addEventListener('touchstart', toggleFs, {passive:false});
-    fsBtn.addEventListener('click', toggleFs);
-  }
-  updateFullscreenButton();
 }
-
-document.addEventListener('fullscreenchange', updateFullscreenButton);
-document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
 
 // ── Orientation / zoom prevention ────────────────────────────────
 function checkOrientation(){
@@ -605,7 +510,7 @@ function checkOrientation(){
   if(!overlay) return;
   overlay.style.display = window.innerHeight > window.innerWidth ? 'flex' : 'none';
 }
-window.addEventListener('resize', ()=>{ checkOrientation(); setTimeout(()=>window.scrollTo(0,0),50); });
+window.addEventListener('resize', checkOrientation);
 window.addEventListener('orientationchange', ()=>{ setTimeout(checkOrientation,200); });
 checkOrientation();
 

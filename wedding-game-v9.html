@@ -22,6 +22,22 @@ body { background:#000; display:flex; flex-direction:column; align-items:center;
   flex-shrink:0;
 }
 canvas { display:block; image-rendering:auto; width:640px; height:480px; }
+/* Fullscreen scaling — maintain 4:3 ratio */
+:fullscreen, :-webkit-full-screen {
+  background:#000 !important;
+  display:flex !important;
+  justify-content:center !important;
+  align-items:center !important;
+}
+:fullscreen #game-container, :-webkit-full-screen #game-container {
+  width: min(100vw, calc(100vh * 4 / 3)) !important;
+  height: min(100vh, calc(100vw * 3 / 4)) !important;
+  border:none !important;
+}
+:fullscreen canvas, :-webkit-full-screen canvas {
+  width:100% !important;
+  height:100% !important;
+}
 #hud { position:absolute; top:0; left:0; right:0; padding:4px 8px; display:flex; justify-content:space-between; font-size:7px; color:#fff; pointer-events:none; text-shadow:1px 1px 0 #000; z-index:10; background:rgba(0,0,0,0.5); }
 #narrator-box {
   position:absolute;
@@ -1824,9 +1840,16 @@ function retryLevel(){ window.__goSfx=false;
 function startGame(){
   window.__goSfx=false;
   // Go fullscreen on play
-  const el = document.getElementById('game-container') || document.documentElement;
-  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  const requestFS = ()=>{
+    const el = document.documentElement;
+    if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else if(el.mozRequestFullScreen) el.mozRequestFullScreen();
+    else if(el.msRequestFullscreen) el.msRequestFullscreen();
+  };
+  requestFS();
+  // Also expose globally so canvas click can trigger it
+  window._requestFS = requestFS;
   currentLevel=1; score=0; particles=[];
   lives = playerMode==='multi' ? 6 : 3;
   level2BridgeReached=false; level2IntroShown=false; // reset on full new game
@@ -3851,7 +3874,7 @@ function hitMihaela(mh,d,phase){
   if(mh.hp<=0){
     Audio.sfx('enemydie');
     spawnParticle(mh.x,mh.y,'#ffd700',30,10);
-    Audio.playLevelTheme('wedding-march.mp3', 0.5); // 🎵 HERE COMES THE BRIDE
+    Audio.playLevelTheme('wedding-march.mp3', 0.85); // 🎵 HERE COMES THE BRIDE
     queueDialogue('MIHAELA','Fine. But for the record — I sound better than The Ringtones.',230,'#ff4444');
     d.rescued=true; d.victoryTimer=0;
     score+=2000;
