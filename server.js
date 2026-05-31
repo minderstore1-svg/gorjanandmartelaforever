@@ -99,8 +99,9 @@ const server=http.createServer((req,res)=>{
       'fun-puzzle-quest.mp3':    'HeatleyBros - HeatleyBros I - 05 Fun Puzzle Quest.mp3',
       'back-to-business.mp3':    'HeatleyBros - HeatleyBros I - 07 Back To Business.mp3',
       'wedding-march.mp3':     "Mendelssohn's Wedding March.mp3",
+      'dreams-of-childhood.mp3': 'dreams-of-childhood.mp3',
     };
-    const clean = path.basename(url);
+    const clean = decodeURIComponent(path.basename(url));
     const actual = nameMap[clean];
     const fpath = actual ? path.join(__dirname, actual) : null;
     if(fpath && fs.existsSync(fpath)){
